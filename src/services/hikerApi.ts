@@ -1,4 +1,6 @@
 
+
+import { HikerUser } from "../utils/types";
 import axios from "axios";
 
 const HIKER_API_URL = process.env.HIKER_API_URL || "https://api.hikerapi.com";
@@ -17,8 +19,9 @@ const hikerClient = axios.create({
 });
 
 
+
 // Get user object by username (returns user info, including pk as user_id)
-export async function userByUsernameV1(username: string): Promise<any> {
+export async function userByUsernameV1(username: string): Promise<HikerUser | undefined> {
   try {
     const params = { username };
     const res = await hikerClient.get("/v1/user/by/username", { params });

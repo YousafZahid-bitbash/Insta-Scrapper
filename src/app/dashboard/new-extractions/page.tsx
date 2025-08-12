@@ -5,7 +5,6 @@ import Navbar from "@/components/Navbar";
 import { supabase } from "../../../supabaseClient";
 // import { useUser } from "@supabase/auth-helpers-react"; // Uncomment if using auth helpers
 import Sidebar from "@/components/Sidebar";
-
 import "../../globals.css";
 
 const extractOptions = [
