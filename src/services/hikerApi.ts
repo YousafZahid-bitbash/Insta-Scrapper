@@ -4,7 +4,9 @@ import { HikerUser } from "../utils/types";
 import axios from "axios";
 
 const HIKER_API_URL = process.env.NEXT_PUBLIC_HIKER_API_URL || "https://api.hikerapi.com";
+
 const HIKER_API_KEY = process.env.NEXT_PUBLIC_HIKER_API_KEY;
+console.log("[hikerApi] HIKER_API_KEY:", HIKER_API_KEY);
 
 if (!HIKER_API_KEY) {
   throw new Error("NEXT_PUBLIC_HIKER_API_KEY is not set in environment variables");
