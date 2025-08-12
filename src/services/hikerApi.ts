@@ -7,7 +7,7 @@ const HIKER_API_URL = process.env.NEXT_PUBLIC_HIKER_API_URL || "https://api.hike
 const HIKER_API_KEY = process.env.NEXT_PUBLIC_HIKER_API_KEY;
 
 if (!HIKER_API_KEY) {
-  throw new Error("HIKER_API_KEY is not set in environment variables");
+  throw new Error("NEXT_PUBLIC_HIKER_API_KEY is not set in environment variables");
 }
 
 const hikerClient = axios.create({
