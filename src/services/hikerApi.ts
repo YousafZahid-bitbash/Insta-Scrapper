@@ -1,3 +1,4 @@
+
 import axios from "axios";
 
 const HIKER_API_URL = process.env.HIKER_API_URL || "https://api.hikerapi.com";
@@ -15,7 +16,27 @@ const hikerClient = axios.create({
   },
 });
 
+
+// Get user object by username (returns user info, including pk as user_id)
+export async function userByUsernameV1(username: string): Promise<any> {
+  try {
+    const params = { username };
+    const res = await hikerClient.get("/v1/user/by/username", { params });
+    return res.data;
+  } catch (error: unknown) {
+    handleHikerError(error);
+  }
+}
+
 // Get a user's followers (one page) with cursor
+// Get a user's followers by username (fetches user_id first)
+export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string) {
+  const user = await userByUsernameV1(username);
+  if (!user || !user.pk) throw new Error("User not found");
+  return userFollowersChunkGql(user.pk, force, end_cursor);
+}
+
+// Original function (still available if you already have user_id)
 export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string) {
   try {
     const params: Record<string, unknown> = { user_id };
@@ -29,6 +50,14 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
 }
 
 // Get a user's followings (one page) with cursor
+// Get a user's followings by username (fetches user_id first)
+export async function userFollowingChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string) {
+  const user = await userByUsernameV1(username);
+  if (!user || !user.pk) throw new Error("User not found");
+  return userFollowingChunkGql(user.pk, force, end_cursor);
+}
+
+// Original function (still available if you already have user_id)
 export async function userFollowingChunkGql(user_id: string, force?: boolean, end_cursor?: string) {
   try {
     const params: Record<string, unknown> = { user_id };
