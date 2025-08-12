@@ -36,7 +36,7 @@ export default function SignupPage() {
 	}
 
 	return (
-		<main className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-200">
+		<main className="min-h-screen w-full flex items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-gray-200 via-white to-gray-100" style={{backgroundImage: 'repeating-linear-gradient(135deg, #f5f5f5 0px, #f5f5f5 24px, #e5e7eb 24px, #e5e7eb 48px)'}}>
 			<div className="w-full max-w-md p-10 space-y-8 bg-white rounded-2xl shadow-2xl border border-gray-100">
 				<h1 className="text-3xl font-serif font-semibold text-center text-gray-900 mb-2 tracking-tight">Create Account</h1>
 				<p className="text-center text-gray-500 mb-6 text-base">Sign up to get started</p>
