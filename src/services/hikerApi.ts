@@ -5,8 +5,12 @@ import axios from "axios";
 
 const HIKER_API_URL = process.env.NEXT_PUBLIC_HIKER_API_URL || "https://api.hikerapi.com";
 
+
+console.log("[hikerApi] process.env.NEXT_PUBLIC_HIKER_API_KEY:", process.env.NEXT_PUBLIC_HIKER_API_KEY);
+console.log("[hikerApi] process.env.HIKER_API_KEY:", process.env.HIKER_API_KEY);
+console.log("[hikerApi] process.env.NODE_ENV:", process.env.NODE_ENV);
 const HIKER_API_KEY = process.env.NEXT_PUBLIC_HIKER_API_KEY;
-console.log("[hikerApi] HIKER_API_KEY:", HIKER_API_KEY);
+console.log("[hikerApi] HIKER_API_KEY (assigned):", HIKER_API_KEY);
 
 if (!HIKER_API_KEY) {
   throw new Error("NEXT_PUBLIC_HIKER_API_KEY is not set in environment variables");
