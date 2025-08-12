@@ -19,7 +19,7 @@ export default function BillingPage() {
     async function fetchCoins() {
       const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
       if (userId) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("users")
           .select("coins")
           .eq("id", userId)
