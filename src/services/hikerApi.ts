@@ -16,27 +16,27 @@ const hikerClient = axios.create({
 });
 
 // Get a user's followers (one page) with cursor
-export async function userFollowersChunkGql(user_id: string, force?: any, end_cursor?: any) {
+export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string) {
   try {
-    const params: any = { user_id };
+    const params: Record<string, unknown> = { user_id };
     if (force !== undefined) params.force = force;
     if (end_cursor !== undefined) params.end_cursor = end_cursor;
     const res = await hikerClient.get("/gql/user/followers/chunk", { params });
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleHikerError(error);
   }
 }
 
 // Get a user's followings (one page) with cursor
-export async function userFollowingChunkGql(user_id: string, force?: any, end_cursor?: any) {
+export async function userFollowingChunkGql(user_id: string, force?: boolean, end_cursor?: string) {
   try {
-    const params: any = { user_id };
+    const params: Record<string, unknown> = { user_id };
     if (force !== undefined) params.force = force;
     if (end_cursor !== undefined) params.end_cursor = end_cursor;
     const res = await hikerClient.get("/gql/user/following/chunk", { params });
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleHikerError(error);
   }
 }
@@ -44,45 +44,46 @@ export async function userFollowingChunkGql(user_id: string, force?: any, end_cu
 // Get media likers
 export async function mediaLikersV1(id: string) {
   try {
-    const params = { id };
+    const params: Record<string, unknown> = { id };
     const res = await hikerClient.get("/v1/media/likers", { params });
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleHikerError(error);
   }
 }
 
 // Get media comments (commenters)
-export async function mediaCommentsV2(id: string, can_support_threading?: any, page_id?: any) {
+export async function mediaCommentsV2(id: string, can_support_threading?: boolean, page_id?: string) {
   try {
-    const params: any = { id };
+    const params: Record<string, unknown> = { id };
     if (can_support_threading !== undefined) params.can_support_threading = can_support_threading;
     if (page_id !== undefined) params.page_id = page_id;
     const res = await hikerClient.get("/v2/media/comments", { params });
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleHikerError(error);
   }
 }
 
 // Example for posts (media):
-export async function userMediaChunkGql(user_id: string, end_cursor?: any) {
+export async function userMediaChunkGql(user_id: string, end_cursor?: string) {
   try {
-    const params: any = { user_id };
+    const params: Record<string, unknown> = { user_id };
     if (end_cursor !== undefined) params.end_cursor = end_cursor;
     const res = await hikerClient.get("/gql/user/media/chunk", { params });
     return res.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleHikerError(error);
   }
 }
 
-function handleHikerError(error: any) {
-  if (error.response) {
-    if (error.response.status === 429) {
+function handleHikerError(error: unknown) {
+  if (typeof error === "object" && error && "response" in error) {
+    const err = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
+    if (err.response?.status === 429) {
       throw new Error("Rate limit exceeded. Please try again later.");
     }
-    throw new Error(error.response.data?.message || "Hiker API error");
+    throw new Error(err.response?.data?.message || "Hiker API error");
   }
-  throw new Error(error.message || "Unknown Hiker API error");
+  throw new Error((error as { message?: string }).message || "Unknown Hiker API error");
 }

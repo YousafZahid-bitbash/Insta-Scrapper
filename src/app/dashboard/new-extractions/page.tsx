@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import { supabase } from "../../../supabaseClient";
 // import { useUser } from "@supabase/auth-helpers-react"; // Uncomment if using auth helpers
 import Sidebar from "@/components/Sidebar";
-import Footer from "@/components/Footer";
+
 import "../../globals.css";
 
 const extractOptions = [
@@ -63,9 +63,9 @@ export default function NewExtractionsPage() {
 						<p className="text-lg text-gray-500 mb-8">Choose what you want to extract</p>
 						<div className="bg-white rounded-2xl shadow p-8">
 							<div className="flex flex-wrap gap-2 mb-8">
-								{extractOptions.map(opt => (
-									<button
-										key={opt.value}
+											{extractOptions.map(opt => (
+												<button
+													key={opt.value}
 										className={`flex items-center gap-2 px-6 py-3 rounded-md border transition font-medium text-base focus:outline-none ${selected === opt.value ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-transparent border-gray-200 text-gray-500 hover:bg-gray-50"}`}
 										onClick={() => setSelected(opt.value)}
 										type="button"
