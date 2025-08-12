@@ -21,7 +21,7 @@ export default function NewExtractionsPage() {
 	const [selected, setSelected] = useState("followers");
 	const [input, setInput] = useState("");
 	const [coins, setCoins] = useState<number>(0);
-	const [result, setResult] = useState<any>(null);
+	const [result, setResult] = useState<unknown>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -98,8 +98,12 @@ export default function NewExtractionsPage() {
 											return;
 										}
 										setResult(data);
-									} catch (err: any) {
-										setError(err.message || "Extraction failed");
+									} catch (err) {
+										if (err && typeof err === 'object' && 'message' in err) {
+											setError((err as { message?: string }).message || "Extraction failed");
+										} else {
+											setError("Extraction failed");
+										}
 									}
 									setLoading(false);
 								}}
@@ -122,7 +126,7 @@ export default function NewExtractionsPage() {
 								</button>
 							</form>
 							{error && <div className="text-red-500 mt-4 text-center">{error}</div>}
-							{result && (
+							{typeof result === 'object' && result !== null && (
 								<div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
 									<pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(result, null, 2)}</pre>
 								</div>
