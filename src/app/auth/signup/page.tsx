@@ -36,14 +36,15 @@ export default function SignupPage() {
 	}
 
 	return (
-		<main className="flex min-h-screen items-center justify-center bg-gray-50">
-			<div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow text-gray-900">
-				<h1 className="text-2xl font-bold text-center text-gray-900">Sign Up</h1>
-				<form className="space-y-4" onSubmit={handleSignup}>
+		<main className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-200">
+			<div className="w-full max-w-md p-10 space-y-8 bg-white rounded-2xl shadow-2xl border border-gray-100">
+				<h1 className="text-3xl font-serif font-semibold text-center text-gray-900 mb-2 tracking-tight">Create Account</h1>
+				<p className="text-center text-gray-500 mb-6 text-base">Sign up to get started</p>
+				<form className="space-y-5" onSubmit={handleSignup}>
 					<input
 						type="email"
 						placeholder="Email"
-						className="w-full px-4 py-2 border rounded bg-gray-50 text-gray-900 placeholder-gray-400"
+						className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10"
 						value={email}
 						onChange={e => setEmail(e.target.value)}
 						required
@@ -51,7 +52,7 @@ export default function SignupPage() {
 					<input
 						type="text"
 						placeholder="Username"
-						className="w-full px-4 py-2 border rounded bg-gray-50 text-gray-900 placeholder-gray-400"
+						className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10"
 						value={username}
 						onChange={e => setUsername(e.target.value)}
 						required
@@ -59,7 +60,7 @@ export default function SignupPage() {
 					<input
 						type="password"
 						placeholder="Password"
-						className="w-full px-4 py-2 border rounded bg-gray-50 text-gray-900 placeholder-gray-400"
+						className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10"
 						value={password}
 						onChange={e => setPassword(e.target.value)}
 						required
@@ -67,15 +68,15 @@ export default function SignupPage() {
 					/>
 					<button
 						type="submit"
-						className="w-full bg-black text-white py-2 rounded font-semibold disabled:opacity-60"
+						className="w-full bg-black text-white py-3 rounded-lg font-semibold text-lg shadow hover:bg-gray-900 transition disabled:opacity-60"
 						disabled={loading}
 					>
 						{loading ? "Signing up..." : "Sign Up"}
 					</button>
 				</form>
-				{error && <div className="text-red-500 text-center">{error}</div>}
-				{success && <div className="text-green-600 text-center">{success}</div>}
-				<div className="text-center text-sm text-gray-700">
+				{error && <div className="text-red-500 text-center text-sm mt-2">{error}</div>}
+				{success && <div className="text-green-600 text-center text-sm mt-2">{success}</div>}
+				<div className="text-center text-sm text-gray-700 mt-4">
 					Already have an account?{' '}
 					<Link href="/auth/login" className="text-blue-600 hover:underline font-semibold">Login</Link>
 				</div>

@@ -41,52 +41,45 @@ export default function LoginPage() {
 			}
 	}
 
-			return (
-					<main className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
-						<iframe
-							src="https://my.spline.design/datatransfer-B46O3qI2ug1536NZ7iGcA3uL/"
-							frameBorder="0"
-							className="absolute inset-0 w-full h-full z-0"
-							style={{ minHeight: '100vh', border: 0 }}
-							allowFullScreen
-							title="3D Scene"
-						></iframe>
-						<div className="relative z-10 w-full max-w-md p-8 space-y-6 bg-white/90 rounded shadow text-gray-900 backdrop-blur-md">
-							<h1 className="text-2xl font-bold text-center text-gray-900">Login</h1>
-							<form className="space-y-4" onSubmit={handleLogin}>
-								<input
-									type="email"
-									placeholder="Email"
-									className="w-full px-4 py-2 border rounded bg-gray-50 text-gray-900 placeholder-gray-400"
-									value={email}
-									onChange={e => setEmail(e.target.value)}
-									required
-								/>
-								<input
-									type="password"
-									placeholder="Password"
-									className="w-full px-4 py-2 border rounded bg-gray-50 text-gray-900 placeholder-gray-400"
-									value={password}
-									onChange={e => setPassword(e.target.value)}
-									required
-									minLength={6}
-								/>
-								<button
-									type="submit"
-									className="w-full bg-black text-white py-2 rounded font-semibold disabled:opacity-60"
-									disabled={loading}
-								>
-									{loading ? "Logging in..." : "Login"}
-								</button>
-							</form>
-							{error && <div className="text-red-500 text-center">{error}</div>}
-							{success && <div className="text-green-600 text-center">{success}</div>}
-							<div className="text-center text-sm text-gray-700">
-								Don&apos;t have an account?{' '}
-								<Link href="/auth/signup" className="text-blue-600 hover:underline font-semibold">Sign Up</Link>
-							</div>
-						</div>
-					</main>
+	return (
+		<main className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-100 via-white to-gray-200">
+			<div className="w-full max-w-md p-10 space-y-8 bg-white rounded-2xl shadow-2xl border border-gray-100">
+				<h1 className="text-3xl font-serif font-semibold text-center text-gray-900 mb-2 tracking-tight">Welcome Back</h1>
+				<p className="text-center text-gray-500 mb-6 text-base">Sign in to your account</p>
+				<form className="space-y-5" onSubmit={handleLogin}>
+					<input
+						type="email"
+						placeholder="Email"
+						className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10"
+						value={email}
+						onChange={e => setEmail(e.target.value)}
+						required
+					/>
+					<input
+						type="password"
+						placeholder="Password"
+						className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/10"
+						value={password}
+						onChange={e => setPassword(e.target.value)}
+						required
+						minLength={6}
+					/>
+					<button
+						type="submit"
+						className="w-full bg-black text-white py-3 rounded-lg font-semibold text-lg shadow hover:bg-gray-900 transition disabled:opacity-60"
+						disabled={loading}
+					>
+						{loading ? "Logging in..." : "Login"}
+					</button>
+				</form>
+				{error && <div className="text-red-500 text-center text-sm mt-2">{error}</div>}
+				{success && <div className="text-green-600 text-center text-sm mt-2">{success}</div>}
+				<div className="text-center text-sm text-gray-700 mt-4">
+					Don&apos;t have an account?{' '}
+					<Link href="/auth/signup" className="text-blue-600 hover:underline font-semibold">Sign Up</Link>
+				</div>
+			</div>
+		</main>
 			);
 	
 }
