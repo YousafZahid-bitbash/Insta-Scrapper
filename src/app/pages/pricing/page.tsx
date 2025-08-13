@@ -32,7 +32,7 @@ export default function PricingPage() {
 			setLoading(false);
 		}
 		fetchDeals();
-	}, []);
+			}, []);
 
 	const scenes = [
 		{
@@ -86,7 +86,7 @@ export default function PricingPage() {
 						<h2 className="text-3xl font-bold mb-4 font-serif text-[#d4af37]">How It Works</h2>
 						<p className="mb-6 text-lg">Simply purchase coins, then use them to extract the Instagram data you need. No subscriptions, no hidden fees. Your coins never expire and you can use them for any extraction type supported by Insta Scrapper.</p>
 						<ul className="list-disc list-inside text-left mx-auto inline-block mb-6">
-							<li>Choose a deal and click "Buy Now"</li>
+							<li>Choose a deal and click &quot;Buy Now&quot;</li>
 							<li>Complete your purchase securely</li>
 							<li>Coins are instantly credited to your account</li>
 							<li>Start extracting data right away!</li>

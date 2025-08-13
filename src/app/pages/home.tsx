@@ -1,5 +1,5 @@
 import Navbar from "../../components/Navbar";
-import Link from "next/link";
+// import Link from "next/link";
 import "../globals.css";
 
 export default function Home() {

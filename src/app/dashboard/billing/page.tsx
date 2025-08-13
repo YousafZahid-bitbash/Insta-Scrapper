@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-import Footer from "@/components/Footer";
+
 import { supabase } from "../../../supabaseClient";
 
 
