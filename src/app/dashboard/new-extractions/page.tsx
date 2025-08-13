@@ -54,87 +54,87 @@ export default function NewExtractionsPage() {
 				}, []);
 
 		console.log("[NewExtractions] Rendering Navbar with coins:", coins);
-		return (
-			<div className="min-h-screen bg-[#f7f9fc] flex flex-col">
-				<Navbar coins={coins} />
-			<div className="flex flex-1 w-full">
-				<div className="hidden md:block">
-					<Sidebar />
-				</div>
-				<main className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:p-8">
-					<div className="w-full max-w-5xl">
-						<h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center">New Extract</h1>
-						<p className="text-lg text-gray-500 mb-8 text-center">Choose what you want to extract</p>
-						<div className="bg-white rounded-2xl shadow p-8">
-							<div className="flex flex-wrap gap-2 mb-8 justify-center">
-								{extractOptions.map(opt => (
-									<button
-										key={opt.value}
-										className={`flex items-center gap-2 px-6 py-3 rounded-md border transition font-medium text-base focus:outline-none ${selected === opt.value ? "bg-blue-50 border-blue-400 text-blue-700" : "bg-transparent border-gray-200 text-gray-500 hover:bg-gray-50"}`}
-										onClick={() => setSelected(opt.value)}
-										type="button"
-									>
-										<span className="text-lg">{opt.icon}</span>
-										{opt.label}
-									</button>
-								))}
-							</div>
-							<form
-								className="flex flex-col sm:flex-row items-center gap-4 mt-4"
-								onSubmit={async e => {
-									e.preventDefault();
-									setResult(null);
-									setError(null);
-									setLoading(true);
-									try {
-										let data;
-										if (selected === "followers") {
-											data = await userFollowersChunkGqlByUsername(input);
-										} else if (selected === "followings") {
-											data = await userFollowingChunkGqlByUsername(input);
-										} else {
-											setError("Extraction for this option is not implemented yet.");
-											setLoading(false);
-											return;
-										}
-										setResult(data);
-									} catch (err) {
-										if (err && typeof err === 'object' && 'message' in err) {
-											setError((err as { message?: string }).message || "Extraction failed");
-										} else {
-											setError("Extraction failed");
-										}
-									}
-									setLoading(false);
-								}}
-							>
-								<span className="text-2xl text-gray-400">@</span>
-								<input
-									type="text"
-									placeholder="Enter instagram username"
-									className="flex-1 px-4 py-3 rounded-md border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-									value={input}
-									onChange={e => setInput(e.target.value)}
-									required
-								/>
-								<button
-									type="submit"
-									className="px-8 py-3 rounded-md bg-blue-500 text-white font-semibold text-lg hover:bg-blue-600 transition"
-									disabled={loading || !input}
-								>
-									{loading ? "Extracting..." : "Extract"}
-								</button>
-							</form>
-							{error && <div className="text-red-500 mt-4 text-center">{error}</div>}
-							{typeof result === 'object' && result !== null && (
-								<div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
-									<pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(result, null, 2)}</pre>
-								</div>
-							)}
+			return (
+				<div className="min-h-screen flex flex-col bg-gradient-to-br from-[#f7f9fc] via-[#e3e6f3] to-[#d4af37]">
+					<Navbar coins={coins} />
+					<div className="flex flex-1 w-full">
+						<div className="hidden md:block">
+							<Sidebar />
 						</div>
+						<main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16">
+							<div className="w-full max-w-4xl mx-auto">
+								<div className="bg-white/90 rounded-3xl shadow-2xl p-12 border border-[#d4af37] mt-8 mb-8 relative">
+									<h1 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-4 text-gray-900 tracking-tight">New Extraction</h1>
+									<p className="text-lg text-gray-600 mb-8 text-center">Choose what you want to extract from Instagram</p>
+									<div className="flex flex-wrap gap-3 mb-10 justify-center">
+										{extractOptions.map(opt => (
+											<button
+												key={opt.value}
+												className={`flex items-center gap-2 px-7 py-3 rounded-xl border-2 transition font-semibold text-base focus:outline-none shadow-sm ${selected === opt.value ? "bg-[#d4af37]/10 border-[#d4af37] text-[#bfa233]" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+												onClick={() => setSelected(opt.value)}
+												type="button"
+											>
+												<span className="text-xl">{opt.icon}</span>
+												{opt.label}
+											</button>
+										))}
+									</div>
+									<form
+										className="flex flex-col sm:flex-row items-center gap-4 mt-2 justify-center"
+										onSubmit={async e => {
+											e.preventDefault();
+											setResult(null);
+											setError(null);
+											setLoading(true);
+											try {
+												let data;
+												if (selected === "followers") {
+													data = await userFollowersChunkGqlByUsername(input);
+												} else if (selected === "followings") {
+													data = await userFollowingChunkGqlByUsername(input);
+												} else {
+													setError("Extraction for this option is not implemented yet.");
+													setLoading(false);
+													return;
+												}
+												setResult(data);
+											} catch (err) {
+												if (err && typeof err === 'object' && 'message' in err) {
+													setError((err as { message?: string }).message || "Extraction failed");
+												} else {
+													setError("Extraction failed");
+												}
+											}
+											setLoading(false);
+										}}
+									>
+										<span className="text-2xl text-gray-400 font-serif">@</span>
+										<input
+											type="text"
+											placeholder="Enter Instagram username"
+											className="flex-1 px-5 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37] font-serif text-lg shadow-sm"
+											value={input}
+											onChange={e => setInput(e.target.value)}
+											required
+										/>
+										<button
+											type="submit"
+											className="px-10 py-3 rounded-xl bg-[#d4af37] text-white font-bold text-lg shadow hover:bg-[#bfa233] transition font-serif"
+											disabled={loading || !input}
+										>
+											{loading ? "Extracting..." : "Extract"}
+										</button>
+									</form>
+									{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
+									{typeof result === 'object' && result !== null && (
+										<div className="mt-10 bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 shadow">
+											<pre className="text-sm whitespace-pre-wrap break-all font-mono">{JSON.stringify(result, null, 2)}</pre>
+										</div>
+									)}
+								</div>
+							</div>
+						</main>
 					</div>
-				</main>
-			</div>
-		</div>
-	);
+				</div>
+			);
 }

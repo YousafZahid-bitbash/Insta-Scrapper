@@ -56,9 +56,7 @@ export default function SettingsPage() {
                 <div className="mb-8 text-center">
                   <div className="text-lg font-serif text-gray-700 mb-2">Name: <span className="font-bold text-gray-900">{user.username || "-"}</span></div>
                   <div className="text-lg font-serif text-gray-700 mb-2">Email: <span className="font-bold text-gray-900">{user.email}</span></div>
-                  {/* <div className="text-lg font-serif text-gray-700 mb-2">User ID: <span className="font-bold text-gray-900">{user.id}</span></div> */}
-                  {/* <div className="text-lg font-serif text-gray-700 mb-2">Stripe Connected: <span className={stripeConnected ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{stripeConnected ? "Yes" : "No"}</span></div> */}
-                </div>
+                 </div>
                 <div className="mb-8 text-center">
                   {/* Update Password feature removed */}
                 </div>

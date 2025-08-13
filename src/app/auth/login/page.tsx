@@ -35,7 +35,7 @@ export default function LoginPage() {
 				if (data[0]?.user_id) {
 					localStorage.setItem("user_id", data[0].user_id);
 				}
-				router.push("/dashboard");
+				router.push("/dashboard/new-extractions");
 			} else {
 				setError("Invalid credentials");
 			}
