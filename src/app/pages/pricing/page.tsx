@@ -1,4 +1,4 @@
-import Navbar from "@/components/Navbar";
+import HomeNavbar from "@/components/HomeNavbar";
 import '@/app/globals.css';
 
 const deals = [
@@ -11,7 +11,7 @@ const deals = [
 export default function PricingPage() {
 	return (
 		<>
-			<Navbar />
+			<HomeNavbar />
 			<main className="min-h-screen bg-gray-50 p-8 text-gray-900 flex flex-col items-center">
 				<h1 className="text-3xl font-bold text-center mb-8 text-gray-900">Pricing</h1>
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-4xl">
