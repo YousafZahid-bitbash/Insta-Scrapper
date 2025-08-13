@@ -6,7 +6,7 @@ export default function HomeNavbar() {
   <header className="w-full flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 py-4 sm:py-6 shadow-sm gap-3 sm:gap-0 text-gray-900 bg-white">
       <Link href="/pages/home" className="flex items-center gap-2">
         <Image src="/file.svg" alt="Logo" width={32} height={32} />
-    <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-900">GiveMeData</span>
+    <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-900">Insta Scrapper</span>
       </Link>
   <nav className="flex gap-4 sm:gap-6 text-sm sm:text-base font-medium flex-wrap justify-center text-gray-900">
         <Link href="/">Home</Link>
