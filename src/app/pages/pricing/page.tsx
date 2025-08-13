@@ -21,18 +21,18 @@ export default function PricingPage() {
 	const [loading, setLoading] = useState(true);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
-		async function fetchDeals() {
-			const { data, error } = await supabase
-				.from("deals")
-				.select("id, coins, price, sale_price, description, active")
-				.eq("active", true)
-				.order("price", { ascending: true });
-			if (!error && data) setDeals(data);
-			setLoading(false);
-		}
-		fetchDeals();
-			}, []);
+		useEffect(() => {
+			async function fetchDeals() {
+				const { data, error } = await supabase
+					.from("deals")
+					.select("id, coins, price, sale_price, description, active")
+					.eq("active", true)
+					.order("price", { ascending: true });
+				if (!error && data) setDeals(data);
+				setLoading(false);
+			}
+			fetchDeals();
+		}, []);
 
 	const scenes = [
 		{

@@ -5,7 +5,8 @@ import Sidebar from "@/components/Sidebar";
 import { supabase } from "../../../supabaseClient";
 
 export default function SettingsPage() {
-  const [user, setUser] = useState<any>(null);
+  type User = { id: string; email: string; username: string };
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   // ...existing code...
 //   const 
