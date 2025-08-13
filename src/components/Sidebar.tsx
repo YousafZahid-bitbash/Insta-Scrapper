@@ -17,7 +17,7 @@ export default function Sidebar() {
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account</span>
         <nav className="mt-3 flex flex-col gap-2">
           <Link href="/dashboard/billing" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium">Billing</Link>
-          <Link href="#" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium">Settings</Link>
+            <Link href="/dashboard/settings" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium">Settings</Link>
           <button className="px-3 py-2 rounded hover:bg-gray-100 text-left text-gray-900 font-medium">Logout</button>
         </nav>
       </div>
