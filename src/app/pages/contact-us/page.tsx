@@ -5,7 +5,7 @@ export default function ContactUsPage() {
 	return (
 		<>
 			<HomeNavbar />
-			<main className="min-h-screen w-full flex items-center justify-center bg-[#f9f6f2] text-gray-900" style={{background: 'linear-gradient(135deg, #f9f6f2 0%, #fffbe6 100%)'}}>
+			<main className="min-h-screen w-full flex items-center justify-center bg-[#222] text-gray-900">
 				<div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-12 border border-[#d4af37] relative">
 					<div className="absolute -top-8 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-[#d4af37] flex items-center justify-center shadow-lg border-4 border-white">
 						<svg width="36" height="36" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M12 12.713l11.985-7.713A1 1 0 0023 4H1a1 1 0 00-.985 1.001L12 12.713z"/><path fill="#fff" d="M12 14.713l-12-7.713V20a1 1 0 001 1h22a1 1 0 001-1V7l-12 7.713z"/></svg>

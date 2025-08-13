@@ -62,11 +62,11 @@ export default function NewExtractionsPage() {
 					<Sidebar />
 				</div>
 				<main className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:p-8">
-					<div className="w-full max-w-4xl">
-						<h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">New Extract</h1>
-						<p className="text-lg text-gray-500 mb-8">Choose what you want to extract</p>
+					<div className="w-full max-w-5xl">
+						<h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center">New Extract</h1>
+						<p className="text-lg text-gray-500 mb-8 text-center">Choose what you want to extract</p>
 						<div className="bg-white rounded-2xl shadow p-8">
-							<div className="flex flex-wrap gap-2 mb-8">
+							<div className="flex flex-wrap gap-2 mb-8 justify-center">
 								{extractOptions.map(opt => (
 									<button
 										key={opt.value}
