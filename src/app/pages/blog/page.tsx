@@ -1,5 +1,5 @@
-import Navbar from "../../components/Navbar";
-import '../globals.css';
+import Navbar from "@/components/Navbar";
+import '@/app/globals.css';
 
 export default function BlogPage() {
 	return (

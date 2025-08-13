@@ -1,5 +1,5 @@
-import Navbar from "../../components/Navbar";
-import '../globals.css';
+import Navbar from "@/components/Navbar";
+import '@/app/globals.css';
 
 const deals = [
 	{ coins: 10000, price: 100 },
