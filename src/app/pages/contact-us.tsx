@@ -8,7 +8,7 @@ export default function ContactUsPage() {
 			<main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8 text-gray-900">
 				<div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
 					<h1 className="text-3xl font-bold text-center mb-6 text-gray-900">Contact Us</h1>
-					<p className="text-center text-gray-600 mb-8">We'd love to hear from you! Fill out the form below or reach us directly at <a href="mailto:support@givemedata.co" className="text-blue-600 hover:underline">support@givemedata.co</a>.</p>
+					  <p className="text-center text-gray-600 mb-8">We&apos;d love to hear from you! Fill out the form below or reach us directly at <a href="mailto:support@givemedata.co" className="text-blue-600 hover:underline">support@givemedata.co</a>.</p>
 					<form className="space-y-6">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
