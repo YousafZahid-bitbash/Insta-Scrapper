@@ -1,5 +1,5 @@
-import HomeNavbar from "@/components/HomeNavbar";
-import '@/app/globals.css';
+import HomeNavbar from "../../../components/HomeNavbar";
+import '../../../app/globals.css';
 
 export default function AffiliatesPage() {
 	return (
