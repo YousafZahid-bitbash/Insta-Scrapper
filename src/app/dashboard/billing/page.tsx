@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
+import Shimmer from "@/components/Shimmer";
 import Sidebar from "@/components/Sidebar";
 
 import { supabase } from "../../../supabaseClient";
-
-
 
 type Deal = {
   id: number;
@@ -67,17 +66,18 @@ export default function BillingPage() {
                 {coins}
               </span>
             </div>
-            <div className="flex justify-center mb-8">
-              <button className="px-8 py-3 rounded-lg bg-[#d4af37] text-white font-bold text-lg shadow hover:bg-[#bfa233] transition font-serif">Get Coins</button>
-            </div>
             {loading ? (
-              <div className="text-center text-lg text-gray-500">Loading deals...</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-4xl mx-auto">
+                {[...Array(4)].map((_, i) => (
+                  <Shimmer key={i} className="h-56 w-full mb-4 rounded-2xl" />
+                ))}
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-4xl mx-auto">
-                {deals.map((deal) => (
+                {deals.map(deal => (
                   <div key={deal.id} className="bg-[#fffbe6] rounded-2xl shadow-lg p-8 flex flex-col items-center border-2 border-[#d4af37] hover:border-[#bfa233] transition-all hover:scale-105">
                     <span className="text-3xl font-extrabold text-[#d4af37] mb-2 font-serif">{deal.coins.toLocaleString()} Coins</span>
-                    <span className="text-lg text-gray-700 mb-4 font-light">{deal.description || `Perfect for ${deal.coins / 1000}k+ extractions`}</span>
+                    <span className="text-lg text-gray-700 mb-4 font-light">{deal.description || `Enough for ${deal.coins / 1000}k+ extractions`}</span>
                     <span className="text-2xl font-bold text-gray-900 mb-2 font-serif">
                       {deal.sale_price ? (
                         <>
@@ -97,7 +97,6 @@ export default function BillingPage() {
           </div>
         </main>
       </div>
-      
     </div>
   );
 }

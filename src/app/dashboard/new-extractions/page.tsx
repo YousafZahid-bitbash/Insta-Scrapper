@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
 import Navbar from "@/components/Navbar";
+import Shimmer from "@/components/Shimmer";
 import { supabase } from "../../../supabaseClient";
 import Sidebar from "@/components/Sidebar";
 import "../../globals.css";
@@ -125,12 +126,19 @@ export default function NewExtractionsPage() {
 											{loading ? "Extracting..." : "Extract"}
 										</button>
 									</form>
-									{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
-									{typeof result === 'object' && result !== null && (
-										<div className="mt-10 bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 shadow">
-											<pre className="text-sm whitespace-pre-wrap break-all font-mono">{JSON.stringify(result, null, 2)}</pre>
-										</div>
-									)}
+													{loading && (
+														<div className="mt-10">
+															<Shimmer className="w-full h-32 mb-4" />
+															<Shimmer className="w-2/3 h-6 mb-2 mx-auto" />
+															<Shimmer className="w-1/2 h-6 mx-auto" />
+														</div>
+													)}
+													{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
+													{typeof result === 'object' && result !== null && !loading && (
+														<div className="mt-10 bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 shadow">
+															<pre className="text-sm whitespace-pre-wrap break-all font-mono">{JSON.stringify(result, null, 2)}</pre>
+														</div>
+													)}
 								</div>
 							</div>
 						</main>

@@ -1,6 +1,7 @@
 
 "use client";
 import HomeNavbar from "@/components/HomeNavbar";
+import Shimmer from "@/components/Shimmer";
 import '@/app/globals.css';
 
 import { useRef, useEffect, useState } from "react";
@@ -45,30 +46,34 @@ export default function PricingPage() {
 						</div>
 						<h1 className="text-4xl font-serif font-bold text-center mb-6 text-gray-900 tracking-tight" style={{fontFamily:'Georgia,serif'}}>Pricing & Deals</h1>
 						<p className="text-center text-gray-700 mb-8 text-lg font-light">Unlock powerful Instagram data extraction with our coin-based system. Each coin lets you extract data from profiles, posts, hashtags, followers, and more. Choose a deal below and start extracting instantly!</p>
-						{loading ? (
-							<div className="text-center text-lg text-gray-500">Loading deals...</div>
-						) : (
-							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-4xl mx-auto">
-								{deals.map(deal => (
-									<div key={deal.id} className="bg-[#fffbe6] rounded-2xl shadow-lg p-8 flex flex-col items-center border-2 border-[#d4af37] hover:border-[#bfa233] transition-all hover:scale-105">
-										<span className="text-3xl font-extrabold text-[#d4af37] mb-2 font-serif">{deal.coins.toLocaleString()} Coins</span>
-										<span className="text-lg text-gray-700 mb-4 font-light">{deal.description || `Enough for ${deal.coins / 1000}k+ extractions`}</span>
-										<span className="text-2xl font-bold text-gray-900 mb-2 font-serif">
-											{deal.sale_price ? (
-												<>
-													<span className="line-through text-gray-400 mr-2">${deal.price}</span>
-													${deal.sale_price}
-												</>
-											) : (
-												<>${deal.price}</>
-											)}
-										</span>
-										{deal.sale_price && <span className="text-sm text-green-600 font-semibold mb-4">On Sale!</span>}
-										<button className="w-full px-6 py-3 rounded bg-[#d4af37] text-white font-semibold text-lg shadow hover:bg-[#bfa233] transition font-serif">Buy Now</button>
-									</div>
-								))}
-							</div>
-						)}
+									{loading ? (
+										<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-4xl mx-auto">
+											{[...Array(4)].map((_, i) => (
+												<Shimmer key={i} className="h-56 w-full mb-4 rounded-2xl" />
+											))}
+										</div>
+									) : (
+										<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-4xl mx-auto">
+											{deals.map(deal => (
+												<div key={deal.id} className="bg-[#fffbe6] rounded-2xl shadow-lg p-8 flex flex-col items-center border-2 border-[#d4af37] hover:border-[#bfa233] transition-all hover:scale-105">
+													<span className="text-3xl font-extrabold text-[#d4af37] mb-2 font-serif">{deal.coins.toLocaleString()} Coins</span>
+													<span className="text-lg text-gray-700 mb-4 font-light">{deal.description || `Enough for ${deal.coins / 1000}k+ extractions`}</span>
+													<span className="text-2xl font-bold text-gray-900 mb-2 font-serif">
+														{deal.sale_price ? (
+															<>
+																<span className="line-through text-gray-400 mr-2">${deal.price}</span>
+																${deal.sale_price}
+															</>
+														) : (
+															<>${deal.price}</>
+														)}
+													</span>
+													{deal.sale_price && <span className="text-sm text-green-600 font-semibold mb-4">On Sale!</span>}
+													<button className="w-full px-6 py-3 rounded bg-[#d4af37] text-white font-semibold text-lg shadow hover:bg-[#bfa233] transition font-serif">Buy Now</button>
+												</div>
+											))}
+										</div>
+									)}
 					</div>
 				</section>
 			)
