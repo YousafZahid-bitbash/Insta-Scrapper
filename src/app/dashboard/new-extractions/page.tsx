@@ -136,7 +136,7 @@ export default function NewExtractionsPage() {
 													{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
 													{typeof result === 'object' && result !== null && !loading && (
 														<div className="mt-10 bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 shadow">
-															<pre className="text-sm whitespace-pre-wrap break-all font-mono">{JSON.stringify(result, null, 2)}</pre>
+															<pre className="text-sm whitespace-pre-wrap break-all font-mono text-black">{JSON.stringify(result, null, 2)}</pre>
 														</div>
 													)}
 								</div>
