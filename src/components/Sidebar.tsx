@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 h-screen bg-white border-r flex flex-col p-6">
+  <aside className="w-64 h-[calc(100vh-4rem)] bg-white border-r flex flex-col p-6 fixed top-16 left-0 z-30">
       <div className="mb-8">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</span>
         <nav className="mt-3 flex flex-col gap-2">
