@@ -6,9 +6,30 @@ import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 
 export default function YourExtractionsPage() {
-  const [extractions, setExtractions] = useState<any[]>([]);
-  const [selectedExtraction, setSelectedExtraction] = useState<any | null>(null);
-  const [extractedUsers, setExtractedUsers] = useState<any[]>([]);
+  type Extraction = {
+    id: string;
+    extraction_type: string;
+    target_username: string | null;
+    target_user_id: string;
+    requested_at: string;
+    completed_at: string;
+    status: string;
+    page_count: number;
+    next_page_id: string | null;
+    error_message: string | null;
+  };
+  type ExtractedUser = {
+    id: string;
+    extraction_id: string;
+    pk: string;
+    username: string;
+    full_name: string;
+    is_private: boolean;
+    is_verified: boolean;
+  };
+  const [extractions, setExtractions] = useState<Extraction[]>([]);
+  const [selectedExtraction, setSelectedExtraction] = useState<Extraction | null>(null);
+  const [extractedUsers, setExtractedUsers] = useState<ExtractedUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [coins, setCoins] = useState<number>(0);
 
@@ -56,7 +77,7 @@ export default function YourExtractionsPage() {
 }, []);
 
 
-  const handleShowDetails = async (extraction: any) => {
+  const handleShowDetails = async (extraction: Extraction) => {
     setSelectedExtraction(extraction);
     setLoading(true);
     const { data, error } = await supabase

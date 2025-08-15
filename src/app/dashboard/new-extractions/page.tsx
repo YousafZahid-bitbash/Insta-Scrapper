@@ -22,27 +22,27 @@ export default function NewExtractionsPage() {
 	 const [selected, setSelected] = useState("followers");
 	 const [input, setInput] = useState("");
 	 const [coins, setCoins] = useState<number>(0);
-	 const [result, setResult] = useState<any>(null);
+	const [result, setResult] = useState<unknown>(null);
 	 const [loading, setLoading] = useState(false);
 	 const [error, setError] = useState<string | null>(null);
-	 const [extractedCount, setExtractedCount] = useState<number>(0);
+	const [extractedCount, setExtractedCount] = useState<number>(0);
 
 				 useEffect(() => {
 					 async function fetchCoins() {
 						 const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
 						 if (userId) {
 							 try {
-								 const { data, error } = await supabase
-									 .from("users")
-									 .select("coins")
-									 .eq("id", userId)
-									 .single();
-								 if (data && data.coins !== undefined) {
-									 setCoins(data.coins);
-								 }
-							 } catch (err) {
-								 // ...existing code...
-							 }
+										const { data } = await supabase
+											.from("users")
+											.select("coins")
+											.eq("id", userId)
+											.single();
+										if (data && data.coins !== undefined) {
+											setCoins(data.coins);
+										}
+									} catch {
+										// ignore
+									}
 						 }
 					 }
 					 fetchCoins();
