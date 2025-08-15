@@ -55,7 +55,15 @@ export async function userFollowersChunkGqlByUsername(username: string, force?: 
 // Original function (still available if you already have user_id)
 export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string) {
   try {
-    let allFollowers: any[] = [];
+    type Follower = {
+      pk: string;
+      username: string;
+      full_name: string;
+      profile_pic_url: string;
+      is_private: boolean;
+      is_verified: boolean;
+    };
+    let allFollowers: Follower[] = [];
     let nextPageId: string | undefined = undefined;
     let pageCount = 0;
     
@@ -107,7 +115,7 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
           console.error("[hikerApi] Error saving extraction:", extractionError);
         } else if (extraction && extraction.id) {
           // Insert extracted users
-          const extractedUsers = allFollowers.map((u: any) => ({
+          const extractedUsers = allFollowers.map((u: Follower) => ({
             extraction_id: extraction.id,
             pk: u.pk,
             username: u.username,
@@ -175,7 +183,15 @@ export async function userFollowingChunkGqlByUsername(username: string, force?: 
 // Original function (still available if you already have user_id)
 export async function userFollowingChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string) {
   try {
-    let allFollowings: any[] = [];
+    type Following = {
+      pk: string;
+      username: string;
+      full_name: string;
+      profile_pic_url: string;
+      is_private: boolean;
+      is_verified: boolean;
+    };
+    let allFollowings: Following[] = [];
     let nextPageId: string | undefined = undefined;
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
@@ -226,7 +242,7 @@ export async function userFollowingChunkGql(user_id: string, force?: boolean, en
           console.error("[hikerApi] Error saving extraction:", extractionError);
         } else if (extraction && extraction.id) {
           // Insert extracted users
-          const extractedUsers = allFollowings.map((u: any) => ({
+          const extractedUsers = allFollowings.map((u: Following) => ({
             extraction_id: extraction.id,
             pk: u.pk,
             username: u.username,
