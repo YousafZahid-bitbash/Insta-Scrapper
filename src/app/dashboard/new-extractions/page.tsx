@@ -50,7 +50,7 @@ export default function NewExtractionsPage() {
 
 		console.log("[NewExtractions] Rendering Navbar with coins:", coins);
 			 return (
-				 <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#f7f9fc] via-[#e3e6f3] to-[#d4af37]">
+				 <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#f7f9fc] via-[#e3e6f3] to-[#ddc26a]">
 					 <Navbar coins={coins} />
 					 <div className="flex flex-1 w-full">
 						 <div className="hidden md:block">

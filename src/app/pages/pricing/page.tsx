@@ -34,6 +34,7 @@ export default function PricingPage() {
 			}
 			fetchDeals();
 		}, []);
+	
 
 	const scenes = [
 		{

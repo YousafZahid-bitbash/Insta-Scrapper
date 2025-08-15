@@ -196,7 +196,7 @@ export default function YourExtractionsPage() {
                       )}
                     </div>
                   </div>
-                  // ...existing code...
+                  {/* ...existing code... */}
                 </div>
               </div>
             </>
