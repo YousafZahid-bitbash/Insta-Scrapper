@@ -135,7 +135,7 @@ export default function PricingPage() {
 		return () => {
 			ref?.removeEventListener('wheel', handleWheel);
 		};
-	}, []);
+	}, [scenes, scenes.length]);
 
 	return (
 		<>
