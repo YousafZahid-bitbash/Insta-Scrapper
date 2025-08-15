@@ -97,7 +97,7 @@ export default function YourExtractionsPage() {
                   className="mt-4 md:mt-0 md:ml-6 px-6 py-2 font-semibold font-serif bg-gradient-to-r from-blue-700 to-blue-400 text-white rounded-lg shadow hover:from-blue-800 hover:to-blue-500 transition-all"
                   onClick={() => handleShowDetails(extraction)}
                 >
-                  View Details
+                  Extracted Data
                 </button>
               </li>
             ))}
@@ -134,7 +134,7 @@ export default function YourExtractionsPage() {
                         <th className="p-3 font-serif text-black">Full Name</th>
                         <th className="p-3 font-serif text-black">Private</th>
                         <th className="p-3 font-serif text-black">Verified</th>
-                        <th className="p-3 font-serif text-black">Profile Pic</th>
+                        
                       </tr>
                     </thead>
                     <tbody>
@@ -144,21 +144,13 @@ export default function YourExtractionsPage() {
                           <td className="p-3 font-serif text-black text-center">{u.full_name}</td>
                           <td className="p-3 text-black text-center">{u.is_private ? "Yes" : "No"}</td>
                           <td className="p-3 text-black text-center">{u.is_verified ? "Yes" : "No"}</td>
-                          <td className="p-3">
-                            {u.profile_pic_url && (
-                              <img src={u.profile_pic_url} alt={u.username} className="w-10 h-10 rounded-full border border-gray-300 shadow" />
-                            )}
-                          </td>
+                          
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
-              <h3 className="font-serif font-bold mt-8 mb-2 text-lg text-blue-900">Raw Response</h3>
-              <pre className="bg-gray-100 p-6 rounded-xl text-xs overflow-x-auto border border-gray-200 shadow-inner">
-                {JSON.stringify(extractedUsers, null, 2)}
-              </pre>
             </div>
           )}
         </main>
