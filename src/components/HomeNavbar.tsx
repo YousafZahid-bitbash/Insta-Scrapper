@@ -1,78 +1,99 @@
+
+
 "use client"
+import { useState } from "react"
 import Link from "next/link";
-import Image from "next/image";
-import { useState } from "react";
 
 export default function HomeNavbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
   return (
-    <div className="mt-8 mb-4">
-      <header className="sticky top-4 z-30 w-full mx-auto max-w-[1100px] rounded-2xl backdrop-blur bg-white/90 border border-[#d4af37]/30 shadow-lg px-6 py-3 flex items-center justify-between transition-all duration-200">
-        {/* Left: Logo */}
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/file.svg" alt="Logo" width={32} height={32} />
-            <span className="text-xl font-bold tracking-tight text-black font-sans">Insta Scrapper</span>
-          </Link>
+    <header className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-6xl mx-auto px-4">
+      <nav className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 px-6 py-4">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center">
+              <span className="text-black font-bold text-sm">IS</span>
+            </div>
+            <span className="text-xl font-bold text-black" style={{ fontFamily: "Montserrat, sans-serif" }}>
+              InstaScraper
+            </span>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <a
+              href="#features"
+              className="text-gray-700 hover:text-yellow-600 transition-colors font-medium"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              Features
+            </a>
+            <a
+              href="#pricing"
+              className="text-gray-700 hover:text-yellow-600 transition-colors font-medium"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              Pricing
+            </a>
+            <a
+              href="#testimonials"
+              className="text-gray-700 hover:text-yellow-600 transition-colors font-medium"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              Reviews
+            </a>
+          </div>
+
+          {/* Auth Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link href="/auth/login" className="text-gray-700 hover:text-yellow-600 transition-colors font-medium px-4 py-2">
+              Login
+            </Link>
+            <Link href="/auth/signup" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold px-6 py-2 rounded-full hover:scale-105 transition-transform shadow-lg">
+              Sign Up
+            </Link>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+              />
+            </svg>
+          </button>
         </div>
-        {/* Center: Nav links (desktop) */}
-        <nav className="hidden md:flex gap-8 text-base font-medium tracking-tight font-sans justify-center" aria-label="Main navigation">
-          <Link href="/pages/pricing" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#d4af37] hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150">Pricing</Link>
-          <Link href="/pages/blog" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#d4af37] hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150">Blog</Link>
-          <Link href="/pages/affiliates" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#d4af37] hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150">Affiliates</Link>
-          <Link href="/pages/contact-us" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#d4af37] hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150">Contact Us</Link>
-        </nav>
-        {/* Right: Auth buttons */}
-        <div className="hidden md:flex gap-6">
-          <Link href="/auth/login" className="px-4 py-2 rounded-lg border border-gray-300 bg-transparent text-black font-medium hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150">Login</Link>
-          <Link href="/auth/signup" className="px-4 py-2 rounded-lg bg-black text-white font-medium shadow hover:shadow-gold hover:bg-[#d4af37] hover:text-black focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150">Sign Up</Link>
-        </div>
-        {/* Mobile: Hamburger menu */}
-        <button
-          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white/80 text-black focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150"
-          aria-label="Open menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
-        {/* Mobile: Drawer menu */}
-        {menuOpen && (
-          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-start justify-end md:hidden animate-fade-in" role="dialog" aria-modal="true">
-            <div className="w-64 bg-white rounded-l-2xl shadow-lg p-6 flex flex-col gap-6 mt-4">
-              <button
-                className="self-end text-2xl text-black hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37]"
-                aria-label="Close menu"
-                onClick={() => setMenuOpen(false)}
-              >
-                &times;
-              </button>
-              <nav className="flex flex-col gap-4 text-base font-medium  tracking-tight font-sans" aria-label="Mobile navigation">
-                <Link href="/pages/pricing" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#d4af37] hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150" onClick={() => setMenuOpen(false)}>Pricing</Link>
-                <Link href="/pages/blog" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#d4af37] hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150" onClick={() => setMenuOpen(false)}>Blog</Link>
-                <Link href="/pages/affiliates" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#423409] hover:text-[#000000] focus-visible:ring-2 focus-visible:ring-[#826300] transition-all duration-150" onClick={() => setMenuOpen(false)}>Affiliates</Link>
-                <Link href="/pages/contact-us" className="px-2 pb-1 border-b-2 border-transparent text-black hover:border-[#d4af37] hover:text-[#d4af37] focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150" onClick={() => setMenuOpen(false)}>Contact Us</Link>
-              </nav>
-              <div className="flex gap-4 mt-6">
-                <Link href="/auth/login" className="px-4 py-2 rounded-lg border border-gray-300 bg-transparent text-black font-medium hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150" onClick={() => setMenuOpen(false)}>Login</Link>
-                <Link href="/auth/signup" className="px-4 py-2 rounded-lg bg-black text-white font-medium shadow hover:shadow-gold hover:bg-[#d4af37] hover:text-black focus-visible:ring-2 focus-visible:ring-[#d4af37] transition-all duration-150" onClick={() => setMenuOpen(false)}>Sign Up</Link>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden mt-4 pt-4 border-t border-gray-200">
+            <div className="flex flex-col space-y-4">
+              <a href="#features" className="text-gray-700 hover:text-yellow-600 transition-colors font-medium">
+                Features
+              </a>
+              <a href="#pricing" className="text-gray-700 hover:text-yellow-600 transition-colors font-medium">
+                Pricing
+              </a>
+              <a href="#testimonials" className="text-gray-700 hover:text-yellow-600 transition-colors font-medium">
+                Reviews
+              </a>
+              <div className="flex flex-col space-y-2 pt-4 border-t border-gray-200">
+                <Link href="/auth/login" className="text-gray-700 hover:text-yellow-600 transition-colors font-medium text-left">
+                  Login
+                </Link>
+                <Link href="/auth/signup" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold px-6 py-2 rounded-full hover:scale-105 transition-transform shadow-lg">
+                  Sign Up
+                </Link>
               </div>
             </div>
           </div>
         )}
-      </header>
-      <style jsx global>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: none; }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s cubic-bezier(0.4,0,0.2,1) both;
-        }
-        .hover\:shadow-gold:hover {
-          box-shadow: 0 0 16px 2px #d4af37;
-        }
-      `}</style>
-    </div>
-  );
+      </nav>
+    </header>
+  )
 }

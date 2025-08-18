@@ -56,7 +56,7 @@ export default function NewExtractionsPage() {
 						 <div className="hidden md:block">
 							 <Sidebar />
 						 </div>
-						 <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16">
+						<main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16 w-full">
 							 <div className="w-full max-w-4xl mx-auto">
 								 <div className="bg-white/90 rounded-3xl shadow-2xl p-12 border border-[#d4af37] mt-8 mb-8 relative">
 									 <h1 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-4 text-gray-900 tracking-tight">New Extraction</h1>
