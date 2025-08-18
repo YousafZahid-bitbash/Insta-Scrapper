@@ -54,6 +54,7 @@ export default function HomeNavbar() {
             <Link href="/auth/signup" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold px-6 py-2 rounded-full hover:scale-105 transition-transform shadow-lg">
               Sign Up
             </Link>
+            
           </div>
 
           {/* Mobile Menu Button */}
