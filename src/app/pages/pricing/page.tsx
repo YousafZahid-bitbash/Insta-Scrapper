@@ -88,7 +88,7 @@ export default function PricingPage() {
 							<path fill="#d4af37" fillOpacity="0.08" d="M0,160L60,165.3C120,171,240,181,360,165.3C480,149,600,107,720,117.3C840,128,960,192,1080,218.7C1200,245,1320,235,1380,229.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
 						</svg>
 					</div>
-					<div className="max-w-2xl mx-auto text-center text-black text-base font-serif relative z-10 bg-white/80 rounded-2xl shadow-xl p-10 border border-[#d4af37]">
+					<div className="max-w-2xl mx-auto text-center text-white text-base font-serif relative z-10 bg-[#222] rounded-2xl shadow-xl p-10 border border-[#d4af37]">
 						<h2 className="text-3xl font-bold mb-4 font-serif text-[#d4af37]">How It Works</h2>
 						<p className="mb-6 text-lg">Simply purchase coins, then use them to extract the Instagram data you need. No subscriptions, no hidden fees. Your coins never expire and you can use them for any extraction type supported by Insta Scrapper.</p>
 						<ul className="list-disc list-inside text-left mx-auto inline-block mb-6">
