@@ -1,4 +1,3 @@
-
 import { HikerUser } from "../utils/types";
 import axios from "axios";
 import { supabase } from "../supabaseClient";
@@ -37,6 +36,10 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
     handleHikerError(error);
   }
 }
+
+/***********************************************************/
+/**                FOLLOWERS API CALL METHOD              **/
+/***********************************************************/
 
 // Get a user's followers (one page) with cursor
 // Get a user's followers by username (fetches user_id first)
@@ -170,6 +173,12 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
   }
 }
 
+
+/***********************************************************/
+/**                FOLLOWING API CALL METHOD              **/
+/***********************************************************/
+
+
 // Get a user's followings (one page) with cursor
 // Get a user's followings by username (fetches user_id first)
 export async function userFollowingChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string) {
@@ -298,16 +307,36 @@ export async function userFollowingChunkGql(user_id: string, force?: boolean, en
 }
 
 
+/***********************************************************/
+/**                LIKERS API CALL METHOD              **/
+/***********************************************************/
+
 // Get media likers
-export async function mediaLikersV1(id: string) {
+export async function mediaLikersV1(url: string) {
   try {
-    const params: Record<string, unknown> = { id };
+    const mediaObj = await mediaByUrlV1(url);
+    const params: Record<string, unknown> = { id: mediaObj.id };
     const res = await hikerClient.get("/v1/media/likers", { params });
     return res.data;
   } catch (error: unknown) {
     handleHikerError(error);
   }
 }
+
+
+// Get media object by post URL (returns pk/id)
+export async function mediaByUrlV1(url: string) {
+  try {
+    const params: Record<string, unknown> = { url };
+    const res = await hikerClient.get("/v1/media/by/url", { params });
+    return res.data;
+  } catch (error: unknown) {
+    handleHikerError(error);
+  }
+}
+
+
+
 
 // Get media comments (commenters)
 export async function mediaCommentsV2(id: string, can_support_threading?: boolean, page_id?: string) {
@@ -333,6 +362,8 @@ export async function userMediaChunkGql(user_id: string, end_cursor?: string) {
     handleHikerError(error);
   }
 }
+
+
 
 function handleHikerError(error: unknown) {
   if (typeof error === "object" && error && "response" in error) {
