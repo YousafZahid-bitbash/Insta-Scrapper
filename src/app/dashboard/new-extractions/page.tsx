@@ -37,10 +37,10 @@ export default function NewExtractionsPage() {
 	extractPhone: false,
 	extractEmail: false,
 	extractLinkInBio: false,
-	privacy: false,
-	profilePicture: false,
-	verifiedAccount: false,
-	businessAccount: false,
+	privacy: "doesn't matter",
+	profilePicture: "doesn't matter",
+	verifiedAccount: "doesn't matter",
+	businessAccount: "doesn't matter",
 	followersMin: '',
 	followersMax: '',
 	followingsMin: '',
@@ -48,6 +48,7 @@ export default function NewExtractionsPage() {
 	filterByName: '',
 	filterByNameInBioContains: '',
 	filterByNameInBioStop: '',
+	coinLimit: '',
 	});
 
 	useEffect(() => {
@@ -101,10 +102,10 @@ export default function NewExtractionsPage() {
 						extractPhone: false,
 						extractEmail: false,
 						extractLinkInBio: false,
-						privacy: false,
-						profilePicture: false,
-						verifiedAccount: false,
-						businessAccount: false,
+						privacy: "doesn't matter",
+						profilePicture: "doesn't matter",
+						verifiedAccount: "doesn't matter",
+						businessAccount: "doesn't matter",
 						followersMin: '',
 						followersMax: '',
 						followingsMin: '',
@@ -112,6 +113,7 @@ export default function NewExtractionsPage() {
 						filterByName: '',
 						filterByNameInBioContains: '',
 						filterByNameInBioStop: '',
+						coinLimit: '',
 					})}
 					>
 					Clear
@@ -127,10 +129,10 @@ export default function NewExtractionsPage() {
 					extractPhone: false,
 					extractEmail: false,
 					extractLinkInBio: false,
-					privacy: false,
-					profilePicture: false,
-					verifiedAccount: false,
-					businessAccount: false,
+					privacy: "doesn't matter",
+					profilePicture: "doesn't matter",
+					verifiedAccount: "doesn't matter",
+					businessAccount: "doesn't matter",
 					followersMin: '',
 					followersMax: '',
 					followingsMin: '',
@@ -138,6 +140,7 @@ export default function NewExtractionsPage() {
 					filterByName: '',
 					filterByNameInBioContains: '',
 					filterByNameInBioStop: '',
+					coinLimit: '',
 				})}
 				/>
 			<div className="flex flex-1 w-full">
@@ -199,13 +202,36 @@ export default function NewExtractionsPage() {
 												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
 												setItemsCollected(prev => prev + (Array.isArray(followingsData) ? followingsData.length : 0));
 												setCoinsSpent(prev => prev + 1);
+											} else if (selected === "likers") {
+												// const likersData = await import("@/services/hikerApi").then(mod => mod.mediaLikersV1(target));
+												// extractedCount = likersData?.users?.length || 0;
+											} else if (selected === "commenters") {
+												// const mediaObj = await import("@/services/hikerApi").then(mod => mod.mediaByUrlV1(target));
+												// if (mediaObj && mediaObj.id) {
+												// 	const commentersData = await import("@/services/hikerApi").then(mod => mod.mediaCommentsV2(mediaObj.id));
+												// 	extractedCount = commentersData?.comments?.length || 0;
+												// } else {
+												// 	extractedCount = 0;
+												// }
+											} else if (selected === "posts") {
+												// const userObj = await import("@/services/hikerApi").then(mod => mod.userByUsernameV1(target));
+												// if (userObj && userObj.pk) {
+												// 	const postsData = await import("@/services/hikerApi").then(mod => mod.userMediaChunkGql(userObj.pk));
+												// 	extractedCount = postsData?.media?.length || 0;
+												// } else {
+													
+												// }
+											} else if (selected === "hashtags") {
+												// No hashtagSearchV1 in hikerApi, so skip or simulate
+												
 											} else {
-												// Simulate extraction for other types
 												await new Promise(res => setTimeout(res, 500));
-												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-												setItemsCollected(prev => prev + 1);
-												setCoinsSpent(prev => prev + 1);
+												
 											}
+											setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
+											setItemsCollected(prev => prev + extractedCount);
+											setCoinsSpent(prev => prev + extractedCount);
+										
 										} catch (err) {
 											setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
 										}

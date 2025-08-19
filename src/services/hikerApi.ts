@@ -43,8 +43,10 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 
 // Get a user's followers (one page) with cursor
 // Get a user's followers by username (fetches user_id first)
-export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string) {
-  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with username:`, username, 'force:', force, 'end_cursor:', end_cursor);
+export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, any>) {
+  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with username:`, username, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
+  const cleanUsername = username.replace(/^@/, "");
+  const userDetails = await userByUsernameV1(cleanUsername);
   const user = await userByUsernameV1(username);
   console.log(`[hikerApi] userByUsernameV1 result:`, user);
   if (!user || !user.pk) {
@@ -52,11 +54,11 @@ export async function userFollowersChunkGqlByUsername(username: string, force?: 
     throw new Error("User not found");
   }
   // Pass username to main function for DB save
-  return userFollowersChunkGql(user.pk, force, end_cursor, username);
+  return userFollowersChunkGql(user.pk, force, end_cursor, username, filters);
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string) {
+export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, any>) {
   try {
     type Follower = {
       pk: string;
@@ -67,17 +69,15 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
       is_verified: boolean;
     };
     let allFollowers: Follower[] = [];
+    let filteredFollowers: any[] = [];
     let nextPageId: string | undefined = undefined;
     let pageCount = 0;
-    
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     do {
         const params: Record<string, unknown> = { user_id };
         if (nextPageId) params.page_id = nextPageId;
         console.log(`[hikerApi] [FollowersV2] Calling /v2/user/followers with params:`, params);
         const res = await hikerClient.get("/v2/user/followers", { params });
-        console.log(`[hikerApi] [FollowersV2] API response:`, res.data);
-        // Response structure: { response: { users: [...] }, next_page_id: "..." }
         const data = res.data;
         const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
         console.log(`[hikerApi] [FollowersV2] Extracted users count:`, users.length);
@@ -90,10 +90,14 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
         nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
         console.log(`[hikerApi] [FollowersV2] Next page id:`, nextPageId);
       } while (nextPageId);
-
+       const result = await extractFilteredUsers(
+         allFollowers,
+         filters || {},
+         async (username) => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data
+       );
     console.log(`[hikerApi] [FollowersV2] Total followers collected:`, allFollowers.length);
     // Save extraction and extracted users to DB only if followers found
-    if (userId && allFollowers.length > 0) {
+    if (userId && filteredFollowers.length > 0) {
       try {
         // Insert extraction row
         const { data: extraction, error: extractionError } = await supabase
@@ -118,19 +122,13 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
           console.error("[hikerApi] Error saving extraction:", extractionError);
         } else if (extraction && extraction.id) {
           // Insert extracted users
-          const extractedUsers = allFollowers.map((u: Follower) => ({
-            extraction_id: extraction.id,
-            pk: u.pk,
-            username: u.username,
-            full_name: u.full_name,
-            profile_pic_url: u.profile_pic_url,
-            is_private: u.is_private,
-            is_verified: u.is_verified,
-          }));
-          if (extractedUsers.length > 0) {
+          for (const user of filteredFollowers) {
+            user.extraction_id = extraction.id;
+          }
+          if (filteredFollowers.length > 0) {
             const { error: usersError } = await supabase
               .from("extracted_users")
-              .insert(extractedUsers);
+              .insert(filteredFollowers);
             if (usersError) {
               console.error("[hikerApi] Error saving extracted users:", usersError);
             }
@@ -143,7 +141,7 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
               .eq("id", userId)
               .single();
             if (!coinsError && userData && typeof userData.coins === "number") {
-              const newCoins = Math.max(0, userData.coins - allFollowers.length);
+              const newCoins = Math.max(0, userData.coins - filteredFollowers.length);
               const { error: updateError } = await supabase
                 .from("users")
                 .update({ coins: newCoins })
@@ -151,7 +149,7 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
               if (updateError) {
                 console.error(`[hikerApi] Error updating coins:`, updateError);
               } else {
-                console.log(`[hikerApi] Coins updated. Deducted:`, allFollowers.length, `New balance:`, newCoins);
+                console.log(`[hikerApi] Coins updated. Deducted:`, filteredFollowers.length, `New balance:`, newCoins);
               }
             } else {
               console.error(`[hikerApi] Error fetching coins for deduction:`, coinsError);
@@ -164,9 +162,9 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
         console.error("[hikerApi] Exception during DB save:", err);
       }
     } else {
-      console.warn(`[hikerApi] [FollowersV2] No followers found, skipping DB save and coin deduction.`);
+      console.warn(`[hikerApi] [FollowersV2] No filtered followers found, skipping DB save and coin deduction.`);
     }
-    return allFollowers;
+    return filteredFollowers;
   } catch (error: unknown) {
     console.error('[hikerApi] userFollowersChunkGqlV2 actual error:', error);
     handleHikerError(error);
@@ -181,16 +179,16 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
 
 // Get a user's followings (one page) with cursor
 // Get a user's followings by username (fetches user_id first)
-export async function userFollowingChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string) {
+export async function userFollowingChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, any>) {
   
   const user = await userByUsernameV1(username);
   console.log(`[hikerApi] userByUsernameV1 result:`, user);
   if (!user || !user.pk) throw new Error("User not found");
-  return userFollowingChunkGql(user.pk, force, end_cursor, username);
+  return userFollowingChunkGql(user.pk, force, end_cursor, username, filters);
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowingChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string) {
+export async function userFollowingChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, any>) {
   try {
     type Following = {
       pk: string;
@@ -205,15 +203,20 @@ export async function userFollowingChunkGql(user_id: string, force?: boolean, en
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     do {
-      const params: Record<string, unknown> = { user_id };
+      const params: Record<string, unknown> = { user_id, ...(filters || {}) };
       if (nextPageId) params.page_id = nextPageId;
       console.log(`[hikerApi] [FollowingV2] Calling /v2/user/following with params:`, params);
+      
       const res = await hikerClient.get("/v2/user/following", { params });
+      
       console.log(`[hikerApi] [FollowingV2] API response:`, res.data);
+      
       // Response structure: { response: { users: [...] }, next_page_id: "..." }
       const data = res.data;
       const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
+      
       console.log(`[hikerApi] [FollowingV2] Extracted users count:`, users.length);
+      
       if (users.length === 0) {
         console.warn(`[hikerApi] [FollowingV2] Empty or invalid response, skipping coin deduction and DB save for this page.`);
       } else {
@@ -374,4 +377,78 @@ function handleHikerError(error: unknown) {
     throw new Error(err.response?.data?.message || "Hiker API error");
   }
   throw new Error((error as { message?: string }).message || "Unknown Hiker API error");
+}
+
+/***********************************************************/
+/**                FILTERED FOLLOWERS EXTRACTION          **/
+/***********************************************************/
+
+
+// Type definitions for better safety
+interface FilterOptions {
+  privacy?: string;
+  profilePicture?: string;
+  verifiedAccount?: string;
+  businessAccount?: string;
+  followersMin?: number;
+  followersMax?: number;
+  followingsMin?: number;
+  followingsMax?: number;
+  extractPhone?: boolean;
+  extractEmail?: boolean;
+  extractLinkInBio?: boolean;
+}
+
+
+// Generic user type for dynamic extraction
+interface UserLike {
+  username: string;
+  [key: string]: any;
+}
+
+
+// Generic extraction/filtering function for any user-like array
+export async function extractFilteredUsers<T extends UserLike>(
+  users: T[],
+  filters: FilterOptions,
+  getDetails: (username: string) => Promise<any>
+): Promise<Record<string, any>[]> {
+  const filteredUsers: Record<string, any>[] = [];
+  for (const userObj of users) {
+    // Get detailed info for each user (followers, followings, likers, etc.)
+    const userDetails = await getDetails(userObj.username);
+    if (!filterUser(userDetails, filters)) continue;
+    // Prepare contact/link data to save
+    const saveData: Record<string, any> = {
+      username: userDetails.username,
+      full_name: userDetails.full_name,
+    };
+    if (filters.extractPhone) saveData.phone = userDetails.phone_number || null;
+    if (filters.extractEmail) saveData.email = userDetails.email || null;
+    if (filters.extractLinkInBio) saveData.link_in_bio = userDetails.link_in_bio || null;
+    filteredUsers.push(saveData);
+  }
+  return filteredUsers;
+}
+
+
+// Reusable filter function for user objects
+export function filterUser(user: any, filters: FilterOptions): boolean {
+  // Profile flags
+  const flagChecks = [
+    { key: "privacy", value: user.is_private, filter: filters.privacy },
+    { key: "profilePicture", value: !!user.profile_pic_url, filter: filters.profilePicture },
+    { key: "verifiedAccount", value: user.is_verified, filter: filters.verifiedAccount },
+    { key: "businessAccount", value: user.is_business, filter: filters.businessAccount },
+  ];
+  for (const { filter, value } of flagChecks) {
+    if (filter === "yes" && !value) return false;
+    if (filter === "no" && value) return false;
+  }
+  // Follower/following ranges
+  if (filters.followersMin && user.follower_count < Number(filters.followersMin)) return false;
+  if (filters.followersMax && user.follower_count > Number(filters.followersMax)) return false;
+  if (filters.followingsMin && user.following_count < Number(filters.followingsMin)) return false;
+  if (filters.followingsMax && user.following_count > Number(filters.followingsMax)) return false;
+  return true;
 }
