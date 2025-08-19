@@ -78,7 +78,7 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, any>) {
   console.log(`[hikerApi] userFollowersChunkGqlByUsername called with username:`, username, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
   const cleanUsername = username.replace(/^@/, "");
-  const userDetails = await userByUsernameV1(cleanUsername);
+  // const userDetails = await userByUsernameV1(cleanUsername); // unused
   const user = await userByUsernameV1(username);
   console.log(`[hikerApi] userByUsernameV1 result:`, user);
   if (!user || !user.pk) {
@@ -102,7 +102,7 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
     };
     let allFollowers: Follower[] = [];
   console.log('[Backend] Received extraction request with filters:', filters);
-    // let filteredFollowers: any[] = [];
+  // let filteredFollowers: Follower[] = [];
     let nextPageId: string | undefined = undefined;
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
@@ -126,10 +126,10 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
        const result = await extractFilteredUsers(
          allFollowers,
          safeFilters,
-         async (username) => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data
+         async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
        );
        // Ensure all required columns are present for each user
-       const filteredFollowers = result.map(user => ({
+  const filteredFollowers = result.map((user: ExtractedUser) => ({
          // Always present fields
          pk: user.pk,
          username: user.username,
@@ -254,7 +254,7 @@ export async function userFollowingChunkGql(user_id: string, force?: boolean, en
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     do {
-      const params: Record<string, unknown> = { user_id, ...(filters || {}) };
+  const params: Record<string, unknown> = { user_id, ...(filters || {}) };
       if (nextPageId) params.page_id = nextPageId;
       console.log(`[hikerApi] [FollowingV2] Calling /v2/user/following with params:`, params);
       
@@ -472,26 +472,19 @@ export async function extractFilteredUsers<T extends UserLike>(
     let userDetails: UserDetails | undefined;
     try {
       userDetails = await getDetails(userObj.username);
-    } catch (err: any) {
-      if (err && err.response && typeof err.response.status === 'number') {
-        if (err.response.status === 404) {
-          console.warn('[Backend] [extractFilteredUsers] User not found (404):', userObj.username);
-          continue;
+    } catch (err) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const response = (err as any).response;
+        if (response && typeof response.status === 'number') {
+          if (response.status === 404) {
+            console.warn('[Backend] [extractFilteredUsers] User not found (404):', userObj.username);
+            continue;
+          }
+          if (response.status === 403) {
+            console.warn('[Backend] [extractFilteredUsers] User is forbidden(account, media or comment is private) (403):', userObj.username);
+            continue;
+          }
         }
-        if (err.response.status === 403) {
-          console.warn('[Backend] [extractFilteredUsers] User is forbidden(account, media or comment is private) (403):', userObj.username);
-          continue;
-        }
-      }
-      // For other errors, rethrow
-      throw err;
-      if (err?.response?.status === 404) {
-        console.warn('[Backend] [extractFilteredUsers] User not found (404):', userObj.username);
-        continue;
-      }
-      else if (err?.response?.status === 403) {
-      console.warn('[Backend] [extractFilteredUsers] User is forbidden(account, media or comment is private) (403):', userObj.username)
-      continue;
       }
       // For other errors, rethrow
       throw err;

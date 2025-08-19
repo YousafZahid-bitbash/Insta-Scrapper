@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
 import Navbar from "@/components/Navbar";
-import Shimmer from "@/components/Shimmer";
+// import Shimmer from "@/components/Shimmer";
 import { supabase } from "../../../supabaseClient";
 import Sidebar from "@/components/Sidebar";
 import "../../globals.css";
-import { userFollowersChunkGqlByUsername, userFollowingChunkGqlByUsername } from "@/services/hikerApi";
+// import { userFollowersChunkGqlByUsername, userFollowingChunkGqlByUsername } from "@/services/hikerApi";
 import { FilterPanel, FiltersState } from "@/components/FilterPanel";
 
 const extractOptions = [
@@ -23,7 +23,7 @@ const extractOptions = [
 export default function NewExtractionsPage() {
 	const [selected, setSelected] = useState("followers");
 	const [targetsInput, setTargetsInput] = useState("");
-	const [coinLimit, setCoinLimit] = useState<number>(0);
+	// const [coinLimit, setCoinLimit] = useState<number>(0);
 	const [coins, setCoins] = useState<number>(0);
 	const [result, setResult] = useState<unknown>(null);
 	const [loading, setLoading] = useState(false);
@@ -74,7 +74,7 @@ export default function NewExtractionsPage() {
 
 	// Helper: parse targets from textarea
 	const parsedTargets = targetsInput.split(/\r?\n/).map(t => t.trim()).filter(Boolean);
-	const estimatedCoins = parsedTargets.length;
+	// const estimatedCoins = parsedTargets.length;
 
 	// Progress bar calculation
 	const processedCount = progress.filter(p => p.status === "Done" || p.status === "Error").length;
@@ -182,7 +182,8 @@ export default function NewExtractionsPage() {
 									setCoinsSpent(0);
 									// Extraction logic for each target
 									for (let i = 0; i < parsedTargets.length; i++) {
-										if (coinLimit > 0 && coinsSpent >= coinLimit) break;
+										const coinLimitNum = Number(filters.coinLimit);
+										if (coinLimitNum > 0 && coinsSpent >= coinLimitNum) break;
 										const target = parsedTargets[i];
 										setProgress(prev => [...prev, { status: "Running", target }]);
 										try {

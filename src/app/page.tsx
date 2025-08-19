@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import HomeNavbar from "@/components/HomeNavbar";
 import { supabase } from "../supabaseClient";
 import Footer from "@/components/Footer";
@@ -45,12 +46,15 @@ const testimonials = [
 // Pricing will be fetched from the database
 
 export default function LandingPage() {
-  const [pricing, setPricing] = useState<Array<{ tier: string; price: number; coins: number; description: string }>>([])
+  type PricingDeal = { id: string; name: string; coins: number; price: number; sale_price?: number; description?: string };
+  const [pricing, setPricing] = useState<PricingDeal[]>([]);
 
   useEffect(() => {
     async function fetchPricing() {
-      const { data, error } = await supabase.from("deals").select("*");
-      if (!error && data) setPricing(data);
+      const { data, error } = await supabase.from("deals").select("id, name, coins, price, sale_price, description");
+      if (!error && Array.isArray(data)) {
+        setPricing(data as PricingDeal[]);
+      }
     }
     fetchPricing();
   }, []);
@@ -158,7 +162,7 @@ export default function LandingPage() {
           </h2>
           <div className="w-24 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full mx-auto mb-16" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
+            {features.map((feature) => (
               <div
                 key={feature.title}
                 className="group bg-white rounded-3xl shadow-lg p-8 flex flex-col items-center border border-gray-100 hover:shadow-2xl hover:border-yellow-200 transition-all duration-300 hover:-translate-y-2"
@@ -191,10 +195,13 @@ export default function LandingPage() {
               {/* Golden frame accent */}
               <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-3xl opacity-20 blur-lg"></div>
               <div className="relative bg-white rounded-2xl p-2 shadow-2xl border-2 border-yellow-200">
-                <img
+                <Image
                   src="/dashboard.png"
                   alt="InstaScraper Dashboard"
+                  width={800}
+                  height={400}
                   className="w-full h-auto rounded-xl"
+                  priority
                 />
               </div>
             </div>
@@ -245,9 +252,11 @@ export default function LandingPage() {
             {testimonials.map((t, idx) => (
               <div key={idx} className="bg-white rounded-3xl p-10 shadow-2xl border border-gray-100 relative">
                 <div className="absolute -top-6 left-10">
-                  <img
+                  <Image
                     src={t.avatar || "/placeholder.svg"}
                     alt={`${t.author} avatar`}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-full border-4 border-yellow-400 shadow-lg"
                   />
                 </div>
@@ -263,7 +272,7 @@ export default function LandingPage() {
                     className="text-lg text-gray-700 mb-6 leading-relaxed italic"
                     style={{ fontFamily: "Inter, sans-serif" }}
                   >
-                    "{t.quote}"
+                    &quot;{t.quote}&quot;
                   </p>
                   <div className="border-t border-gray-200 pt-4">
                     <div className="text-yellow-600 font-bold text-lg" style={{ fontFamily: "Montserrat, sans-serif" }}>
@@ -294,7 +303,7 @@ export default function LandingPage() {
                 <div key={i} className="h-56 w-full mb-4 rounded-2xl bg-[#fffbe6] animate-pulse" />
               ))
             ) : (
-              pricing.map((deal: any) => (
+              pricing.map((deal: { id: string; name: string; coins: number; price: number; sale_price?: number; description?: string }) => (
                 <div key={deal.id} className="bg-[#fffbe6] rounded-2xl shadow-lg p-8 flex flex-col items-center border-2 border-[#d4af37] hover:border-[#bfa233] transition-all hover:scale-105">
                   <span className="text-3xl font-extrabold text-[#d4af37] mb-2 font-serif">{deal.coins?.toLocaleString()} Coins</span>
                   <span className="text-lg text-gray-700 mb-4 font-light">{deal.description || `Enough for ${deal.coins / 1000}k+ extractions`}</span>
