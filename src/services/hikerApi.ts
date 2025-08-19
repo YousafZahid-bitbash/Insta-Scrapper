@@ -474,7 +474,7 @@ export async function extractFilteredUsers<T extends UserLike>(
       userDetails = await getDetails(userObj.username);
     } catch (err) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
-        const response = (err as any).response;
+        const response = (err as { response?: { status?: number } }).response;
         if (response && typeof response.status === 'number') {
           if (response.status === 404) {
             console.warn('[Backend] [extractFilteredUsers] User not found (404):', userObj.username);
