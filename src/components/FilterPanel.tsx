@@ -46,7 +46,7 @@ interface FilterPanelProps {
 export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange, onClose, reset }) => {
   // Accordion open state
   const [openSections, setOpenSections] = useState<string[]>(sections.map(s => s.key));
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  // Removed unused variable isMobile
 
   if (!open) return null;
 
@@ -54,8 +54,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
   return (
     <div
       className={`fixed right-0 z-40 bg-white text-black md:w-[420px] w-screen h-screen shadow-2xl transition-all duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
-      style={{ top: '64px', padding: "1.5rem", overflowY: "auto" }}
     >
+      <Separator />
       {/* Header */}
       <div className="relative pb-2 mb-2 border-b border-gray-200">
         <div className="flex items-center justify-between">

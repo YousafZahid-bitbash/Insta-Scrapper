@@ -416,6 +416,7 @@ interface FilterOptions {
   extractPhone?: boolean;
   extractEmail?: boolean;
   extractLinkInBio?: boolean;
+  filterByNameInBioContains?: string;
 }
 
 
@@ -489,6 +490,23 @@ export function filterUser(user: any, filters: FilterOptions): boolean {
     if (filter === "yes" && !value) return false;
     if (filter === "no" && value) return false;
   }
+
+  // Filter by name in bio contains only
+  if (filters.filterByNameInBioContains) {
+    // Split words by line, trim, and filter out empty
+    const words = String(filters.filterByNameInBioContains)
+      .split(/\r?\n/)
+      .map(w => w.trim())
+      .filter(Boolean);
+    if (words.length > 0) {
+      const fullName = (user.full_name || "").toLowerCase();
+      const biography = (user.biography || "").toLowerCase();
+      // If none of the words are found, filter out
+      const found = words.some(word => fullName.includes(word.toLowerCase()) || biography.includes(word.toLowerCase()));
+      if (!found) return false;
+    }
+  }
+
   // Follower/following ranges
   if (filters.followersMin && user.follower_count < Number(filters.followersMin)) return false;
   if (filters.followersMax && user.follower_count > Number(filters.followersMax)) return false;
