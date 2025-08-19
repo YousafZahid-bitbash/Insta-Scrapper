@@ -139,12 +139,12 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
                     <input
                       type="radio"
                       name={flag.key}
-                      value="doesn't matter"
+                      value="doesn&apos;t matter"
                       checked={value[flag.key as keyof FiltersState] === "doesn't matter"}
                       onChange={() => onChange({ ...value, [flag.key]: "doesn't matter" })}
                       className="accent-[#d4af37] w-5 h-5"
                     />
-                    <span>Doesn't matter</span>
+                    <span>Doesn&apos;t matter</span>
                   </label>
                 </div>
               </div>

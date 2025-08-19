@@ -1,3 +1,35 @@
+// Type definitions for user extraction
+export interface UserDetails {
+  username: string;
+  full_name: string;
+  profile_pic_url?: string;
+  is_private?: boolean;
+  is_verified?: boolean;
+  is_business?: boolean;
+  phone_number?: string;
+  email?: string;
+  link_in_bio?: string;
+  pk?: string;
+  biography?: string;
+  follower_count?: number;
+  following_count?: number;
+}
+
+export interface ExtractedUser {
+  username: string;
+  full_name: string;
+  phone?: string | null;
+  email?: string | null;
+  link_in_bio?: string | null;
+  extraction_id?: string;
+  pk?: string;
+  profile_pic_url?: string;
+  is_private?: boolean;
+  is_verified?: boolean;
+  is_business?: boolean;
+}
+// Type definitions for user extraction
+// Type definitions for user extraction
 import { HikerUser } from "../utils/types";
 import axios from "axios";
 import { supabase } from "../supabaseClient";
@@ -423,7 +455,7 @@ interface FilterOptions {
 // Generic user type for dynamic extraction
 interface UserLike {
   username: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 
@@ -431,16 +463,28 @@ interface UserLike {
 export async function extractFilteredUsers<T extends UserLike>(
   users: T[],
   filters: FilterOptions,
-  getDetails: (username: string) => Promise<any>
-): Promise<Record<string, any>[]> {
+  getDetails: (username: string) => Promise<UserDetails>
+): Promise<ExtractedUser[]> {
   console.log('[Backend] [extractFilteredUsers] Filtering users with filters:', filters);
-  const filteredUsers: Record<string, any>[] = [];
+  const filteredUsers: ExtractedUser[] = [];
   for (const userObj of users) {
     // Get detailed info for each user (followers, followings, likers, etc.)
-    let userDetails;
+    let userDetails: UserDetails | undefined;
     try {
       userDetails = await getDetails(userObj.username);
     } catch (err: any) {
+      if (err && err.response && typeof err.response.status === 'number') {
+        if (err.response.status === 404) {
+          console.warn('[Backend] [extractFilteredUsers] User not found (404):', userObj.username);
+          continue;
+        }
+        if (err.response.status === 403) {
+          console.warn('[Backend] [extractFilteredUsers] User is forbidden(account, media or comment is private) (403):', userObj.username);
+          continue;
+        }
+      }
+      // For other errors, rethrow
+      throw err;
       if (err?.response?.status === 404) {
         console.warn('[Backend] [extractFilteredUsers] User not found (404):', userObj.username);
         continue;
@@ -462,13 +506,18 @@ export async function extractFilteredUsers<T extends UserLike>(
       continue;
     }
     // Prepare contact/link data to save
-    const saveData: Record<string, any> = {
+    const saveData: ExtractedUser = {
       username: userDetails.username,
       full_name: userDetails.full_name,
+      phone: filters.extractPhone ? userDetails.phone_number || null : undefined,
+      email: filters.extractEmail ? userDetails.email || null : undefined,
+      link_in_bio: filters.extractLinkInBio ? userDetails.link_in_bio || null : undefined,
+      pk: userDetails.pk,
+      profile_pic_url: userDetails.profile_pic_url,
+      is_private: userDetails.is_private,
+      is_verified: userDetails.is_verified,
+      is_business: userDetails.is_business,
     };
-    if (filters.extractPhone) saveData.phone = userDetails.phone_number || null;
-    if (filters.extractEmail) saveData.email = userDetails.email || null;
-    if (filters.extractLinkInBio) saveData.link_in_bio = userDetails.link_in_bio || null;
     console.log('[Backend] [extractFilteredUsers] User PASSED filters and will be saved:', saveData);
     filteredUsers.push(saveData);
   }
@@ -478,7 +527,7 @@ export async function extractFilteredUsers<T extends UserLike>(
 
 
 // Reusable filter function for user objects
-export function filterUser(user: any, filters: FilterOptions): boolean {
+export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
   // Profile flags
   const flagChecks = [
     { key: "privacy", value: user.is_private, filter: filters.privacy },
@@ -501,6 +550,11 @@ export function filterUser(user: any, filters: FilterOptions): boolean {
     if (words.length > 0) {
       const fullName = (user.full_name || "").toLowerCase();
       const biography = (user.biography || "").toLowerCase();
+  // follower/following count filters
+  if (filters.followersMin && (user.follower_count === undefined || user.follower_count < Number(filters.followersMin))) return false;
+  if (filters.followersMax && (user.follower_count === undefined || user.follower_count > Number(filters.followersMax))) return false;
+  if (filters.followingsMin && (user.following_count === undefined || user.following_count < Number(filters.followingsMin))) return false;
+  if (filters.followingsMax && (user.following_count === undefined || user.following_count > Number(filters.followingsMax))) return false;
       // If none of the words are found, filter out
       const found = words.some(word => fullName.includes(word.toLowerCase()) || biography.includes(word.toLowerCase()));
       if (!found) return false;
@@ -508,9 +562,9 @@ export function filterUser(user: any, filters: FilterOptions): boolean {
   }
 
   // Follower/following ranges
-  if (filters.followersMin && user.follower_count < Number(filters.followersMin)) return false;
-  if (filters.followersMax && user.follower_count > Number(filters.followersMax)) return false;
-  if (filters.followingsMin && user.following_count < Number(filters.followingsMin)) return false;
-  if (filters.followingsMax && user.following_count > Number(filters.followingsMax)) return false;
+  if (filters.followersMin && (typeof user.follower_count !== 'number' || user.follower_count < Number(filters.followersMin))) return false;
+  if (filters.followersMax && (typeof user.follower_count !== 'number' || user.follower_count > Number(filters.followersMax))) return false;
+  if (filters.followingsMin && (typeof user.following_count !== 'number' || user.following_count < Number(filters.followingsMin))) return false;
+  if (filters.followingsMax && (typeof user.following_count !== 'number' || user.following_count > Number(filters.followingsMax))) return false;
   return true;
 }
