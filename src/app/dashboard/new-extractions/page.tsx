@@ -193,7 +193,11 @@ export default function NewExtractionsPage() {
 												setItemsCollected(prev => prev + (likersData?.users?.length || 0));
 												setCoinsSpent(prev => prev + 1);
 											} else if (selected === "followers") {
-												const followersData = await import("@/services/hikerApi").then(mod => mod.userFollowersChunkGqlByUsername(target));
+												console.log('[Frontend] Sending followers extraction request:', {
+													target,
+													filters,
+												});
+												const followersData = await import("@/services/hikerApi").then(mod => mod.userFollowersChunkGqlByUsername(target, undefined, undefined, filters));
 												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
 												setItemsCollected(prev => prev + (Array.isArray(followersData) ? followersData.length : 0));
 												setCoinsSpent(prev => prev + 1);

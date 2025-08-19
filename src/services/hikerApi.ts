@@ -69,18 +69,17 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
       is_verified: boolean;
     };
     let allFollowers: Follower[] = [];
-    let filteredFollowers: any[] = [];
+  console.log('[Backend] Received extraction request with filters:', filters);
+    // let filteredFollowers: any[] = [];
     let nextPageId: string | undefined = undefined;
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     do {
         const params: Record<string, unknown> = { user_id };
         if (nextPageId) params.page_id = nextPageId;
-        console.log(`[hikerApi] [FollowersV2] Calling /v2/user/followers with params:`, params);
         const res = await hikerClient.get("/v2/user/followers", { params });
         const data = res.data;
         const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
-        console.log(`[hikerApi] [FollowersV2] Extracted users count:`, users.length);
         if (users.length === 0) {
           console.warn(`[hikerApi] [FollowersV2] Empty or invalid response, skipping coin deduction and DB save for this page.`);
         } else {
@@ -90,11 +89,31 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
         nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
         console.log(`[hikerApi] [FollowersV2] Next page id:`, nextPageId);
       } while (nextPageId);
+       const safeFilters = filters || {};
+       console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
        const result = await extractFilteredUsers(
          allFollowers,
-         filters || {},
+         safeFilters,
          async (username) => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data
        );
+       // Ensure all required columns are present for each user
+       const filteredFollowers = result.map(user => ({
+         // Always present fields
+         pk: user.pk,
+         username: user.username,
+         full_name: user.full_name,
+         profile_pic_url: user.profile_pic_url,
+         is_private: user.is_private,
+         is_verified: user.is_verified,
+         // Optional fields based on filters
+         email: safeFilters.extractEmail ? user.email ?? null : null,
+         phone: safeFilters.extractPhone ? user.phone ?? null : null,
+         link_in_bio: safeFilters.extractLinkInBio ? user.link_in_bio ?? null : null,
+         is_business: typeof user.is_business !== 'undefined' ? user.is_business : null,
+         // extraction_id will be added before DB insert
+       }));
+       console.log('[Backend] Filtering complete. Total users after filtering:', filteredFollowers.length);
+       console.log('[Backend] Filters used:', safeFilters);
     console.log(`[hikerApi] [FollowersV2] Total followers collected:`, allFollowers.length);
     // Save extraction and extracted users to DB only if followers found
     if (userId && filteredFollowers.length > 0) {
@@ -123,7 +142,7 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
         } else if (extraction && extraction.id) {
           // Insert extracted users
           for (const user of filteredFollowers) {
-            user.extraction_id = extraction.id;
+            (user as any).extraction_id = extraction.id;
           }
           if (filteredFollowers.length > 0) {
             const { error: usersError } = await supabase
@@ -413,11 +432,34 @@ export async function extractFilteredUsers<T extends UserLike>(
   filters: FilterOptions,
   getDetails: (username: string) => Promise<any>
 ): Promise<Record<string, any>[]> {
+  console.log('[Backend] [extractFilteredUsers] Filtering users with filters:', filters);
   const filteredUsers: Record<string, any>[] = [];
   for (const userObj of users) {
     // Get detailed info for each user (followers, followings, likers, etc.)
-    const userDetails = await getDetails(userObj.username);
-    if (!filterUser(userDetails, filters)) continue;
+    let userDetails;
+    try {
+      userDetails = await getDetails(userObj.username);
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        console.warn('[Backend] [extractFilteredUsers] User not found (404):', userObj.username);
+        continue;
+      }
+      else if (err?.response?.status === 403) {
+      console.warn('[Backend] [extractFilteredUsers] User is forbidden(account, media or comment is private) (403):', userObj.username)
+      continue;
+      }
+      // For other errors, rethrow
+      throw err;
+    }
+    if (!userDetails) {
+      console.warn('[Backend] [extractFilteredUsers] No user details returned for:', userObj.username);
+      continue;
+    }
+    console.log('[Backend] [extractFilteredUsers] Checking user:', userDetails.username, userDetails);
+    if (!filterUser(userDetails, filters)) {
+      console.log('[Backend] [extractFilteredUsers] User did NOT pass filters:', userDetails.username);
+      continue;
+    }
     // Prepare contact/link data to save
     const saveData: Record<string, any> = {
       username: userDetails.username,
@@ -426,8 +468,10 @@ export async function extractFilteredUsers<T extends UserLike>(
     if (filters.extractPhone) saveData.phone = userDetails.phone_number || null;
     if (filters.extractEmail) saveData.email = userDetails.email || null;
     if (filters.extractLinkInBio) saveData.link_in_bio = userDetails.link_in_bio || null;
+    console.log('[Backend] [extractFilteredUsers] User PASSED filters and will be saved:', saveData);
     filteredUsers.push(saveData);
   }
+  console.log('[Backend] [extractFilteredUsers] Users after filtering:', filteredUsers.length);
   return filteredUsers;
 }
 
