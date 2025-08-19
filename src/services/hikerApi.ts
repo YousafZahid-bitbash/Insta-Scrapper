@@ -75,9 +75,9 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 
 // Get a user's followers (one page) with cursor
 // Get a user's followers by username (fetches user_id first)
-export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, any>) {
+export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, FilterOptions>) {
   console.log(`[hikerApi] userFollowersChunkGqlByUsername called with username:`, username, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
-  const cleanUsername = username.replace(/^@/, "");
+  // const cleanUsername = username.replace(/^@/, "");
   // const userDetails = await userByUsernameV1(cleanUsername); // unused
   const user = await userByUsernameV1(username);
   console.log(`[hikerApi] userByUsernameV1 result:`, user);
@@ -90,7 +90,7 @@ export async function userFollowersChunkGqlByUsername(username: string, force?: 
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, any>) {
+export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>) {
   try {
     type Follower = {
       pk: string;
@@ -174,7 +174,7 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
         } else if (extraction && extraction.id) {
           // Insert extracted users
           for (const user of filteredFollowers) {
-            (user as any).extraction_id = extraction.id;
+            (user as ExtractedUser).extraction_id = extraction.id;
           }
           if (filteredFollowers.length > 0) {
             const { error: usersError } = await supabase
@@ -230,7 +230,7 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
 
 // Get a user's followings (one page) with cursor
 // Get a user's followings by username (fetches user_id first)
-export async function userFollowingChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, any>) {
+export async function userFollowingChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, FilterOptions>) {
   
   const user = await userByUsernameV1(username);
   console.log(`[hikerApi] userByUsernameV1 result:`, user);
@@ -239,7 +239,7 @@ export async function userFollowingChunkGqlByUsername(username: string, force?: 
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowingChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, any>) {
+export async function userFollowingChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>) {
   try {
     type Following = {
       pk: string;
