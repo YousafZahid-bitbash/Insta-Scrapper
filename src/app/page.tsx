@@ -46,12 +46,12 @@ const testimonials = [
 // Pricing will be fetched from the database
 
 export default function LandingPage() {
-  type PricingDeal = { id: string; name: string; coins: number; price: number; sale_price?: number; description?: string };
+  type PricingDeal = { id: string; coins: number; price: number; sale_price?: number; description?: string; name: string};
   const [pricing, setPricing] = useState<PricingDeal[]>([]);
 
   useEffect(() => {
     async function fetchPricing() {
-      const { data, error } = await supabase.from("deals").select("id, name, coins, price, sale_price, description");
+      const { data, error } = await supabase.from("deals").select("id, coins, price, sale_price, description, name");
       if (!error && Array.isArray(data)) {
         setPricing(data as PricingDeal[]);
       }
