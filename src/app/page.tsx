@@ -46,7 +46,7 @@ const testimonials = [
 // Pricing will be fetched from the database
 
 export default function LandingPage() {
-  type PricingDeal = { id: string; coins: number; price: number; sale_price?: number; description?: string; name: string};
+  type PricingDeal = { id: string; coins: number; price: number; sale_price?: number; description?: string; name: string };
   const [pricing, setPricing] = useState<PricingDeal[]>([]);
 
   useEffect(() => {
