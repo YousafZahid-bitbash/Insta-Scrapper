@@ -32,7 +32,7 @@ export default function NewExtractionsPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [extractedCount, setExtractedCount] = useState<number>(0);
 	const [progress, setProgress] = useState<{ status: string; target: string; error?: string }[]>([]);
-	const [itemsCollected, setItemsCollected] = useState<number>(0);
+	// Removed unused itemsCollected
 	const [coinsSpent, setCoinsSpent] = useState<number>(0);
 	const [filterOpen, setFilterOpen] = useState(false);
 	const [filters, setFilters] = useState<FiltersState>({
@@ -81,7 +81,7 @@ export default function NewExtractionsPage() {
 	// Progress bar calculation
 	const processedCount = progress.filter(p => p.status === "Done" || p.status === "Error").length;
 	const totalCount = parsedTargets.length;
-	const percent = totalCount ? Math.round((processedCount / totalCount) * 100) : 0;
+	// Removed unused percent
 
 	console.log("[NewExtractions] Rendering Navbar with coins:", coins);
 	return (
@@ -180,10 +180,9 @@ export default function NewExtractionsPage() {
 											setLoading(true);
 											setExtractedCount(0);
 											setProgress([]);
-											setItemsCollected(0);
 											setCoinsSpent(0);
 											// Extraction logic for each target with multi-404 handling
-											let currentTargets = [...parsedTargets];
+										const currentTargets = [...parsedTargets];
 											let i = 0;
 											while (i < currentTargets.length) {
 												const coinLimitNum = Number(filters.coinLimit);
@@ -194,32 +193,30 @@ export default function NewExtractionsPage() {
 													if (selected === "likers") {
 														const likersData = await import("@/services/hikerApi").then(mod => mod.mediaLikersV1(target));
 														setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-														setItemsCollected(prev => prev + (likersData?.users?.length || 0));
 														setCoinsSpent(prev => prev + 1);
 													} else if (selected === "followers") {
-													const filterOptions: any = {};
-													if (filters.privacy === "yes") filterOptions.privacy = true;
-													else if (filters.privacy === "no") filterOptions.privacy = false;
-													if (filters.profilePicture === "yes") filterOptions.profilePicture = true;
-													else if (filters.profilePicture === "no") filterOptions.profilePicture = false;
-													if (filters.verifiedAccount === "yes") filterOptions.verifiedAccount = true;
-													else if (filters.verifiedAccount === "no") filterOptions.verifiedAccount = false;
-													if (filters.businessAccount === "yes") filterOptions.businessAccount = true;
-													else if (filters.businessAccount === "no") filterOptions.businessAccount = false;
-													if (filters.followersMin) filterOptions.followersMin = Number(filters.followersMin);
-													if (filters.followersMax) filterOptions.followersMax = Number(filters.followersMax);
-													if (filters.followingsMin) filterOptions.followingsMin = Number(filters.followingsMin);
-													if (filters.followingsMax) filterOptions.followingsMax = Number(filters.followingsMax);
-													if (filters.extractPhone) filterOptions.extractPhone = true;
-													if (filters.extractEmail) filterOptions.extractEmail = true;
-													if (filters.extractLinkInBio) filterOptions.extractLinkInBio = true;
-													if (filters.filterByNameInBioContains) filterOptions.filterByNameInBioContains = filters.filterByNameInBioContains;
+												const filterOptions: Record<string, unknown> = {};
+												if (filters.privacy === "yes") filterOptions.privacy = true;
+												else if (filters.privacy === "no") filterOptions.privacy = false;
+												if (filters.profilePicture === "yes") filterOptions.profilePicture = true;
+												else if (filters.profilePicture === "no") filterOptions.profilePicture = false;
+												if (filters.verifiedAccount === "yes") filterOptions.verifiedAccount = true;
+												else if (filters.verifiedAccount === "no") filterOptions.verifiedAccount = false;
+												if (filters.businessAccount === "yes") filterOptions.businessAccount = true;
+												else if (filters.businessAccount === "no") filterOptions.businessAccount = false;
+												if (filters.followersMin) filterOptions.followersMin = Number(filters.followersMin);
+												if (filters.followersMax) filterOptions.followersMax = Number(filters.followersMax);
+												if (filters.followingsMin) filterOptions.followingsMin = Number(filters.followingsMin);
+												if (filters.followingsMax) filterOptions.followingsMax = Number(filters.followingsMax);
+												if (filters.extractPhone) filterOptions.extractPhone = true;
+												if (filters.extractEmail) filterOptions.extractEmail = true;
+												if (filters.extractLinkInBio) filterOptions.extractLinkInBio = true;
+												if (filters.filterByNameInBioContains) filterOptions.filterByNameInBioContains = filters.filterByNameInBioContains;
 														
 															const followersData = await import("@/services/hikerApi").then(mod =>
 																mod.userFollowersChunkGqlByUsername({ target, filters: filterOptions })
 															);
 															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-															setItemsCollected(prev => prev + (Array.isArray(followersData) ? followersData.length : 0));
 															setCoinsSpent(prev => prev + 1);
 														// } catch (err: any) {
 														// 	if (err && (err.type === 'multi-404' || err.type === 'multi-403')) {
@@ -270,7 +267,6 @@ export default function NewExtractionsPage() {
 														// try {
 															const followingsData = await import("@/services/hikerApi").then(mod => mod.userFollowingChunkGqlByUsername({ target, filters: filterOptions }));
 															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-															setItemsCollected(prev => prev + (Array.isArray(followingsData) ? followingsData.length : 0));
 															setCoinsSpent(prev => prev + 1);
 														// } catch (err: any) {
 														// 	if (err && (err.type === 'multi-404' || err.type === 'multi-403')) {
@@ -310,7 +306,6 @@ export default function NewExtractionsPage() {
 														await new Promise(res => setTimeout(res, 500));
 													}
 													setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-													setItemsCollected(prev => prev + extractedCount);
 													setCoinsSpent(prev => prev + extractedCount);
 												} catch (err) {
 													setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));

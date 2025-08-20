@@ -118,8 +118,8 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
-    let errorMessages: string[] = [];
-    let validUserIds: string[] = [...userIds];
+  const errorMessages: string[] = [];
+  const validUserIds: string[] = [...userIds];
     for (let i = 0; i < validUserIds.length; i++) {
       const singleUserId = validUserIds[i];
       let nextPageId: string | undefined = undefined;
