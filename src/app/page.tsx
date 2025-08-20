@@ -47,7 +47,7 @@ const testimonials = [
 // Pricing will be fetched from the database
 
 export default function LandingPage() {
-  type PricingDeal = { id: string; coins: number; price: number; sale_price?: number; description?: string; name: string };
+  type PricingDeal = { id: string; coins: number; price: number; sale_price?: number; description?: string; Name: string };
   const [pricing, setPricing] = useState<PricingDeal[]>([]);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function LandingPage() {
       console.log('supabase anon key:', supabase?.rest?.headers?.apikey || 'Not available');
       const { data, error } = await supabase
         .from("deals")
-        .select("id, coins, price, sale_price, description, name");
+        .select("id, coins, price, sale_price, description, Name");
       if (!error && Array.isArray(data)) {
         setPricing(data as PricingDeal[]);
       }
@@ -311,7 +311,7 @@ export default function LandingPage() {
                 <div key={i} className="h-56 w-full mb-4 rounded-2xl bg-[#fffbe6] animate-pulse" />
               ))
             ) : (
-              pricing.map((deal: { id: string; name: string; coins: number; price: number; sale_price?: number; description?: string }) => (
+              pricing.map((deal: { id: string; coins: number; price: number; sale_price?: number; description?: string; Name: string;}) => (
                 <div key={deal.id} className="bg-[#fffbe6] rounded-2xl shadow-lg p-8 flex flex-col items-center border-2 border-[#d4af37] hover:border-[#bfa233] transition-all hover:scale-105">
                   <span className="text-3xl font-extrabold text-[#d4af37] mb-2 font-serif">{deal.coins?.toLocaleString()} Coins</span>
                   <span className="text-lg text-gray-700 mb-4 font-light">{deal.description || `Enough for ${deal.coins / 1000}k+ extractions`}</span>
