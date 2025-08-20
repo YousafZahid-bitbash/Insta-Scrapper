@@ -76,21 +76,29 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 // Get a user's followers (one page) with cursor
 // Get a user's followers by username (fetches user_id first)
 export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, FilterOptions>) {
-  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with username:`, username, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
-  // const cleanUsername = username.replace(/^@/, "");
-  // const userDetails = await userByUsernameV1(cleanUsername); // unused
-  const user = await userByUsernameV1(username);
-  console.log(`[hikerApi] userByUsernameV1 result:`, user);
-  if (!user || !user.pk) {
-    console.error(`[hikerApi] User not found for username:`, username);
-    throw new Error("User not found");
+  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with username(s):`, username, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
+  // Support both single username and array of usernames
+  const usernames = Array.isArray(username) ? username : [username];
+  const userIds: string[] = [];
+  for (const uname of usernames) {
+    const cleanUsername = uname.replace(/^@/, "");
+    const user = await userByUsernameV1(cleanUsername);
+    console.log(`[hikerApi] userByUsernameV1 result for ", cleanUsername, ":`, user);
+    if (!user || !user.pk) {
+      console.error(`[hikerApi] User not found for username:`, cleanUsername);
+      continue; // Skip missing users, don't throw
+    }
+    userIds.push(user.pk);
   }
-  // Pass username to main function for DB save
-  return userFollowersChunkGql(user.pk, force, end_cursor, username, filters);
+  if (userIds.length === 0) {
+    throw new Error("No valid user IDs found for provided usernames");
+  }
+  // Pass array of user IDs to main function for DB save
+  return userFollowersChunkGql(userIds, force, end_cursor, usernames.join(","), filters);
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowersChunkGql(user_id: string, force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>) {
+export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>) {
   try {
     type Follower = {
       pk: string;
@@ -101,56 +109,54 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
       is_verified: boolean;
     };
     let allFollowers: Follower[] = [];
-  console.log('[Backend] Received extraction request with filters:', filters);
-  // let filteredFollowers: Follower[] = [];
-    let nextPageId: string | undefined = undefined;
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-    do {
-        const params: Record<string, unknown> = { user_id };
+    const userIds = Array.isArray(user_id) ? user_id : [user_id];
+    for (const singleUserId of userIds) {
+      let nextPageId: string | undefined = undefined;
+      do {
+        const params: Record<string, unknown> = { user_id: singleUserId };
         if (nextPageId) params.page_id = nextPageId;
         const res = await hikerClient.get("/v2/user/followers", { params });
         const data = res.data;
         const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
         if (users.length === 0) {
-          console.warn(`[hikerApi] [FollowersV2] Empty or invalid response, skipping coin deduction and DB save for this page.`);
+          console.warn(`[hikerApi] [FollowersV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
         } else {
           allFollowers = allFollowers.concat(users);
           pageCount++;
         }
         nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
-        console.log(`[hikerApi] [FollowersV2] Next page id:`, nextPageId);
+        console.log(`[hikerApi] [FollowersV2] Next page id for user_id ${singleUserId}:`, nextPageId);
       } while (nextPageId);
-       const safeFilters = filters || {};
-       console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
-       const result = await extractFilteredUsers(
-         allFollowers,
-         safeFilters,
-         async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
-       );
-       // Ensure all required columns are present for each user
-  const filteredFollowers = result.map((user: ExtractedUser) => ({
-         // Always present fields
-         pk: user.pk,
-         username: user.username,
-         full_name: user.full_name,
-         profile_pic_url: user.profile_pic_url,
-         is_private: user.is_private,
-         is_verified: user.is_verified,
-         // Optional fields based on filters
-         email: safeFilters.extractEmail ? user.email ?? null : null,
-         phone: safeFilters.extractPhone ? user.phone ?? null : null,
-         link_in_bio: safeFilters.extractLinkInBio ? user.link_in_bio ?? null : null,
-         is_business: typeof user.is_business !== 'undefined' ? user.is_business : null,
-         // extraction_id will be added before DB insert
-       }));
-       console.log('[Backend] Filtering complete. Total users after filtering:', filteredFollowers.length);
-       console.log('[Backend] Filters used:', safeFilters);
+    }
+    const safeFilters = filters || {};
+    console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
+    const result = await extractFilteredUsers(
+      allFollowers,
+      safeFilters,
+      async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
+    );
+    // Ensure all required columns are present for each user
+    const filteredFollowers = result.map((user: ExtractedUser) => ({
+      pk: user.pk,
+      username: user.username,
+      full_name: user.full_name,
+      profile_pic_url: user.profile_pic_url,
+      is_private: user.is_private,
+      is_verified: user.is_verified,
+      email: safeFilters.extractEmail ? user.email ?? null : null,
+      phone: safeFilters.extractPhone ? user.phone ?? null : null,
+      link_in_bio: safeFilters.extractLinkInBio ? user.link_in_bio ?? null : null,
+      is_business: typeof user.is_business !== 'undefined' ? user.is_business : null,
+      // extraction_id will be added before DB insert
+    }));
+    console.log('[Backend] Filtering complete. Total users after filtering:', filteredFollowers.length);
+    console.log('[Backend] Filters used:', safeFilters);
     console.log(`[hikerApi] [FollowersV2] Total followers collected:`, allFollowers.length);
     // Save extraction and extracted users to DB only if followers found
     if (userId && filteredFollowers.length > 0) {
       try {
-        // Insert extraction row
         const { data: extraction, error: extractionError } = await supabase
           .from("extractions")
           .insert([
@@ -158,12 +164,12 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
               user_id: userId,
               extraction_type: "followers",
               target_username: target_username || null,
-              target_user_id: user_id,
+              target_user_id: Array.isArray(user_id) ? user_id.join(",") : user_id,
               requested_at: new Date().toISOString(),
               completed_at: new Date().toISOString(),
               status: "completed",
               page_count: pageCount,
-              next_page_id: nextPageId,
+              next_page_id: null,
               error_message: null,
             },
           ])
@@ -172,7 +178,6 @@ export async function userFollowersChunkGql(user_id: string, force?: boolean, en
         if (extractionError) {
           console.error("[hikerApi] Error saving extraction:", extractionError);
         } else if (extraction && extraction.id) {
-          // Insert extracted users
           for (const user of filteredFollowers) {
             (user as ExtractedUser).extraction_id = extraction.id;
           }
