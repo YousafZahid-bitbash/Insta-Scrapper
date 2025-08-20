@@ -199,24 +199,24 @@ export default function NewExtractionsPage() {
 													filters,
 												});
 												// Map FiltersState to FilterOptions
-												const filterOptions = {
-													privacy: filters.privacy,
-													profilePicture: filters.profilePicture,
-													verifiedAccount: filters.verifiedAccount,
-													businessAccount: filters.businessAccount,
-													followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
-													followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
-													followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
-													followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
-													extractPhone: filters.extractPhone,
-													extractEmail: filters.extractEmail,
-													extractLinkInBio: filters.extractLinkInBio,
-													filterByNameInBioContains: filters.filterByNameInBioContains,
-												};
-												const followersData = await import("@/services/hikerApi").then(mod => mod.userFollowersChunkGqlByUsername(target, undefined, undefined, { main: filterOptions }));
-												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-												setItemsCollected(prev => prev + (Array.isArray(followersData) ? followersData.length : 0));
-												setCoinsSpent(prev => prev + 1);
+												// const filterOptions = {
+												// 	privacy: filters.privacy,
+												// 	profilePicture: filters.profilePicture,
+												// 	verifiedAccount: filters.verifiedAccount,
+												// 	businessAccount: filters.businessAccount,
+												// 	followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
+												// 	followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
+												// 	followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
+												// 	followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
+												// 	extractPhone: filters.extractPhone,
+												// 	extractEmail: filters.extractEmail,
+												// 	extractLinkInBio: filters.extractLinkInBio,
+												// 	filterByNameInBioContains: filters.filterByNameInBioContains,
+												// };
+												// const followersData = await import("@/services/hikerApi").then(mod => mod.userFollowersChunkGqlByUsername(target, undefined, undefined, { main: filterOptions }));
+												// setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
+												// setItemsCollected(prev => prev + (Array.isArray(followersData) ? followersData.length : 0));
+												// setCoinsSpent(prev => prev + 1);
 											} else if (selected === "followings") {
 												const followingsData = await import("@/services/hikerApi").then(mod => mod.userFollowingChunkGqlByUsername(target));
 												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
