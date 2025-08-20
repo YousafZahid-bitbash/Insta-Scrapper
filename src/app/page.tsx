@@ -55,7 +55,7 @@ export default function LandingPage() {
       // Log the anon key from the environment
       console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
       // Also log the key from the supabase client
-      // @ts-ignore
+  // @ts-expect-error
       console.log('supabase anon key:', supabase?.rest?.headers?.apikey || 'Not available');
       const { data, error } = await supabase
         .from("deals")
