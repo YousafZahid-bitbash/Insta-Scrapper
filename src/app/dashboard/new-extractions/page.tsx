@@ -21,6 +21,8 @@ const extractOptions = [
 ];
 
 export default function NewExtractionsPage() {
+	// Multi-404 modal state
+	const [multi404Modal, setMulti404Modal] = useState<{ show: boolean; message: string; failedUser: string; remaining: string[]; retryFn: (() => void) | null }>({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
 	const [selected, setSelected] = useState("followers");
 	const [targetsInput, setTargetsInput] = useState("");
 	// const [coinLimit, setCoinLimit] = useState<number>(0);
@@ -171,112 +173,144 @@ export default function NewExtractionsPage() {
 							{/* {<FilterControls />} */}
 							<form
 								className="flex flex-col sm:flex-row items-center gap-4 mt-2 justify-center w-full"
-								onSubmit={async e => {
-									e.preventDefault();
-									setResult(null);
-									setError(null);
-									setLoading(true);
-									setExtractedCount(0);
-									setProgress([]);
-									setItemsCollected(0);
-									setCoinsSpent(0);
-									// Extraction logic for each target
-									for (let i = 0; i < parsedTargets.length; i++) {
-										const coinLimitNum = Number(filters.coinLimit);
-										if (coinLimitNum > 0 && coinsSpent >= coinLimitNum) break;
-										const target = parsedTargets[i];
-										setProgress(prev => [...prev, { status: "Running", target }]);
-										try {
-											if (selected === "likers") {
-												// 1. Get media id from post URL
-												const likersData = await import("@/services/hikerApi").then(mod => mod.mediaLikersV1(target));
-												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-												setItemsCollected(prev => prev + (likersData?.users?.length || 0));
-												setCoinsSpent(prev => prev + 1);
-											} else if (selected === "followers") {
-												console.log('[Frontend] Sending followers extraction request:', {
-													target,
-													filters,
-												});
-												// Map FiltersState to FilterOptions
-												const filterOptions = {
-													privacy: filters.privacy,
-													profilePicture: filters.profilePicture,
-													verifiedAccount: filters.verifiedAccount,
-													businessAccount: filters.businessAccount,
-													followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
-													followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
-													followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
-													followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
-													extractPhone: filters.extractPhone,
-													extractEmail: filters.extractEmail,
-													extractLinkInBio: filters.extractLinkInBio,
-													filterByNameInBioContains: filters.filterByNameInBioContains,
-												};
-												const followersData = await import("@/services/hikerApi").then(mod =>
-													mod.userFollowersChunkGqlByUsername({ target, filters: filterOptions })
-												);
-												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-												setItemsCollected(prev => prev + (Array.isArray(followersData) ? followersData.length : 0));
-												setCoinsSpent(prev => prev + 1);
-											} else if (selected === "followings") {
-												console.log('[Frontend] Sending followings extraction request:', {
-													target,
-													filters,
-												});
-												const filterOptions = {
-													privacy: filters.privacy,
-													profilePicture: filters.profilePicture,
-													verifiedAccount: filters.verifiedAccount,
-													businessAccount: filters.businessAccount,
-													followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
-													followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
-													followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
-													followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
-													extractPhone: filters.extractPhone,
-													extractEmail: filters.extractEmail,
-													extractLinkInBio: filters.extractLinkInBio,
-													filterByNameInBioContains: filters.filterByNameInBioContains,
-												};
-												const followingsData = await import("@/services/hikerApi").then(mod => mod.userFollowingChunkGqlByUsername({ target, filters: filterOptions }));
-												setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-												setItemsCollected(prev => prev + (Array.isArray(followingsData) ? followingsData.length : 0));
-												setCoinsSpent(prev => prev + 1);
-											} else if (selected === "likers") {
-												// const likersData = await import("@/services/hikerApi").then(mod => mod.mediaLikersV1(target));
-												// extractedCount = likersData?.users?.length || 0;
-											} else if (selected === "commenters") {
-												// const mediaObj = await import("@/services/hikerApi").then(mod => mod.mediaByUrlV1(target));
-												// if (mediaObj && mediaObj.id) {
-												// 	const commentersData = await import("@/services/hikerApi").then(mod => mod.mediaCommentsV2(mediaObj.id));
-												// 	extractedCount = commentersData?.comments?.length || 0;
-												// } else {
-												// 	extractedCount = 0;
-												// }
-											} else if (selected === "posts") {
-												// const userObj = await import("@/services/hikerApi").then(mod => mod.userByUsernameV1(target));
-												// if (userObj && userObj.pk) {
-												// 	const postsData = await import("@/services/hikerApi").then(mod => mod.userMediaChunkGql(userObj.pk));
-												// 	extractedCount = postsData?.media?.length || 0;
-												// } else {
-													
-												// }
-											} else if (selected === "hashtags") {
-												// No hashtagSearchV1 in hikerApi, so skip or simulate
-												
-											} else {
-												await new Promise(res => setTimeout(res, 500));
-												
+										onSubmit={async e => {
+											e.preventDefault();
+											setResult(null);
+											setError(null);
+											setLoading(true);
+											setExtractedCount(0);
+											setProgress([]);
+											setItemsCollected(0);
+											setCoinsSpent(0);
+											// Extraction logic for each target with multi-404 handling
+											let currentTargets = [...parsedTargets];
+											let i = 0;
+											while (i < currentTargets.length) {
+												const coinLimitNum = Number(filters.coinLimit);
+												if (coinLimitNum > 0 && coinsSpent >= coinLimitNum) break;
+												const target = currentTargets[i];
+												setProgress(prev => [...prev, { status: "Running", target }]);
+												try {
+													if (selected === "likers") {
+														const likersData = await import("@/services/hikerApi").then(mod => mod.mediaLikersV1(target));
+														setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
+														setItemsCollected(prev => prev + (likersData?.users?.length || 0));
+														setCoinsSpent(prev => prev + 1);
+													} else if (selected === "followers") {
+														const filterOptions = {
+															privacy: filters.privacy,
+															profilePicture: filters.profilePicture,
+															verifiedAccount: filters.verifiedAccount,
+															businessAccount: filters.businessAccount,
+															followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
+															followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
+															followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
+															followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
+															extractPhone: filters.extractPhone,
+															extractEmail: filters.extractEmail,
+															extractLinkInBio: filters.extractLinkInBio,
+															filterByNameInBioContains: filters.filterByNameInBioContains,
+														};
+														try {
+															const followersData = await import("@/services/hikerApi").then(mod =>
+																mod.userFollowersChunkGqlByUsername({ target, filters: filterOptions })
+															);
+															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
+															setItemsCollected(prev => prev + (Array.isArray(followersData) ? followersData.length : 0));
+															setCoinsSpent(prev => prev + 1);
+														} catch (err: any) {
+															if (err && err.type === 'multi-404') {
+																setMulti404Modal({
+																	show: true,
+																	message: err.message,
+																	failedUser: err.userId,
+																	remaining: err.remainingUserIds,
+																	retryFn: async () => {
+																		setMulti404Modal({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
+																		currentTargets = err.remainingUserIds;
+																		i = 0;
+																		setProgress([]);
+																		setItemsCollected(0);
+																		setCoinsSpent(0);
+																		setError(null);
+																		setLoading(true);
+																		// Re-trigger form submit
+																		const event = new Event('submit', { bubbles: true });
+																		document.querySelector('form')?.dispatchEvent(event);
+																	}
+																});
+																setLoading(false);
+																return;
+															} else {
+																setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
+															}
+														}
+													} else if (selected === "followings") {
+														const filterOptions = {
+															privacy: filters.privacy,
+															profilePicture: filters.profilePicture,
+															verifiedAccount: filters.verifiedAccount,
+															businessAccount: filters.businessAccount,
+															followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
+															followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
+															followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
+															followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
+															extractPhone: filters.extractPhone,
+															extractEmail: filters.extractEmail,
+															extractLinkInBio: filters.extractLinkInBio,
+															filterByNameInBioContains: filters.filterByNameInBioContains,
+														};
+														try {
+															const followingsData = await import("@/services/hikerApi").then(mod => mod.userFollowingChunkGqlByUsername({ target, filters: filterOptions }));
+															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
+															setItemsCollected(prev => prev + (Array.isArray(followingsData) ? followingsData.length : 0));
+															setCoinsSpent(prev => prev + 1);
+														} catch (err: any) {
+															if (err && err.type === 'multi-404') {
+																setMulti404Modal({
+																	show: true,
+																	message: err.message,
+																	failedUser: err.userId,
+																	remaining: err.remainingUserIds,
+																	retryFn: async () => {
+																		setMulti404Modal({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
+																		currentTargets = err.remainingUserIds;
+																		i = 0;
+																		setProgress([]);
+																		setItemsCollected(0);
+																		setCoinsSpent(0);
+																		setError(null);
+																		setLoading(true);
+																		const event = new Event('submit', { bubbles: true });
+																		document.querySelector('form')?.dispatchEvent(event);
+																	}
+																});
+																setLoading(false);
+																return;
+															} else {
+																setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
+															}
+														}
+													} else if (selected === "likers") {
+														// ...existing code...
+													} else if (selected === "commenters") {
+														// ...existing code...
+													} else if (selected === "posts") {
+														// ...existing code...
+													} else if (selected === "hashtags") {
+														// ...existing code...
+													} else {
+														await new Promise(res => setTimeout(res, 500));
+													}
+													setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
+													setItemsCollected(prev => prev + extractedCount);
+													setCoinsSpent(prev => prev + extractedCount);
+												} catch (err) {
+													setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
+												}
+												i++;
 											}
-											setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
-											setItemsCollected(prev => prev + extractedCount);
-											setCoinsSpent(prev => prev + extractedCount);
-										
-										} catch (err) {
-											setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
-										}
-									}
-									setLoading(false);
+											setLoading(false);
 								}}
 							>
 								<div className="flex w-full gap-4 items-start">
@@ -302,29 +336,30 @@ export default function NewExtractionsPage() {
 								</button>
 								
 							</form>
-							{loading && (
-								<div className="mt-10 w-full flex flex-col items-center gap-6">
-									<div className="w-full max-w-xl">
-										<div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-											<div className="bg-[#d4af37] h-4 rounded-full transition-all duration-300" style={{ width: `${percent}%` }} />
+									{/* Multi-404 Modal */}
+									{multi404Modal.show && (
+										<div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black bg-opacity-30">
+											<div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-red-200 flex flex-col items-center">
+												<h2 className="text-2xl font-serif font-bold text-red-700 mb-4">Extraction Error</h2>
+												<p className="text-gray-700 mb-6 text-center">{multi404Modal.message}</p>
+												<p className="text-gray-700 mb-4 text-center">Do you want to continue extraction with the remaining usernames?</p>
+												<div className="flex gap-4">
+													<button
+														className="px-6 py-2 font-semibold font-serif bg-gradient-to-r from-gray-300 to-gray-400 text-gray-800 rounded-lg shadow hover:from-gray-400 hover:to-gray-500 transition-all"
+														onClick={() => { setMulti404Modal({ show: false, message: '', failedUser: '', remaining: [], retryFn: null }); setLoading(false); }}
+													>
+														Stop
+													</button>
+													<button
+														className="px-6 py-2 font-semibold font-serif bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-lg shadow hover:from-blue-700 hover:to-blue-500 transition-all"
+														onClick={multi404Modal.retryFn || undefined}
+													>
+														Continue
+													</button>
+												</div>
+											</div>
 										</div>
-										<div className="text-sm text-gray-700">Progress: {processedCount} / {totalCount} targets</div>
-									</div>
-									<div className="w-full max-w-xl">
-										<ul className="text-left text-sm">
-											{progress.map((p, idx) => (
-												<li key={idx} className={`mb-1 ${p.status === "Error" ? "text-red-500" : p.status === "Done" ? "text-green-600" : "text-gray-700"}`}>
-													<span className="font-mono">{p.target}</span> — <span>{p.status}</span>{p.error ? ` (${p.error})` : ""}
-												</li>
-											))}
-										</ul>
-									</div>
-									<div className="flex gap-8 mt-2">
-										<div className="text-sm text-gray-700">Items Collected: <span className="font-bold">{itemsCollected}</span></div>
-										<div className="text-sm text-gray-700">Coins Spent: <span className="font-bold">{coinsSpent}</span></div>
-									</div>
-								</div>
-							)}
+									)}
 							{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
 							{typeof result === 'object' && result !== null && !loading && (
 								<div className="mt-10 bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 shadow flex flex-col items-center">

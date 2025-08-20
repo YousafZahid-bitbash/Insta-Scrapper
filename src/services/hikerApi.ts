@@ -118,8 +118,10 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
-    const errorMessages: string[] = [];
-    for (const singleUserId of userIds) {
+    let errorMessages: string[] = [];
+    let validUserIds: string[] = [...userIds];
+    for (let i = 0; i < validUserIds.length; i++) {
+      const singleUserId = validUserIds[i];
       let nextPageId: string | undefined = undefined;
       try {
         do {
@@ -144,6 +146,14 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
             const msg = `User is private or not found (404): user_id ${singleUserId}. Data extraction can't be done.`;
             console.warn(`[hikerApi] [FollowersV2] ${msg}`);
             errorMessages.push(msg);
+            // If only one username, stop extraction immediately
+            if (userIds.length === 1) {
+              throw new Error(msg);
+            } else {
+              // For multiple usernames, ask user if they want to continue or stop
+              // This should be handled in the frontend, so throw a custom error with info
+              throw { type: 'multi-404', message: msg, userId: singleUserId, remainingUserIds: validUserIds.filter(id => id !== singleUserId) };
+            }
           }
         }
         // For other errors, rethrow
@@ -504,6 +514,7 @@ interface FilterOptions {
   extractEmail?: boolean;
   extractLinkInBio?: boolean;
   filterByNameInBioContains?: string;
+  filterByNameInBioStop?: string;
 }
 
 
@@ -548,6 +559,24 @@ export async function extractFilteredUsers<T extends UserLike>(
       console.warn('[Backend] [extractFilteredUsers] No user details returned for:', userObj.username);
       continue;
     }
+
+    // STOP IF logic: If any stop word is found in name or bio, stop extraction and return collected users
+    if (filters.filterByNameInBioStop) {
+      const stopWords = String(filters.filterByNameInBioStop)
+        .split(/\r?\n/)
+        .map(w => w.trim())
+        .filter(Boolean);
+      if (stopWords.length > 0) {
+        const fullName = (userDetails.full_name || "").toLowerCase();
+        const biography = (userDetails.biography || "").toLowerCase();
+        const foundStop = stopWords.some(word => fullName.includes(word.toLowerCase()) || biography.includes(word.toLowerCase()));
+        if (foundStop) {
+          console.log('[Backend] [extractFilteredUsers] STOP IF triggered: Found stop word in name/bio:', userDetails.username);
+          break; // Stop further extraction and return collected users
+        }
+      }
+    }
+
     console.log('[Backend] [extractFilteredUsers] Checking user:', userDetails.username, userDetails);
     if (!filterUser(userDetails, filters)) {
       console.log('[Backend] [extractFilteredUsers] User did NOT pass filters:', userDetails.username);
@@ -598,16 +627,12 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
     if (words.length > 0) {
       const fullName = (user.full_name || "").toLowerCase();
       const biography = (user.biography || "").toLowerCase();
-  // follower/following count filters
-  if (filters.followersMin && (user.follower_count === undefined || user.follower_count < Number(filters.followersMin))) return false;
-  if (filters.followersMax && (user.follower_count === undefined || user.follower_count > Number(filters.followersMax))) return false;
-  if (filters.followingsMin && (user.following_count === undefined || user.following_count < Number(filters.followingsMin))) return false;
-  if (filters.followingsMax && (user.following_count === undefined || user.following_count > Number(filters.followingsMax))) return false;
       // If none of the words are found, filter out
       const found = words.some(word => fullName.includes(word.toLowerCase()) || biography.includes(word.toLowerCase()));
       if (!found) return false;
     }
   }
+  // STOP IF logic removed from here; handled in extractFilteredUsers
 
   // Follower/following ranges
   if (filters.followersMin && (typeof user.follower_count !== 'number' || user.follower_count < Number(filters.followersMin))) return false;

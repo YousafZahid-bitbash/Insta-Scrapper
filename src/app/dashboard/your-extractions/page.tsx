@@ -7,6 +7,37 @@ import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 
 export default function YourExtractionsPage() {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const handleDeleteExtraction = async (extractionId: string) => {
+    setDeleteId(extractionId);
+    setShowDeleteModal(true);
+  };
+  const confirmDeleteExtraction = async () => {
+    if (!deleteId) return;
+    setLoading(true);
+    await supabase
+      .from('extracted_users')
+      .delete()
+      .eq('extraction_id', deleteId);
+    const { error } = await supabase
+      .from('extractions')
+      .delete()
+      .eq('id', deleteId);
+    setLoading(false);
+    setShowDeleteModal(false);
+    setDeleteId(null);
+    if (!error) {
+      setExtractions(prev => prev.filter(e => e.id !== deleteId));
+      if (selectedExtraction && selectedExtraction.id === deleteId) {
+        setShowModal(false);
+        setSelectedExtraction(null);
+        setExtractedUsers([]);
+      }
+    } else {
+      alert('Failed to delete extraction.');
+    }
+  };
   type Extraction = {
     id: string;
     extraction_type: string;
@@ -117,12 +148,44 @@ export default function YourExtractionsPage() {
                   <div className="text-xs text-gray-400 mb-1">Requested: {new Date(extraction.requested_at).toLocaleString()}</div>
                   <div className="text-xs text-gray-500">Status: <span className={extraction.status === 'completed' ? 'text-green-600' : 'text-red-600'}>{extraction.status}</span></div>
                 </div>
-                <button
-                  className="mt-4 md:mt-0 md:ml-6 px-6 py-2 font-semibold font-serif bg-gradient-to-r from-blue-700 to-blue-400 text-white rounded-lg shadow hover:from-blue-800 hover:to-blue-500 transition-all"
-                  onClick={() => handleShowDetails(extraction)}
-                >
-                  Extracted Data
-                </button>
+                <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0 md:ml-6">
+                  <button
+                    className="px-6 py-2 font-semibold font-serif bg-gradient-to-r from-blue-700 to-blue-400 text-white rounded-lg shadow hover:from-blue-800 hover:to-blue-500 transition-all"
+                    onClick={() => handleShowDetails(extraction)}
+                  >
+                    Extracted Data
+                  </button>
+                  <button
+                    className="px-6 py-2 font-semibold font-serif bg-gradient-to-r from-red-600 to-red-400 text-white rounded-lg shadow hover:from-red-700 hover:to-red-500 transition-all"
+                    onClick={() => handleDeleteExtraction(extraction.id)}
+                  >
+                    Delete
+                  </button>
+                  {/* Elegant Delete Confirmation Modal */}
+                  {showDeleteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xs  bg-opacity-30">
+                      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-red-200 flex flex-col items-center">
+                        <h2 className="text-2xl font-serif font-bold text-red-700 mb-4">Delete Extraction?</h2>
+                        <p className="text-gray-700 mb-6 text-center">Are you sure you want to delete this extraction? This action cannot be undone and all associated data will be permanently removed.</p>
+                        <div className="flex gap-4">
+                          <button
+                            className="px-6 py-2 font-semibold font-serif bg-gradient-to-r from-gray-300 to-gray-400 text-gray-800 rounded-lg shadow hover:from-gray-400 hover:to-gray-500 transition-all"
+                            onClick={() => { setShowDeleteModal(false); setDeleteId(null); }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="px-6 py-2 font-semibold font-serif bg-gradient-to-r from-red-600 to-red-400 text-white rounded-lg shadow hover:from-red-700 hover:to-red-500 transition-all"
+                            onClick={confirmDeleteExtraction}
+                            disabled={loading}
+                          >
+                            {loading ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
