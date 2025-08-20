@@ -75,10 +75,15 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 
 // Get a user's followers (one page) with cursor
 // Get a user's followers by username (fetches user_id first)
-export async function userFollowersChunkGqlByUsername(username: string, force?: boolean, end_cursor?: string, filters?: Record<string, FilterOptions>) {
-  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with username(s):`, username, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
+/**
+ * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
+ * Resolves user_id(s), fetches followers, filters, and saves to DB.
+ */
+export async function userFollowersChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }) {
+  const { target, filters, force, end_cursor } = payload;
+  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
   // Support both single username and array of usernames
-  const usernames = Array.isArray(username) ? username : [username];
+  const usernames = Array.isArray(target) ? target : [target];
   const userIds: string[] = [];
   for (const uname of usernames) {
     const cleanUsername = uname.replace(/^@/, "");
@@ -94,7 +99,9 @@ export async function userFollowersChunkGqlByUsername(username: string, force?: 
     throw new Error("No valid user IDs found for provided usernames");
   }
   // Pass array of user IDs to main function for DB save
-  return userFollowersChunkGql(userIds, force, end_cursor, usernames.join(","), filters);
+  // Wrap filters in a Record<string, FilterOptions> for compatibility
+  const filtersRecord: Record<string, FilterOptions> = { followers: filters };
+  return userFollowersChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord);
 }
 
 // Original function (still available if you already have user_id)
