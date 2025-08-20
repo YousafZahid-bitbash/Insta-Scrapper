@@ -54,6 +54,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
   return (
     <div
       className={`fixed right-0 z-40 bg-white text-black md:w-[420px] w-screen h-screen shadow-2xl transition-all duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
+      style={{ maxHeight: '100vh', display: 'flex', flexDirection: 'column' }}
     >
       <Separator />
       {/* Header */}
@@ -74,7 +75,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
         </div>
       </div>
       {/* Accordion Sections */}
-      <div className="mt-2 flex flex-col gap-4">
+      <div className="mt-2 flex flex-col gap-4 overflow-y-auto" style={{ flex: 1, minHeight: 0 }}>
         {/* Contact & Links */}
         <AccordionSection
           title="Contact & Links"
@@ -211,7 +212,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
         </AccordionSection>
       </div>
       {/* Footer */}
-      <div className="mt-6 flex flex-row gap-4 justify-end">
+      <div className="mt-6 flex flex-row gap-4 justify-end bg-white p-4 border-t border-gray-200" style={{ flexShrink: 0 }}>
         <button
           type="button"
           className="bg-[#d4af37] hover:bg-[#bfa233] text-white px-6 py-2 rounded-xl font-bold"
