@@ -22,7 +22,7 @@ const extractOptions = [
 
 export default function NewExtractionsPage() {
 	// Multi-404 modal state
-	const [multi404Modal, setMulti404Modal] = useState<{ show: boolean; message: string; failedUser: string; remaining: string[]; retryFn: (() => void) | null }>({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
+	// const [multi404Modal, setMulti404Modal] = useState<{ show: boolean; message: string; failedUser: string; remaining: string[]; retryFn: (() => void) | null }>({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
 	const [selected, setSelected] = useState("followers");
 	const [targetsInput, setTargetsInput] = useState("");
 	// const [coinLimit, setCoinLimit] = useState<number>(0);
@@ -197,100 +197,107 @@ export default function NewExtractionsPage() {
 														setItemsCollected(prev => prev + (likersData?.users?.length || 0));
 														setCoinsSpent(prev => prev + 1);
 													} else if (selected === "followers") {
-														const filterOptions = {
-															privacy: filters.privacy,
-															profilePicture: filters.profilePicture,
-															verifiedAccount: filters.verifiedAccount,
-															businessAccount: filters.businessAccount,
-															followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
-															followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
-															followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
-															followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
-															extractPhone: filters.extractPhone,
-															extractEmail: filters.extractEmail,
-															extractLinkInBio: filters.extractLinkInBio,
-															filterByNameInBioContains: filters.filterByNameInBioContains,
-														};
-														try {
+													const filterOptions: any = {};
+													if (filters.privacy === "yes") filterOptions.privacy = true;
+													else if (filters.privacy === "no") filterOptions.privacy = false;
+													if (filters.profilePicture === "yes") filterOptions.profilePicture = true;
+													else if (filters.profilePicture === "no") filterOptions.profilePicture = false;
+													if (filters.verifiedAccount === "yes") filterOptions.verifiedAccount = true;
+													else if (filters.verifiedAccount === "no") filterOptions.verifiedAccount = false;
+													if (filters.businessAccount === "yes") filterOptions.businessAccount = true;
+													else if (filters.businessAccount === "no") filterOptions.businessAccount = false;
+													if (filters.followersMin) filterOptions.followersMin = Number(filters.followersMin);
+													if (filters.followersMax) filterOptions.followersMax = Number(filters.followersMax);
+													if (filters.followingsMin) filterOptions.followingsMin = Number(filters.followingsMin);
+													if (filters.followingsMax) filterOptions.followingsMax = Number(filters.followingsMax);
+													if (filters.extractPhone) filterOptions.extractPhone = true;
+													if (filters.extractEmail) filterOptions.extractEmail = true;
+													if (filters.extractLinkInBio) filterOptions.extractLinkInBio = true;
+													if (filters.filterByNameInBioContains) filterOptions.filterByNameInBioContains = filters.filterByNameInBioContains;
+														
 															const followersData = await import("@/services/hikerApi").then(mod =>
 																mod.userFollowersChunkGqlByUsername({ target, filters: filterOptions })
 															);
 															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
 															setItemsCollected(prev => prev + (Array.isArray(followersData) ? followersData.length : 0));
 															setCoinsSpent(prev => prev + 1);
-														} catch (err: any) {
-															if (err && err.type === 'multi-404') {
-																setMulti404Modal({
-																	show: true,
-																	message: err.message,
-																	failedUser: err.userId,
-																	remaining: err.remainingUserIds,
-																	retryFn: async () => {
-																		setMulti404Modal({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
-																		currentTargets = err.remainingUserIds;
-																		i = 0;
-																		setProgress([]);
-																		setItemsCollected(0);
-																		setCoinsSpent(0);
-																		setError(null);
-																		setLoading(true);
-																		// Re-trigger form submit
-																		const event = new Event('submit', { bubbles: true });
-																		document.querySelector('form')?.dispatchEvent(event);
-																	}
-																});
-																setLoading(false);
-																return;
-															} else {
-																setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
-															}
-														}
+														// } catch (err: any) {
+														// 	if (err && (err.type === 'multi-404' || err.type === 'multi-403')) {
+														// 		setMulti404Modal({
+														// 			show: true,
+														// 			message: err.message,
+														// 			failedUser: err.userId,
+														// 			remaining: err.remainingUserIds,
+														// 			retryFn: async () => {
+														// 				setMulti404Modal({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
+														// 				currentTargets = err.remainingUserIds;
+														// 				i = 0;
+														// 				setProgress([]);
+														// 				setItemsCollected(0);
+														// 				setCoinsSpent(0);
+														// 				setError(null);
+														// 				setLoading(true);
+														// 				// Re-trigger form submit
+														// 				const event = new Event('submit', { bubbles: true });
+														// 				document.querySelector('form')?.dispatchEvent(event);
+														// 			}
+														// 		});
+														// 		setLoading(false);
+														// 		return;
+														// 	} else {
+														// 		setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
+														// 	}
+														// }
 													} else if (selected === "followings") {
-														const filterOptions = {
-															privacy: filters.privacy,
-															profilePicture: filters.profilePicture,
-															verifiedAccount: filters.verifiedAccount,
-															businessAccount: filters.businessAccount,
-															followersMin: filters.followersMin ? Number(filters.followersMin) : undefined,
-															followersMax: filters.followersMax ? Number(filters.followersMax) : undefined,
-															followingsMin: filters.followingsMin ? Number(filters.followingsMin) : undefined,
-															followingsMax: filters.followingsMax ? Number(filters.followingsMax) : undefined,
-															extractPhone: filters.extractPhone,
-															extractEmail: filters.extractEmail,
-															extractLinkInBio: filters.extractLinkInBio,
-															filterByNameInBioContains: filters.filterByNameInBioContains,
-														};
-														try {
+														const filterOptions: any = {};
+													if (filters.privacy === "yes") filterOptions.privacy = true;
+													else if (filters.privacy === "no") filterOptions.privacy = false;
+													if (filters.profilePicture === "yes") filterOptions.profilePicture = true;
+													else if (filters.profilePicture === "no") filterOptions.profilePicture = false;
+													if (filters.verifiedAccount === "yes") filterOptions.verifiedAccount = true;
+													else if (filters.verifiedAccount === "no") filterOptions.verifiedAccount = false;
+													if (filters.businessAccount === "yes") filterOptions.businessAccount = true;
+													else if (filters.businessAccount === "no") filterOptions.businessAccount = false;
+													if (filters.followersMin) filterOptions.followersMin = Number(filters.followersMin);
+													if (filters.followersMax) filterOptions.followersMax = Number(filters.followersMax);
+													if (filters.followingsMin) filterOptions.followingsMin = Number(filters.followingsMin);
+													if (filters.followingsMax) filterOptions.followingsMax = Number(filters.followingsMax);
+													if (filters.extractPhone) filterOptions.extractPhone = true;
+													if (filters.extractEmail) filterOptions.extractEmail = true;
+													if (filters.extractLinkInBio) filterOptions.extractLinkInBio = true;
+													if (filters.filterByNameInBioContains) filterOptions.filterByNameInBioContains = filters.filterByNameInBioContains;
+														
+														// try {
 															const followingsData = await import("@/services/hikerApi").then(mod => mod.userFollowingChunkGqlByUsername({ target, filters: filterOptions }));
 															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
 															setItemsCollected(prev => prev + (Array.isArray(followingsData) ? followingsData.length : 0));
 															setCoinsSpent(prev => prev + 1);
-														} catch (err: any) {
-															if (err && err.type === 'multi-404') {
-																setMulti404Modal({
-																	show: true,
-																	message: err.message,
-																	failedUser: err.userId,
-																	remaining: err.remainingUserIds,
-																	retryFn: async () => {
-																		setMulti404Modal({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
-																		currentTargets = err.remainingUserIds;
-																		i = 0;
-																		setProgress([]);
-																		setItemsCollected(0);
-																		setCoinsSpent(0);
-																		setError(null);
-																		setLoading(true);
-																		const event = new Event('submit', { bubbles: true });
-																		document.querySelector('form')?.dispatchEvent(event);
-																	}
-																});
-																setLoading(false);
-																return;
-															} else {
-																setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
-															}
-														}
+														// } catch (err: any) {
+														// 	if (err && (err.type === 'multi-404' || err.type === 'multi-403')) {
+														// 		setMulti404Modal({
+														// 			show: true,
+														// 			message: err.message,
+														// 			failedUser: err.userId,
+														// 			remaining: err.remainingUserIds,
+														// 			retryFn: async () => {
+														// 				setMulti404Modal({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
+														// 				currentTargets = err.remainingUserIds;
+														// 				i = 0;
+														// 				setProgress([]);
+														// 				setItemsCollected(0);
+														// 				setCoinsSpent(0);
+														// 				setError(null);
+														// 				setLoading(true);
+														// 				const event = new Event('submit', { bubbles: true });
+														// 				document.querySelector('form')?.dispatchEvent(event);
+														// 			}
+														// 		});
+														// 		setLoading(false);
+														// 		return;
+														// 	} else {
+														// 		setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Error", error: String(err) } : p));
+														// 	}
+														// }
 													} else if (selected === "likers") {
 														// ...existing code...
 													} else if (selected === "commenters") {
@@ -337,7 +344,7 @@ export default function NewExtractionsPage() {
 								
 							</form>
 									{/* Multi-404 Modal */}
-									{multi404Modal.show && (
+									{/* {multi404Modal.show && (
 										<div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black bg-opacity-30">
 											<div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-red-200 flex flex-col items-center">
 												<h2 className="text-2xl font-serif font-bold text-red-700 mb-4">Extraction Error</h2>
@@ -359,7 +366,7 @@ export default function NewExtractionsPage() {
 												</div>
 											</div>
 										</div>
-									)}
+									)} */}
 							{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
 							{typeof result === 'object' && result !== null && !loading && (
 								<div className="mt-10 bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 shadow flex flex-col items-center">

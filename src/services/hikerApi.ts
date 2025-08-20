@@ -142,18 +142,10 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
       } catch (err) {
         if (typeof err === 'object' && err !== null && 'response' in err) {
           const response = (err as { response?: { status?: number } }).response;
-          if (response && response.status === 404) {
-            const msg = `User is private or not found (404): user_id ${singleUserId}. Data extraction can't be done.`;
-            console.warn(`[hikerApi] [FollowersV2] ${msg}`);
-            errorMessages.push(msg);
-            // If only one username, stop extraction immediately
-            if (userIds.length === 1) {
-              throw new Error(msg);
-            } else {
-              // For multiple usernames, ask user if they want to continue or stop
-              // This should be handled in the frontend, so throw a custom error with info
-              throw { type: 'multi-404', message: msg, userId: singleUserId, remainingUserIds: validUserIds.filter(id => id !== singleUserId) };
-            }
+          if (response && (response.status === 404 || response.status === 403)) {
+            // Skip this user and continue with others
+            console.warn(`[hikerApi] [FollowersV2] Skipping invalid user_id ${singleUserId} due to ${response.status}`);
+            continue;
           }
         }
         // For other errors, rethrow
@@ -254,8 +246,9 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     }
   return { filteredFollowers, errorMessages };
   } catch (error: unknown) {
-    console.error('[hikerApi] userFollowersChunkGqlV2 actual error:', error);
-    handleHikerError(error);
+  // Only handle unexpected errors
+  console.error('[hikerApi] userFollowersChunkGqlV2 actual error:', error);
+  handleHikerError(error);
   }
 }
 
@@ -312,21 +305,46 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
     for (const singleUserId of userIds) {
       let nextPageId: string | undefined = undefined;
-      do {
-        const params: Record<string, unknown> = { user_id: singleUserId };
-        if (nextPageId) params.page_id = nextPageId;
-        const res = await hikerClient.get("/v2/user/following", { params });
-        const data = res.data;
-        const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
-        if (users.length === 0) {
-          console.warn(`[hikerApi] [FollowingV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
-        } else {
-          allFollowings = allFollowings.concat(users);
-          pageCount++;
+      try {
+        do {
+          const params: Record<string, unknown> = { user_id: singleUserId };
+          if (nextPageId) params.page_id = nextPageId;
+          const res = await hikerClient.get("/v2/user/following", { params });
+          const data = res.data;
+          const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
+          if (users.length === 0) {
+            console.warn(`[hikerApi] [FollowingV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
+          } else {
+            allFollowings = allFollowings.concat(users);
+            pageCount++;
+          }
+          nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
+          console.log(`[hikerApi] [FollowingV2] Next page id for user_id ${singleUserId}:`, nextPageId);
+        } while (nextPageId);
+      } catch (err) {
+        if (typeof err === 'object' && err !== null && 'response' in err) {
+          const response = (err as { response?: { status?: number } }).response;
+          if (response && (response.status === 404 || response.status === 403)) {
+            let msg = '';
+            if (response.status === 404) {
+              msg = `User is private or not found (404): user_id ${singleUserId}. Data extraction can't be done.`;
+            } else if (response.status === 403) {
+              msg = `User is private or forbidden (403): user_id ${singleUserId}. Data extraction can't be done.`;
+            }
+            console.warn(`[hikerApi] [FollowingV2] ${msg}`);
+            // For frontend display, you may want to collect these errors as well
+            // errorMessages.push(msg); // Uncomment if you want to collect errors for followings too
+            if (userIds.length === 1) {
+              throw { type: response.status === 404 ? 'single-404' : 'single-403', message: msg, userId: singleUserId };
+            } else {
+              throw { type: response.status === 404 ? 'multi-404' : 'multi-403', message: msg, userId: singleUserId, remainingUserIds: userIds.filter(id => id !== singleUserId) };
+            }
+          }
         }
-        nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
-        console.log(`[hikerApi] [FollowingV2] Next page id for user_id ${singleUserId}:`, nextPageId);
-      } while (nextPageId);
+        else {
+          throw err;
+        }
+      }
     }
     const safeFilters = filters || {};
     console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowings.length);
