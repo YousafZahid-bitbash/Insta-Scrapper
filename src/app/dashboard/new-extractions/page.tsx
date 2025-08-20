@@ -191,7 +191,7 @@ export default function NewExtractionsPage() {
 												setProgress(prev => [...prev, { status: "Running", target }]);
 												try {
 													if (selected === "likers") {
-														const likersData = await import("@/services/hikerApi").then(mod => mod.mediaLikersV1(target));
+														await import("@/services/hikerApi").then(mod => mod.mediaLikersV1(target));
 														setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
 														setCoinsSpent(prev => prev + 1);
 													} else if (selected === "followers") {
@@ -213,7 +213,7 @@ export default function NewExtractionsPage() {
 												if (filters.extractLinkInBio) filterOptions.extractLinkInBio = true;
 												if (filters.filterByNameInBioContains) filterOptions.filterByNameInBioContains = filters.filterByNameInBioContains;
 														
-															const followersData = await import("@/services/hikerApi").then(mod =>
+															await import("@/services/hikerApi").then(mod =>
 																mod.userFollowersChunkGqlByUsername({ target, filters: filterOptions })
 															);
 															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
@@ -246,7 +246,7 @@ export default function NewExtractionsPage() {
 														// 	}
 														// }
 													} else if (selected === "followings") {
-														const filterOptions: any = {};
+														const filterOptions: { [key: string]: unknown } = {};
 													if (filters.privacy === "yes") filterOptions.privacy = true;
 													else if (filters.privacy === "no") filterOptions.privacy = false;
 													if (filters.profilePicture === "yes") filterOptions.profilePicture = true;
@@ -265,7 +265,7 @@ export default function NewExtractionsPage() {
 													if (filters.filterByNameInBioContains) filterOptions.filterByNameInBioContains = filters.filterByNameInBioContains;
 														
 														// try {
-															const followingsData = await import("@/services/hikerApi").then(mod => mod.userFollowingChunkGqlByUsername({ target, filters: filterOptions }));
+															await import("@/services/hikerApi").then(mod => mod.userFollowingChunkGqlByUsername({ target, filters: filterOptions }));
 															setProgress(prev => prev.map((p, idx) => idx === i ? { ...p, status: "Done" } : p));
 															setCoinsSpent(prev => prev + 1);
 														// } catch (err: any) {
