@@ -65,7 +65,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="w-full bg-black py-32 md:py-40 px-4 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-screen">
         <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
-          <svg
+          {/* <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 1440 900"
             preserveAspectRatio="none"
@@ -90,7 +90,7 @@ export default function LandingPage() {
                 <stop offset="100%" stopColor="#d4af37" stopOpacity="0.6" />
               </linearGradient>
             </defs>
-            {/* Elegant geometric lines */}
+            
             <line
               x1="0"
               y1="200"
@@ -110,11 +110,11 @@ export default function LandingPage() {
               filter="url(#gold-glow)"
             />
             <line x1="200" y1="0" x2="1240" y2="900" stroke="#d4af37" strokeWidth="1" opacity="0.4" />
-            {/* Subtle diamond shapes */}
+            
             <polygon points="720,50 740,70 720,90 700,70" fill="#d4af37" opacity="0.3" />
             <polygon points="120,400 140,420 120,440 100,420" fill="#d4af37" opacity="0.2" />
             <polygon points="1320,600 1340,620 1320,640 1300,620" fill="#d4af37" opacity="0.3" />
-          </svg>
+          </svg> */}
         </div>
         <div className="relative z-10 w-full flex flex-col items-center justify-center max-w-6xl mx-auto">
           <h1
