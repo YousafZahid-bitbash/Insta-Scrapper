@@ -4,6 +4,7 @@ import Image from "next/image";
 import HomeNavbar from "@/components/HomeNavbar";
 import { supabase } from "../supabaseClient";
 import Footer from "@/components/Footer";
+
 const features = [
   {
     title: "Instagram Profile Scraping",
@@ -51,7 +52,14 @@ export default function LandingPage() {
 
   useEffect(() => {
     async function fetchPricing() {
-      const { data, error } = await supabase.from("deals").select("id, coins, price, sale_price, description, name");
+      // Log the anon key from the environment
+      console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      // Also log the key from the supabase client
+      // @ts-ignore
+      console.log('supabase anon key:', supabase?.rest?.headers?.apikey || 'Not available');
+      const { data, error } = await supabase
+        .from("deals")
+        .select("id, coins, price, sale_price, description, name");
       if (!error && Array.isArray(data)) {
         setPricing(data as PricingDeal[]);
       }
