@@ -1,3 +1,4 @@
+import type { ExtractedUser } from "@/services/hikerApi";
 	"use client"
 	
 import { useEffect, useState } from "react";
@@ -188,62 +189,62 @@ export default function NewExtractionsPage() {
 											setResult(null);
 											setError(null);
 											setLoading(true);
-													// Extraction logic for followers/followings: send all usernames in one API call
-													setStopRequested(false);
-													setLoading(true);
-													// let stoppedEarly = false;
-													// Pass all filters, even if empty
-													const filterOptions: Record<string, unknown> = {
-														extractPhone: filters.extractPhone,
-														extractEmail: filters.extractEmail,
-														extractLinkInBio: filters.extractLinkInBio,
-														privacy: filters.privacy,
-														profilePicture: filters.profilePicture,
-														verifiedAccount: filters.verifiedAccount,
-														businessAccount: filters.businessAccount,
-														followersMin: filters.followersMin,
-														followersMax: filters.followersMax,
-														followingsMin: filters.followingsMin,
-														followingsMax: filters.followingsMax,
-														filterByName: filters.filterByName,
-														filterByNameInBioContains: filters.filterByNameInBioContains,
-														filterByNameInBioStop: filters.filterByNameInBioStop,
-														coinLimit: filters.coinLimit,
-													};
-													
-													try {
-														if (selected === "followers" || selected === "followings") {
-															// setProgress(parsedTargets.map(target => ({ status: "Running", target })));
-															console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
-															const mod = await import("@/services/hikerApi");
-															const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
-															const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: any[] };
-															// Both followers and followings use filteredFollowers property from backend aggregation
-															const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
-															// setProgress(parsedTargets.map((target) => ({ status: "Done", target })));
-															setExtractedCount(extractedUsers.length);
-															// setCoinsSpent(extractedUsers.length);
-														} else {
-															// For other types, keep previous logic (one-by-one)
-															for (let i = 0; i < parsedTargets.length; i++) {
-																if (stopRequested) {
-																	// stoppedEarly = true;
-																	break;
-																}
-																// setProgress(prev => [...prev, { status: "Running", target: parsedTargets[i] }]);
-																// ...existing code for likers, hashtags, etc...
-															}
+											// Extraction logic for followers/followings: send all usernames in one API call
+											setStopRequested(false);
+											setLoading(true);
+											// let stoppedEarly = false;
+											// Pass all filters, even if empty
+											const filterOptions: Record<string, unknown> = {
+												extractPhone: filters.extractPhone,
+												extractEmail: filters.extractEmail,
+												extractLinkInBio: filters.extractLinkInBio,
+												privacy: filters.privacy,
+												profilePicture: filters.profilePicture,
+												verifiedAccount: filters.verifiedAccount,
+												businessAccount: filters.businessAccount,
+												followersMin: filters.followersMin,
+												followersMax: filters.followersMax,
+												followingsMin: filters.followingsMin,
+												followingsMax: filters.followingsMax,
+												filterByName: filters.filterByName,
+												filterByNameInBioContains: filters.filterByNameInBioContains,
+												filterByNameInBioStop: filters.filterByNameInBioStop,
+												coinLimit: filters.coinLimit,
+											};
+											
+											try {
+												if (selected === "followers" || selected === "followings") {
+													// setProgress(parsedTargets.map(target => ({ status: "Running", target })));
+													console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
+													const mod = await import("@/services/hikerApi");
+													const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
+													const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: ExtractedUser[] };
+													// Both followers and followings use filteredFollowers property from backend aggregation
+													const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
+													// setProgress(parsedTargets.map((target) => ({ status: "Done", target })));
+													setExtractedCount(extractedUsers.length);
+													// setCoinsSpent(extractedUsers.length);
+												} else {
+													// For other types, keep previous logic (one-by-one)
+													for (let i = 0; i < parsedTargets.length; i++) {
+														if (stopRequested) {
+															// stoppedEarly = true;
+															break;
 														}
-													} catch (err) {
-														setError(String(err));
+														// setProgress(prev => [...prev, { status: "Running", target: parsedTargets[i] }]);
+														// ...existing code for likers, hashtags, etc...
 													}
-													setLoading(false);
-														// For example, if you collect them in a variable, save them here
-														// If the backend already saves after each target, you may not need to do anything
-														// If you need to trigger a final save, do it here
-														// Example: show a message or refresh extractions
-														// window.location.href = "/dashboard/your-extractions";
-													}
+												}
+											} catch (err) {
+												setError(String(err));
+											}
+											setLoading(false);
+												// For example, if you collect them in a variable, save them here
+												// If the backend already saves after each target, you may not need to do anything
+												// If you need to trigger a final save, do it here
+												// Example: show a message or refresh extractions
+												// window.location.href = "/dashboard/your-extractions";
+											}
 								// End of async onSubmit
 							}
 							>
