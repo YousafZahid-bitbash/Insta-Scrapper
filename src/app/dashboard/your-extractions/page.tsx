@@ -9,6 +9,7 @@ import Navbar from "../../../components/Navbar";
 export default function YourExtractionsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
   const handleDeleteExtraction = async (extractionId: string) => {
     setDeleteId(extractionId);
     setShowDeleteModal(true);
@@ -65,6 +66,37 @@ export default function YourExtractionsPage() {
   const [extractedUsers, setExtractedUsers] = useState<ExtractedUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [coins, setCoins] = useState<number>(0);
+
+  // Download handler
+  const handleDownload = (format: 'json' | 'csv' | 'txt') => {
+    setShowDownloadDropdown(false);
+    if (!extractedUsers || extractedUsers.length === 0) return;
+    let dataStr = '';
+    let filename = `extracted_${selectedExtraction?.extraction_type || 'data'}.${format}`;
+    if (format === 'json') {
+      dataStr = JSON.stringify(extractedUsers, null, 2);
+    } else if (format === 'csv') {
+      const keys = Object.keys(extractedUsers[0]).filter(k => k !== 'id' && k !== 'extraction_id' && k !== 'pk');
+      const header = keys.join(';');
+      const rows = extractedUsers.map(u => keys.map(k => String(u[k as keyof typeof u] ?? '')).join(';'));
+      dataStr = header + '\n' + rows.join('\n');
+    } else if (format === 'txt') {
+      const keys = Object.keys(extractedUsers[0]).filter(k => k !== 'id' && k !== 'extraction_id' && k !== 'pk');
+      const rows = extractedUsers.map(u => keys.map(k => String(u[k as keyof typeof u] ?? '')).join(',')).join('\n');
+      dataStr = rows;
+    }
+    const blob = new Blob([dataStr], { type: format === 'json' ? 'application/json' : 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
 
   useEffect(() => {
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
@@ -217,6 +249,22 @@ export default function YourExtractionsPage() {
                         {selectedExtraction.error_message && (
                           <div className="text-red-500"><span className="font-semibold">Error:</span> {selectedExtraction.error_message}</div>
                         )}
+                        {/* Download Button and Dropdown */}
+                        <div className="relative mt-2">
+                          <button
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-serif font-semibold shadow hover:bg-blue-700 transition-all"
+                            onClick={() => setShowDownloadDropdown((prev) => !prev)}
+                          >
+                            Download File
+                          </button>
+                          {showDownloadDropdown && (
+                            <div className="absolute left-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                              <button className="block w-full px-4 py-2 text-black text-left hover:bg-blue-50" onClick={() => handleDownload('json')}>Download as JSON</button>
+                              <button className="block w-full px-4 py-2 text-black text-left hover:bg-blue-50" onClick={() => handleDownload('csv')}>Download as CSV</button>
+                              <button className="block w-full px-4 py-2 text-black text-left hover:bg-blue-50" onClick={() => handleDownload('txt')}>Download as TXT</button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {/* Data Table Container */}

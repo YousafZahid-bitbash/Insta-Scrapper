@@ -465,7 +465,6 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
 /**                LIKERS API CALL METHOD              **/
 /***********************************************************/
 
-
 // Bulk likers extraction for multiple post URLs
 export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }) {
   const { urls, filters } = payload;
@@ -582,17 +581,17 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 }
 
 
-// Get media likers
-export async function mediaLikersV1(url: string) {
-  try {
-    const mediaObj = await mediaByUrlV1(url);
-    const params: Record<string, unknown> = { id: mediaObj.id };
-    const res = await hikerClient.get("/v1/media/likers", { params });
-    return res.data;
-  } catch (error: unknown) {
-    handleHikerError(error);
-  }
-}
+// // Get media likers
+// export async function mediaLikersV1(url: string) {
+//   try {
+//     const mediaObj = await mediaByUrlV1(url);
+//     const params: Record<string, unknown> = { id: mediaObj.id };
+//     const res = await hikerClient.get("/v1/media/likers", { params });
+//     return res.data;
+//   } catch (error: unknown) {
+//     handleHikerError(error);
+//   }
+// }
 
 
 // Get media object by post URL (returns pk/id)
@@ -606,9 +605,9 @@ export async function mediaByUrlV1(url: string) {
   }
 }
 
-
-
-
+/******************************************************/
+/**           USERS EXTRACTION FROM COMMENTS         **/
+/******************************************************/
 
 
 // Get media comments (commenters)
