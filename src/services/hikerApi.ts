@@ -465,6 +465,123 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
 /**                LIKERS API CALL METHOD              **/
 /***********************************************************/
 
+
+// Bulk likers extraction for multiple post URLs
+export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }) {
+  const { urls, filters } = payload;
+  // Support both array and single string with newlines
+  const urlList: string[] = Array.isArray(urls)
+    ? urls.flatMap(u => String(u).split(/\r?\n/))
+    : String(urls).split(/\r?\n/);
+  const cleanUrls = urlList.map(u => u.trim()).filter(Boolean);
+  const allLikers: UserLike[] = [];
+  const errorMessages: string[] = [];
+  for (const url of cleanUrls) {
+    try {
+      const mediaObj = await mediaByUrlV1(url);
+      if (!mediaObj || !mediaObj.id) {
+        errorMessages.push(`Could not get media ID for URL: ${url}`);
+        continue;
+      }
+      const params: Record<string, unknown> = { id: mediaObj.id };
+      const res = await hikerClient.get("/v1/media/likers", { params });
+      if (Array.isArray(res.data)) {
+        allLikers.push(...res.data);
+      } else if (Array.isArray(res.data?.users)) {
+        allLikers.push(...res.data.users);
+      } else {
+        errorMessages.push(`No likers found for media ID: ${mediaObj.id}`);
+      }
+    } catch (err) {
+      errorMessages.push(`Error processing URL: ${url} - ${String(err)}`);
+    }
+  }
+
+  // 1. Pre-filter by filterByName before fetching details
+  let preFilteredLikers = allLikers;
+  if (filters.filterByName) {
+    const rawExcludeList = String(filters.filterByName);
+    const excludeUsernames = rawExcludeList
+      .split(/\r?\n/)
+      .map(u => u.trim().toLowerCase())
+      .filter(Boolean);
+    preFilteredLikers = allLikers.filter(liker => {
+      const usernameNormalized = String(liker.username).toLowerCase();
+      return !excludeUsernames.includes(usernameNormalized);
+    });
+  }
+
+  // 2. Fetch details for each remaining user
+  const detailedLikers: UserDetails[] = [];
+  for (const liker of preFilteredLikers) {
+    try {
+      const details = await userByUsernameV1(liker.username);
+      if (details) {
+        detailedLikers.push(details);
+      }
+    } catch (err) {
+      errorMessages.push(`Error fetching details for username: ${liker.username} - ${String(err)}`);
+    }
+  }
+
+  // 3. Call extractFilteredUsers with detailed users
+  const filteredLikers = await extractFilteredUsers(
+    detailedLikers as unknown as UserLike[],
+    filters,
+    async (username: string): Promise<UserDetails> => detailedLikers.find(u => u.username === username) as UserDetails
+  );
+
+  // Save filtered likers to database with extraction record
+  if (filteredLikers.length > 0) {
+    try {
+      // Create extraction record
+      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+      const extractionType = "likers";
+      const targetUsernames = cleanUrls.join(",");
+      const requestedAt = new Date().toISOString();
+      const completedAt = new Date().toISOString();
+      const pageCount = cleanUrls.length;
+      const extractionInsert = {
+        user_id: userId,
+        extraction_type: extractionType,
+        target_username: targetUsernames,
+        target_user_id: null,
+        requested_at: requestedAt,
+        completed_at: completedAt,
+        status: "completed",
+        page_count: pageCount,
+        next_page_id: null,
+        error_message: null,
+      };
+      const { data: extraction, error: extractionError } = await supabase
+        .from("extractions")
+        .insert([extractionInsert])
+        .select()
+        .single();
+      if (extractionError) {
+        errorMessages.push("Error saving extraction record: " + String(extractionError.message));
+      } else if (extraction && extraction.id) {
+        // Attach extraction_id to each liker
+        for (const liker of filteredLikers) {
+          liker.extraction_id = extraction.id;
+        }
+        // Save likers to extracted_users
+        const { error: usersError } = await supabase
+          .from("extracted_users")
+          .insert(filteredLikers);
+        if (usersError) {
+          errorMessages.push("Error saving filtered likers to database: " + String(usersError.message));
+        }
+      }
+    } catch (err) {
+      errorMessages.push("Exception during DB save: " + String(err));
+    }
+  }
+
+  return { filteredLikers, errorMessages };
+}
+
+
 // Get media likers
 export async function mediaLikersV1(url: string) {
   try {
@@ -488,6 +605,8 @@ export async function mediaByUrlV1(url: string) {
     handleHikerError(error);
   }
 }
+
+
 
 
 
@@ -530,6 +649,9 @@ function handleHikerError(error: unknown) {
   throw new Error((error as { message?: string }).message || "Unknown Hiker API error");
 }
 
+
+
+
 /***********************************************************/
 /**                FILTERED FOLLOWERS EXTRACTION          **/
 /***********************************************************/
@@ -559,6 +681,8 @@ interface UserLike {
   username: string;
   [key: string]: unknown;
 }
+
+
 
 
 // Generic extraction/filtering function for any user-like array
@@ -651,7 +775,7 @@ export async function extractFilteredUsers<T extends UserLike>(
         linkInBioValue = null;
       }
     }
-    
+
     const saveData: ExtractedUser = {
       username: userDetails.username,
       full_name: userDetails.full_name,

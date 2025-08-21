@@ -1,6 +1,6 @@
-import type { ExtractedUser } from "@/services/hikerApi";
-	"use client"
+"use client"
 	
+import type { ExtractedUser } from "@/services/hikerApi";
 import { useEffect, useState } from "react";
 
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
@@ -189,11 +189,8 @@ export default function NewExtractionsPage() {
 											setResult(null);
 											setError(null);
 											setLoading(true);
-											// Extraction logic for followers/followings: send all usernames in one API call
 											setStopRequested(false);
 											setLoading(true);
-											// let stoppedEarly = false;
-											// Pass all filters, even if empty
 											const filterOptions: Record<string, unknown> = {
 												extractPhone: filters.extractPhone,
 												extractEmail: filters.extractEmail,
@@ -213,27 +210,21 @@ export default function NewExtractionsPage() {
 											};
 											
 											try {
+												const mod = await import("@/services/hikerApi");
 												if (selected === "followers" || selected === "followings") {
-													// setProgress(parsedTargets.map(target => ({ status: "Running", target })));
 													console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
-													const mod = await import("@/services/hikerApi");
 													const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
 													const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: ExtractedUser[] };
-													// Both followers and followings use filteredFollowers property from backend aggregation
 													const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
-													// setProgress(parsedTargets.map((target) => ({ status: "Done", target })));
 													setExtractedCount(extractedUsers.length);
-													// setCoinsSpent(extractedUsers.length);
+												} else if (selected === "likers") {
+													// For likers, parsedTargets are URLs
+													console.log("[Extraction API Call] method: likers, URLs:", parsedTargets, "Filters:", filterOptions);
+													const apiResult = await mod.mediaLikersBulkV1({ urls: parsedTargets, filters: filterOptions });
+													const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
+													setExtractedCount(extractedUsers.length);
 												} else {
-													// For other types, keep previous logic (one-by-one)
-													for (let i = 0; i < parsedTargets.length; i++) {
-														if (stopRequested) {
-															// stoppedEarly = true;
-															break;
-														}
-														// setProgress(prev => [...prev, { status: "Running", target: parsedTargets[i] }]);
-														// ...existing code for likers, hashtags, etc...
-													}
+													// ...existing code for hashtags, posts, etc...
 												}
 											} catch (err) {
 												setError(String(err));
