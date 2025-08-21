@@ -32,7 +32,7 @@ export default function NewExtractionsPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [extractedCount, setExtractedCount] = useState<number>(0);
-	const [progress, setProgress] = useState<{ status: string; target: string; error?: string }[]>([]);
+	// const [progress, setProgress] = useState<{ status: string; target: string; error?: string }[]>([]);
 	// Removed unused itemsCollected
 	// const [coinsSpent, setCoinsSpent] = useState<number>(0);
 	const [filterOpen, setFilterOpen] = useState(false);
@@ -213,14 +213,14 @@ export default function NewExtractionsPage() {
 													
 													try {
 														if (selected === "followers" || selected === "followings") {
-															setProgress(parsedTargets.map(target => ({ status: "Running", target })));
+															// setProgress(parsedTargets.map(target => ({ status: "Running", target })));
 															console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
 															const mod = await import("@/services/hikerApi");
 															const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
 															const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: any[] };
 															// Both followers and followings use filteredFollowers property from backend aggregation
 															const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
-															setProgress(parsedTargets.map((target) => ({ status: "Done", target })));
+															// setProgress(parsedTargets.map((target) => ({ status: "Done", target })));
 															setExtractedCount(extractedUsers.length);
 															// setCoinsSpent(extractedUsers.length);
 														} else {
@@ -230,7 +230,7 @@ export default function NewExtractionsPage() {
 																	// stoppedEarly = true;
 																	break;
 																}
-																setProgress(prev => [...prev, { status: "Running", target: parsedTargets[i] }]);
+																// setProgress(prev => [...prev, { status: "Running", target: parsedTargets[i] }]);
 																// ...existing code for likers, hashtags, etc...
 															}
 														}
