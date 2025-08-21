@@ -7,8 +7,9 @@ export interface UserDetails {
   is_private?: boolean;
   is_verified?: boolean;
   is_business?: boolean;
-  phone_number?: string;
-  email?: string;
+  public_phone_number?: string;
+  contact_phone_number?: string;
+  public_email?: string;
   link_in_bio?: string;
   pk?: string;
   biography?: string;
@@ -620,12 +621,43 @@ export async function extractFilteredUsers<T extends UserLike>(
       continue;
     }
     // Prepare contact/link data to save
+    // Combine phone numbers if both are present
+    let phoneValue: string | null | undefined = undefined;
+    if (filters.extractPhone) {
+      const publicPhone = userDetails.public_phone_number ? userDetails.public_phone_number.trim() : "";
+      const contactPhone = userDetails.contact_phone_number ? userDetails.contact_phone_number.trim() : "";
+      if (publicPhone && contactPhone) {
+        phoneValue = `${publicPhone},${contactPhone}`;
+      } else if (publicPhone) {
+        phoneValue = publicPhone;
+      } else if (contactPhone) {
+        phoneValue = contactPhone;
+      } else {
+        phoneValue = null;
+      }
+    }
+    // Extract link from biography if requested
+    let linkInBioValue: string | null | undefined = undefined;
+    if (filters.extractLinkInBio) {
+      // Regex to find URLs in biography
+      const bio = userDetails.biography || "";
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const matches = bio.match(urlRegex);
+      if (matches && matches.length > 0) {
+        linkInBioValue = matches.join(",");
+      } else if (userDetails.link_in_bio) {
+        linkInBioValue = userDetails.link_in_bio;
+      } else {
+        linkInBioValue = null;
+      }
+    }
+    
     const saveData: ExtractedUser = {
       username: userDetails.username,
       full_name: userDetails.full_name,
-      phone: filters.extractPhone ? userDetails.phone_number || null : undefined,
-      email: filters.extractEmail ? userDetails.email || null : undefined,
-      link_in_bio: filters.extractLinkInBio ? userDetails.link_in_bio || null : undefined,
+      phone: phoneValue,
+      email: filters.extractEmail ? userDetails.public_email || null : undefined,
+      link_in_bio: filters.extractLinkInBio ? linkInBioValue : undefined,
       pk: userDetails.pk,
       profile_pic_url: userDetails.profile_pic_url,
       is_private: userDetails.is_private,

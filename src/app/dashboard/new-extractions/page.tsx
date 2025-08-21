@@ -34,7 +34,7 @@ export default function NewExtractionsPage() {
 	const [extractedCount, setExtractedCount] = useState<number>(0);
 	const [progress, setProgress] = useState<{ status: string; target: string; error?: string }[]>([]);
 	// Removed unused itemsCollected
-	const [coinsSpent, setCoinsSpent] = useState<number>(0);
+	// const [coinsSpent, setCoinsSpent] = useState<number>(0);
 	const [filterOpen, setFilterOpen] = useState(false);
 	const [filters, setFilters] = useState<FiltersState>({
 	extractPhone: false,
@@ -80,8 +80,8 @@ export default function NewExtractionsPage() {
 	// const estimatedCoins = parsedTargets.length;
 
 	// Progress bar calculation
-	const processedCount = progress.filter(p => p.status === "Done" || p.status === "Error").length;
-	const totalCount = parsedTargets.length;
+	// const processedCount = progress.filter(p => p.status === "Done" || p.status === "Error").length;
+	// const totalCount = parsedTargets.length;
 	// Removed unused percent
 
 	console.log("[NewExtractions] Rendering Navbar with coins:", coins);
@@ -191,7 +191,7 @@ export default function NewExtractionsPage() {
 													// Extraction logic for followers/followings: send all usernames in one API call
 													setStopRequested(false);
 													setLoading(true);
-													let stoppedEarly = false;
+													// let stoppedEarly = false;
 													// Pass all filters, even if empty
 													const filterOptions: Record<string, unknown> = {
 														extractPhone: filters.extractPhone,
@@ -220,14 +220,14 @@ export default function NewExtractionsPage() {
 															const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: any[] };
 															// Both followers and followings use filteredFollowers property from backend aggregation
 															const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
-															setProgress(parsedTargets.map((target, idx) => ({ status: "Done", target })));
+															setProgress(parsedTargets.map((target) => ({ status: "Done", target })));
 															setExtractedCount(extractedUsers.length);
-															setCoinsSpent(extractedUsers.length);
+															// setCoinsSpent(extractedUsers.length);
 														} else {
 															// For other types, keep previous logic (one-by-one)
 															for (let i = 0; i < parsedTargets.length; i++) {
 																if (stopRequested) {
-																	stoppedEarly = true;
+																	// stoppedEarly = true;
 																	break;
 																}
 																setProgress(prev => [...prev, { status: "Running", target: parsedTargets[i] }]);
