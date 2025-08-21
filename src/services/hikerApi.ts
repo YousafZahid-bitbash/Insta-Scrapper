@@ -1,3 +1,4 @@
+
 // Type definitions for user extraction
 export interface UserDetails {
   username: string;
@@ -80,10 +81,13 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
  */
 export async function userFollowersChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }) {
   const { target, filters, force, end_cursor } = payload;
-  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
+  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
+  console.log('[hikerApi] [userFollowersChunkGqlByUsername] Filters received:', filters);
   // Support both single username and array of usernames
   const usernames = Array.isArray(target) ? target : [target];
   const userIds: string[] = [];
+
+  
   for (const uname of usernames) {
     const cleanUsername = uname.replace(/^@/, "");
     const user = await userByUsernameV1(cleanUsername);
@@ -94,6 +98,10 @@ export async function userFollowersChunkGqlByUsername(payload: { target: string 
     }
     userIds.push(user.pk);
   }
+  // If no userIds found, assign a test user_id for debugging
+
+ 
+  
   if (userIds.length === 0) {
     throw new Error("No valid user IDs found for provided usernames");
   }
@@ -104,7 +112,7 @@ export async function userFollowersChunkGqlByUsername(payload: { target: string 
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>) {
+export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string | string[], filters?: Record<string, FilterOptions>) {
   try {
     type Follower = {
       pk: string;
@@ -118,8 +126,9 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     let pageCount = 0;
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
-  const errorMessages: string[] = [];
-  const validUserIds: string[] = [...userIds];
+    
+    const errorMessages: string[] = [];
+    const validUserIds: string[] = [...userIds];
     for (let i = 0; i < validUserIds.length; i++) {
       const singleUserId = validUserIds[i];
       let nextPageId: string | undefined = undefined;
@@ -154,13 +163,16 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
         }
       }
     }
-    const safeFilters = filters || {};
-    console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
-    const result = await extractFilteredUsers(
-      allFollowers,
-      safeFilters,
-      async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
-    );
+  const safeFilters = filters || {};
+  // Pick the correct filter options object (followers)
+  const filterOptions = safeFilters.followers || {};
+  console.log('[Backend] [userFollowersChunkGql] Filters received:', filterOptions);
+  console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
+  const result = await extractFilteredUsers(
+    allFollowers,
+    filterOptions,
+    async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
+  );
     // Ensure all required columns are present for each user
     const filteredFollowers = result.map((user: ExtractedUser) => ({
       pk: user.pk,
@@ -266,7 +278,8 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
  */
 export async function userFollowingChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }) {
   const { target, filters, force, end_cursor } = payload;
-  console.log(`[hikerApi] userFollowingChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor, 'filters:', filters);
+  console.log(`[hikerApi] userFollowingChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
+  console.log('[hikerApi] [userFollowingChunkGqlByUsername] Filters received:', filters);
   // Support both single username and array of usernames
   const usernames = Array.isArray(target) ? target : [target];
   const userIds: string[] = [];
@@ -346,13 +359,16 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
         }
       }
     }
-    const safeFilters = filters || {};
-    console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowings.length);
-    const result = await extractFilteredUsers(
-      allFollowings,
-      safeFilters,
-      async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
-    );
+  const safeFilters = filters || {};
+  // Pick the correct filter options object (following)
+  const filterOptions = safeFilters.following || {};
+  console.log('[Backend] [userFollowingChunkGql] Filters received:', filterOptions);
+  console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowings.length);
+  const result = await extractFilteredUsers(
+    allFollowings,
+    filterOptions,
+    async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
+  );
     // Ensure all required columns are present for each user
     const filteredFollowings = result.map((user: ExtractedUser) => ({
       pk: user.pk,
@@ -533,6 +549,7 @@ interface FilterOptions {
   extractLinkInBio?: boolean;
   filterByNameInBioContains?: string;
   filterByNameInBioStop?: string;
+  filterByName?: string;
 }
 
 
@@ -578,6 +595,7 @@ export async function extractFilteredUsers<T extends UserLike>(
       continue;
     }
 
+
     // STOP IF logic: If any stop word is found in name or bio, stop extraction and return collected users
     if (filters.filterByNameInBioStop) {
       const stopWords = String(filters.filterByNameInBioStop)
@@ -596,6 +614,7 @@ export async function extractFilteredUsers<T extends UserLike>(
     }
 
     console.log('[Backend] [extractFilteredUsers] Checking user:', userDetails.username, userDetails);
+    filterUser(userDetails, filters)
     if (!filterUser(userDetails, filters)) {
       console.log('[Backend] [extractFilteredUsers] User did NOT pass filters:', userDetails.username);
       continue;
@@ -623,6 +642,7 @@ export async function extractFilteredUsers<T extends UserLike>(
 
 // Reusable filter function for user objects
 export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
+  console.log('[filterUser] Filters received:', filters);
   // Profile flags
   const flagChecks = [
     { key: "privacy", value: user.is_private, filter: filters.privacy },
@@ -630,9 +650,41 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
     { key: "verifiedAccount", value: user.is_verified, filter: filters.verifiedAccount },
     { key: "businessAccount", value: user.is_business, filter: filters.businessAccount },
   ];
-  for (const { filter, value } of flagChecks) {
-    if (filter === "yes" && !value) return false;
-    if (filter === "no" && value) return false;
+  for (const { key, filter, value } of flagChecks) {
+    if (filter === "yes" && !value) {
+      console.log(`[filterUser] Flag check failed: ${key} expected yes, got value:`, value);
+      return false;
+    }
+    if (filter === "no" && value) {
+      console.log(`[filterUser] Flag check failed: ${key} expected no, got value:`, value);
+      return false;
+    }
+    console.log(`[filterUser] Flag check passed: ${key}, filter: ${filter}, value:`, value);
+  }
+
+  // Filter by username exclude list
+  console.log('[filterUser] Checking username exclude list...');
+  console.log('[filterUser] filters.filterByName:', filters.filterByName);
+  if (filters.filterByName) {
+    const rawExcludeList = String(filters.filterByName);
+    console.log('[filterUser] Raw exclude list:', rawExcludeList);
+    const excludeUsernames = rawExcludeList
+      .split(/\r?\n/)
+      .map(u => u.trim().toLowerCase())
+      .filter(Boolean);
+    console.log('[filterUser] Normalized exclude list:', excludeUsernames);
+    const usernameNormalized = user.username.toLowerCase();
+    console.log('[filterUser] Normalized username:', usernameNormalized);
+    if (excludeUsernames.length > 0) {
+      const match = excludeUsernames.includes(usernameNormalized);
+      console.log(`[filterUser] Username exclude check: username=${user.username}, excludeList=`, excludeUsernames, 'match:', match);
+      if (match) {
+        console.log(`[filterUser] User ${user.username} excluded by filterByName.`);
+        return false;
+      } else {
+        console.log(`[filterUser] User ${user.username} NOT excluded by filterByName.`);
+      }
+    }
   }
 
   // Filter by name in bio contains only
@@ -645,17 +697,28 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
     if (words.length > 0) {
       const fullName = (user.full_name || "").toLowerCase();
       const biography = (user.biography || "").toLowerCase();
-      // If none of the words are found, filter out
       const found = words.some(word => fullName.includes(word.toLowerCase()) || biography.includes(word.toLowerCase()));
+      console.log(`[filterUser] Name/Bio contains check: words=`, words, 'fullName=', fullName, 'biography=', biography, 'found:', found);
       if (!found) return false;
     }
   }
-  // STOP IF logic removed from here; handled in extractFilteredUsers
-
+  
   // Follower/following ranges
-  if (filters.followersMin && (typeof user.follower_count !== 'number' || user.follower_count < Number(filters.followersMin))) return false;
-  if (filters.followersMax && (typeof user.follower_count !== 'number' || user.follower_count > Number(filters.followersMax))) return false;
-  if (filters.followingsMin && (typeof user.following_count !== 'number' || user.following_count < Number(filters.followingsMin))) return false;
-  if (filters.followingsMax && (typeof user.following_count !== 'number' || user.following_count > Number(filters.followingsMax))) return false;
+  if (filters.followersMin && (typeof user.follower_count !== 'number' || user.follower_count < Number(filters.followersMin))) {
+    console.log(`[filterUser] Follower min check failed: min=${filters.followersMin}, actual=`, user.follower_count);
+    return false;
+  }
+  if (filters.followersMax && (typeof user.follower_count !== 'number' || user.follower_count > Number(filters.followersMax))) {
+    console.log(`[filterUser] Follower max check failed: max=${filters.followersMax}, actual=`, user.follower_count);
+    return false;
+  }
+  if (filters.followingsMin && (typeof user.following_count !== 'number' || user.following_count < Number(filters.followingsMin))) {
+    console.log(`[filterUser] Following min check failed: min=${filters.followingsMin}, actual=`, user.following_count);
+    return false;
+  }
+  if (filters.followingsMax && (typeof user.following_count !== 'number' || user.following_count > Number(filters.followingsMax))) {
+    console.log(`[filterUser] Following max check failed: max=${filters.followingsMax}, actual=`, user.following_count);
+    return false;
+  }
   return true;
 }
