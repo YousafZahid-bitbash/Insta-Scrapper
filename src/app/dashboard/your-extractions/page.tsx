@@ -72,7 +72,7 @@ export default function YourExtractionsPage() {
     setShowDownloadDropdown(false);
     if (!extractedUsers || extractedUsers.length === 0) return;
     let dataStr = '';
-    let filename = `extracted_${selectedExtraction?.extraction_type || 'data'}.${format}`;
+  const filename = `extracted_${selectedExtraction?.extraction_type || 'data'}.${format}`;
     if (format === 'json') {
       dataStr = JSON.stringify(extractedUsers, null, 2);
     } else if (format === 'csv') {

@@ -22,7 +22,7 @@ const extractOptions = [
 ];
 
 export default function NewExtractionsPage() {
-	const [stopRequested, setStopRequested] = useState(false);
+	// const [stopRequested, setStopRequested] = useState(false);
 	// Multi-404 modal state
 	// const [multi404Modal, setMulti404Modal] = useState<{ show: boolean; message: string; failedUser: string; remaining: string[]; retryFn: (() => void) | null }>({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
 	const [selected, setSelected] = useState("followers");
@@ -126,7 +126,7 @@ export default function NewExtractionsPage() {
 							<button
 								type="button"
 								className="px-6 py-2 rounded-xl font-bold border border-red-400 bg-red-500 text-white hover:bg-red-600 ml-2"
-								onClick={() => setStopRequested(true)}
+								// onClick={() => setStopRequested(true)}
 							>
 								Stop
 							</button>
@@ -189,7 +189,7 @@ export default function NewExtractionsPage() {
 											setResult(null);
 											setError(null);
 											setLoading(true);
-											setStopRequested(false);
+											// setStopRequested(false);
 											setLoading(true);
 											const filterOptions: Record<string, unknown> = {
 												extractPhone: filters.extractPhone,

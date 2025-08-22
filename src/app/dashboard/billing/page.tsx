@@ -49,9 +49,7 @@ export default function BillingPage() {
     <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
       <Navbar coins={coins} />
       <div className="flex flex-1 w-full">
-        <div className="hidden md:block">
-          <Sidebar />
-        </div>
+        <Sidebar />
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16">
           <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-12 border border-[#d4af37] mt-8 mb-8 relative">
             <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-[#d4af37] flex items-center justify-center shadow-lg border-4 border-white">
