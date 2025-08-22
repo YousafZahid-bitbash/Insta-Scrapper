@@ -650,7 +650,7 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
 
 // ExtractedPost type for posts extraction
 export interface ExtractedPost {
-  id: string;
+  post_id: string;
   code: string;
   caption_text?: string;
   media_type: number;
@@ -664,7 +664,6 @@ export interface ExtractedPost {
   extraction_id?: number;
 }
 
-// Posts extraction function
 export async function getUserPosts(payload: { target: string | string[], filters?: Record<string, unknown> }) {
   const { target, filters } = payload;
   console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
@@ -701,7 +700,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
             break; // Skip this user, continue with next username
           }
         }
-        // For other errors, rethrow
+        
         throw err;
       }
       for (const media of medias) {
@@ -752,12 +751,12 @@ export async function getUserPosts(payload: { target: string | string[], filters
         }
         if (includePost) {
           extractedPosts.push({
-            id: media.id,
+            post_id: media.id,
             code: media.code,
             caption_text: media.caption_text,
             media_type: media.media_type,
             product_type: media.product_type,
-            taken_at: media.taken_at,
+            taken_at: media.taken_at ? new Date(media.taken_at * 1000).toISOString() : undefined,
             like_count: media.like_count,
             comment_count: media.comment_count,
             thumbnail_url: media.thumbnail_url,
@@ -869,9 +868,9 @@ function handleHikerError(error: unknown) {
 
 
 
-/***********************************************************/
-/**                FILTERED FOLLOWERS EXTRACTION          **/
-/***********************************************************/
+/*****************************************************/
+/**          FILTERED FOLLOWERS EXTRACTION          **/
+/*****************************************************/
 
 
 // Type definitions for better safety
