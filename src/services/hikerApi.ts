@@ -182,14 +182,14 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
       profile_pic_url: user.profile_pic_url,
       is_private: user.is_private,
       is_verified: user.is_verified,
-      email: safeFilters.extractEmail ? user.email ?? null : null,
-      phone: safeFilters.extractPhone ? user.phone ?? null : null,
-      link_in_bio: safeFilters.extractLinkInBio ? user.link_in_bio ?? null : null,
+      email: filterOptions.extractEmail ? user.email ?? null : null,
+      phone: filterOptions.extractPhone ? user.phone ?? null : null,
+      link_in_bio:filterOptions.extractLinkInBio ? user.link_in_bio ?? null : null,
       is_business: typeof user.is_business !== 'undefined' ? user.is_business : null,
       // extraction_id will be added before DB insert
     }));
     console.log('[Backend] Filtering complete. Total users after filtering:', filteredFollowers.length);
-    console.log('[Backend] Filters used:', safeFilters);
+    console.log('[Backend] Filters used:', filterOptions);
     console.log(`[hikerApi] [FollowersV2] Total followers collected:`, allFollowers.length);
     // Save extraction and extracted users to DB only if followers found
     if (userId && filteredFollowers.length > 0) {
@@ -378,14 +378,18 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
       profile_pic_url: user.profile_pic_url,
       is_private: user.is_private,
       is_verified: user.is_verified,
-      email: safeFilters.extractEmail ? user.email ?? null : null,
-      phone: safeFilters.extractPhone ? user.phone ?? null : null,
-      link_in_bio: safeFilters.extractLinkInBio ? user.link_in_bio ?? null : null,
+      email: filterOptions.extractEmail ? user.email ?? null : null,
+      phone: filterOptions.extractPhone ? user.phone ?? null : null,
+      link_in_bio: filterOptions.extractLinkInBio ? user.link_in_bio ?? null : null,
       is_business: typeof user.is_business !== 'undefined' ? user.is_business : null,
       // extraction_id will be added before DB insert
+      ...(() => {
+        console.log('[Mapping Followings] username:', user.username, 'phone:', filterOptions.extractPhone ? user.phone ?? null : null, 'email:', filterOptions.extractEmail ? user.email ?? null : null, 'link_in_bio:', filterOptions.extractLinkInBio ? user.link_in_bio ?? null : null);
+        return {};
+      })()
     }));
     console.log('[Backend] Filtering complete. Total users after filtering:', filteredFollowings.length);
-    console.log('[Backend] Filters used:', safeFilters);
+    console.log('[Backend] Filters used:', filterOptions);
     console.log(`[hikerApi] [FollowingV2] Total followings collected:`, allFollowings.length);
     // Save extraction and extracted users to DB only if followings found
     if (userId && filteredFollowings.length > 0) {
@@ -495,6 +499,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
       errorMessages.push(`Error processing URL: ${url} - ${String(err)}`);
     }
   }
+  console.log('[mediaLikersBulkV1] All likers collected:', allLikers.length, allLikers);
 
   // 1. Pre-filter by filterByName before fetching details
   let preFilteredLikers = allLikers;
@@ -509,6 +514,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
       return !excludeUsernames.includes(usernameNormalized);
     });
   }
+  console.log('[mediaLikersBulkV1] Likers after pre-filtering:', preFilteredLikers.length, preFilteredLikers);
 
   // 2. Fetch details for each remaining user
   const detailedLikers: UserDetails[] = [];
@@ -519,9 +525,18 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
         detailedLikers.push(details);
       }
     } catch (err) {
+      // If error is 403 or 404, skip and continue
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const response = (err as { response?: { status?: number } }).response;
+        if (response && (response.status === 404 || response.status === 403)) {
+          // Ignore and continue
+          continue;
+        }
+      }
       errorMessages.push(`Error fetching details for username: ${liker.username} - ${String(err)}`);
     }
   }
+  console.log('[mediaLikersBulkV1] Detailed likers fetched:', detailedLikers.length, detailedLikers);
 
   // 3. Call extractFilteredUsers with detailed users
   const filteredLikers = await extractFilteredUsers(
@@ -529,6 +544,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
     filters,
     async (username: string): Promise<UserDetails> => detailedLikers.find(u => u.username === username) as UserDetails
   );
+  console.log('[mediaLikersBulkV1] Likers after filtering:', filteredLikers.length, filteredLikers);
 
   // Save filtered likers to database with extraction record
   if (filteredLikers.length > 0) {
@@ -564,12 +580,15 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
         for (const liker of filteredLikers) {
           liker.extraction_id = extraction.id;
         }
+        console.log('[mediaLikersBulkV1] Extraction record created with ID:', extraction.id);
         // Save likers to extracted_users
         const { error: usersError } = await supabase
           .from("extracted_users")
           .insert(filteredLikers);
         if (usersError) {
           errorMessages.push("Error saving filtered likers to database: " + String(usersError.message));
+        } else {
+          console.log('[mediaLikersBulkV1] Likers saved to DB:', filteredLikers.length);
         }
       }
     } catch (err) {
