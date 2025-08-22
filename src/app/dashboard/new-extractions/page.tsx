@@ -133,29 +133,40 @@ export default function NewExtractionsPage() {
 						)}
 				</div>
 			</div>
-			<FilterPanel
-				open={filterOpen}
-				value={filters}
-				onChange={setFilters}
-				onClose={() => setFilterOpen(false)}
-				reset={() => setFilters({
-					extractPhone: false,
-					extractEmail: false,
-					extractLinkInBio: false,
-					privacy: "doesn't matter",
-					profilePicture: "doesn't matter",
-					verifiedAccount: "doesn't matter",
-					businessAccount: "doesn't matter",
-					followersMin: '',
-					followersMax: '',
-					followingsMin: '',
-					followingsMax: '',
-					filterByName: '',
-					filterByNameInBioContains: '',
-					filterByNameInBioStop: '',
-					coinLimit: '',
-				})}
-				/>
+					<FilterPanel
+						open={filterOpen}
+						value={filters}
+						onChange={setFilters}
+						onClose={() => setFilterOpen(false)}
+						reset={() => setFilters({
+							extractPhone: false,
+							extractEmail: false,
+							extractLinkInBio: false,
+							privacy: "doesn't matter",
+							profilePicture: "doesn't matter",
+							verifiedAccount: "doesn't matter",
+							businessAccount: "doesn't matter",
+							followersMin: '',
+							followersMax: '',
+							followingsMin: '',
+							followingsMax: '',
+							filterByName: '',
+							filterByNameInBioContains: '',
+							filterByNameInBioStop: '',
+							coinLimit: '',
+							postDateFrom: '',
+							postDateTo: '',
+							postType: 'any',
+							postLikesMin: '',
+							postLikesMax: '',
+							postCommentsMin: '',
+							postCommentsMax: '',
+							postCaptionContains: '',
+							postHashtagsContains: '',
+							postLocation: '',
+						})}
+						selectedType={selected}
+					/>
 			<div className="flex flex-1 w-full">
 				<div className="hidden md:block">
 					<Sidebar />
@@ -191,23 +202,36 @@ export default function NewExtractionsPage() {
 											setLoading(true);
 											// setStopRequested(false);
 											setLoading(true);
-											const filterOptions: Record<string, unknown> = {
-												extractPhone: filters.extractPhone,
-												extractEmail: filters.extractEmail,
-												extractLinkInBio: filters.extractLinkInBio,
-												privacy: filters.privacy,
-												profilePicture: filters.profilePicture,
-												verifiedAccount: filters.verifiedAccount,
-												businessAccount: filters.businessAccount,
-												followersMin: filters.followersMin,
-												followersMax: filters.followersMax,
-												followingsMin: filters.followingsMin,
-												followingsMax: filters.followingsMax,
-												filterByName: filters.filterByName,
-												filterByNameInBioContains: filters.filterByNameInBioContains,
-												filterByNameInBioStop: filters.filterByNameInBioStop,
-												coinLimit: filters.coinLimit,
-											};
+																	let filterOptions: Record<string, unknown> = {};
+																	if (selected === "posts") {
+																		filterOptions = {
+																			postLikesMin: filters.postLikesMin,
+																			postLikesMax: filters.postLikesMax,
+																			postCommentsMin: filters.postCommentsMin,
+																			postCommentsMax: filters.postCommentsMax,
+																			postCaptionContains: filters.postCaptionContains,
+																			postCaptionStopWords: filters.postCaptionStopWords,
+																			coinLimit: filters.coinLimit,
+																		};
+																	} else {
+																		filterOptions = {
+																			extractPhone: filters.extractPhone,
+																			extractEmail: filters.extractEmail,
+																			extractLinkInBio: filters.extractLinkInBio,
+																			privacy: filters.privacy,
+																			profilePicture: filters.profilePicture,
+																			verifiedAccount: filters.verifiedAccount,
+																			businessAccount: filters.businessAccount,
+																			followersMin: filters.followersMin,
+																			followersMax: filters.followersMax,
+																			followingsMin: filters.followingsMin,
+																			followingsMax: filters.followingsMax,
+																			filterByName: filters.filterByName,
+																			filterByNameInBioContains: filters.filterByNameInBioContains,
+																			filterByNameInBioStop: filters.filterByNameInBioStop,
+																			coinLimit: filters.coinLimit,
+																		};
+																	}
 											
 											try {
 												const mod = await import("@/services/hikerApi");
@@ -223,8 +247,14 @@ export default function NewExtractionsPage() {
 													const apiResult = await mod.mediaLikersBulkV1({ urls: parsedTargets, filters: filterOptions });
 													const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
 													setExtractedCount(extractedUsers.length);
+												} else if (selected === "posts") {
+													// For posts extraction
+													console.log("[Extraction API Call] method: posts, Usernames:", parsedTargets, "Filters:", filterOptions);
+													const apiResult = await mod.getUserPosts({ target: parsedTargets, filters: filterOptions });
+													const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
+													setExtractedCount(extractedPosts.length);
 												} else {
-													// ...existing code for hashtags, posts, etc...
+													// ...existing code for hashtags, etc...
 												}
 											} catch (err) {
 												setError(String(err));
@@ -243,7 +273,7 @@ export default function NewExtractionsPage() {
 									<textarea
 										rows={6}
 										className="flex-1 px-5 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37] font-serif text-lg shadow-sm resize-y"
-										placeholder={selected === "followers" || selected === "followings"
+										placeholder={selected === "followers" || selected === "followings" || selected === "posts"
 											? "Enter each username on a unique line\n@johndoe\n@janedoe"
 											: selected === "likers"
 												? "Add the URL of the Instagram post (e.g. https://instagram.com/p/CA2aJYrg6cZ/)"

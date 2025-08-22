@@ -2,22 +2,9 @@
 import React, { useState } from "react";
 
 
-interface FilterPanelProps {
-  open: boolean;
-  value: FiltersState;
-  onChange: (next: FiltersState) => void;
-  onClose: () => void;
-  reset: () => void;
-}
-
-const sections = [
-  { key: "contact", title: "Contact & Links" },
-  { key: "profile", title: "Profile Flags" },
-  { key: "ranges", title: "Follower/Following Ranges" },
-  { key: "namebio", title: "Name/Bio Rules" },
-];
 
 export type FiltersState = {
+  // User filters
   extractPhone: boolean;
   extractEmail: boolean;
   extractLinkInBio: boolean;
@@ -33,7 +20,28 @@ export type FiltersState = {
   filterByNameInBioContains: string;
   filterByNameInBioStop: string;
   coinLimit: string;
+  // Posts filters
+  postDateFrom?: string;
+  postDateTo?: string;
+  postType?: "image" | "video" | "carousel" | "any";
+  postLikesMin?: string;
+  postLikesMax?: string;
+  postCommentsMin?: string;
+  postCommentsMax?: string;
+  postCaptionContains?: string;
+  postCaptionStopWords?: string;
+  postHashtagsContains?: string;
+  postLocation?: string;
 };
+
+interface FilterPanelProps {
+  open: boolean;
+  value: FiltersState;
+  onChange: (next: FiltersState) => void;
+  onClose: () => void;
+  reset: () => void;
+  selectedType?: string; // 'followers', 'posts', etc.
+}
 
 interface FilterPanelProps {
   open: boolean;
@@ -43,18 +51,18 @@ interface FilterPanelProps {
   reset: () => void;
 }
 
-export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange, onClose, reset }) => {
+export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange, onClose, reset, selectedType }) => {
   // Accordion open state
-  const [openSections, setOpenSections] = useState<string[]>(sections.map(s => s.key));
-  // Removed unused variable isMobile
+  const [openSections, setOpenSections] = useState<string[]>(["contact", "profile", "ranges", "namebio"]);
 
   if (!open) return null;
 
-  // Adjust top offset to match Navbar height (e.g., 64px)
+  // Helper: is posts extraction selected?
+  const isPosts = selectedType === "posts";
+
   return (
     <div
       className={`fixed right-0 z-40 bg-white text-black md:w-[420px] w-screen h-screen shadow-2xl transition-all duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
-      
     >
       <div style={{ maxHeight: '100vh', overflowY: 'auto', paddingLeft: 16, paddingRight: 20 }}>
         <Separator />
@@ -77,7 +85,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
         </div>
         {/* Accordion Sections */}
         <div className="mt-2 flex flex-col gap-4">
-          {/* Contact & Links */}
+          {/* Show user filters only if not posts */}
+          {!isPosts && <>
+            {/* Contact & Links */}
           <AccordionSection
             title="Contact & Links"
             open={openSections.includes("contact")}
@@ -211,23 +221,92 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
               </div>
             </div>
           </AccordionSection>
-        </div>
-        {/* Footer */}
-        <div className="mt-6 flex flex-row gap-4 justify-center mb-8">
-          <button
-            type="button"
-            className="bg-[#d4af37] hover:bg-[#bfa233] text-white px-6 py-2 rounded-xl font-bold"
-            onClick={onClose}
-          >
-            Apply Filters
-          </button>
-          <button
-            type="button"
-            className="px-6 py-2 rounded-xl font-bold border border-[#d4af37]/40 bg-transparent text-[#bfa233] hover:bg-[#f7f9fc]"
-            onClick={reset}
-          >
-            Reset
-          </button>
+        </>}
+          {/* Posts filters section */}
+          {isPosts && <>
+            <AccordionSection
+              title="Likes & Comments"
+              open={openSections.includes("postLikesComments")}
+              onToggle={() => setOpenSections(os => os.includes("postLikesComments") ? os.filter(k => k !== "postLikesComments") : [...os, "postLikesComments"])}
+            >
+              <div className="w-full flex flex-col gap-6">
+                <div className="flex flex-col flex-2">
+                  <span className="font-semibold text-gray-700 mb-2">Likes</span>
+                  <div className="flex gap-3 items-end">
+                    <div className="flex flex-col flex-1">
+                      <label htmlFor="postLikesMin" className="text-sm text-gray-600 mb-1">Min</label>
+                      <input type="number" id="postLikesMin" className="px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full" value={value.postLikesMin || ''} onChange={e => onChange({ ...value, postLikesMin: e.target.value })} min={0} />
+                    </div>
+                    <div className="flex flex-col flex-1">
+                      <label htmlFor="postLikesMax" className="text-sm text-gray-600 mb-1">Max</label>
+                      <input type="number" id="postLikesMax" className="px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full" value={value.postLikesMax || ''} onChange={e => onChange({ ...value, postLikesMax: e.target.value })} min={0} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col flex-2">
+                  <span className="font-semibold text-gray-700 mb-2">Comments</span>
+                  <div className="flex gap-3 items-end">
+                    <div className="flex flex-col flex-1">
+                      <label htmlFor="postCommentsMin" className="text-sm text-gray-600 mb-1">Min</label>
+                      <input type="number" id="postCommentsMin" className="px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full" value={value.postCommentsMin || ''} onChange={e => onChange({ ...value, postCommentsMin: e.target.value })} min={0} />
+                    </div>
+                    <div className="flex flex-col flex-1">
+                      <label htmlFor="postCommentsMax" className="text-sm text-gray-600 mb-1">Max</label>
+                      <input type="number" id="postCommentsMax" className="px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full" value={value.postCommentsMax || ''} onChange={e => onChange({ ...value, postCommentsMax: e.target.value })} min={0} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="coinLimit" className="text-base font-semibold text-gray-700 mb-1">Coin Limit</label>
+                  <input
+                    type="number"
+                    id="coinLimit"
+                    placeholder="Enter coin limit"
+                    className="px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full"
+                    value={value.coinLimit}
+                    onChange={e => onChange({ ...value, coinLimit: e.target.value })}
+                    min={0}
+                  />
+                </div>
+              </div>
+                
+              {/* </div> */}
+            </AccordionSection>
+            <Separator />
+            <AccordionSection
+              title="Description Contains / Stop Words"
+              open={openSections.includes("postDescWords")}
+              onToggle={() => setOpenSections(os => os.includes("postDescWords") ? os.filter(k => k !== "postDescWords") : [...os, "postDescWords"])}
+            >
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="postCaptionContains" className="text-base font-semibold text-gray-700 mb-1">Contains one word in Description</label>
+                  <input type="text" id="postCaptionContains" className="px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full" value={value.postCaptionContains || ''} onChange={e => onChange({ ...value, postCaptionContains: e.target.value })} />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="postCaptionStopWords" className="text-base font-semibold text-gray-700 mb-1">Stop Words in Description</label>
+                  <input type="text" id="postCaptionStopWords" className="px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full" value={value.postCaptionStopWords || ''} onChange={e => onChange({ ...value, postCaptionStopWords: e.target.value })} />
+                </div>
+              </div>
+            </AccordionSection>
+          </>}
+          {/* Footer */}
+          <div className="mt-6 flex flex-row gap-4 justify-center mb-8">
+            <button
+              type="button"
+              className="bg-[#d4af37] hover:bg-[#bfa233] text-white px-6 py-2 rounded-xl font-bold"
+              onClick={onClose}
+            >
+              Apply Filters
+            </button>
+            <button
+              type="button"
+              className="px-6 py-2 rounded-xl font-bold border border-[#d4af37]/40 bg-transparent text-[#bfa233] hover:bg-[#f7f9fc]"
+              onClick={reset}
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
     </div>

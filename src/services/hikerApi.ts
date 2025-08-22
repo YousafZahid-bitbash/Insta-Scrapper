@@ -1,4 +1,5 @@
 
+
 // Type definitions for user extraction
 export interface UserDetails {
   username: string;
@@ -641,6 +642,204 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
     handleHikerError(error);
   }
 }
+
+/************************************************/
+/**        POSTS EXTRACTION FROM USERS         **/
+/************************************************/
+
+
+// ExtractedPost type for posts extraction
+export interface ExtractedPost {
+  id: string;
+  code: string;
+  caption_text?: string;
+  media_type: number;
+  product_type?: string;
+  taken_at?: string;
+  like_count?: number;
+  comment_count?: number;
+  thumbnail_url?: string;
+  user_id: string;
+  username: string;
+  extraction_id?: number;
+}
+
+// Posts extraction function
+export async function getUserPosts(payload: { target: string | string[], filters?: Record<string, unknown> }) {
+  const { target, filters } = payload;
+  console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
+  const usernames = Array.isArray(target) ? target : [target];
+  const extractedPosts: ExtractedPost[] = [];
+  for (const uname of usernames) {
+    const cleanUsername = uname.replace(/^@/, "");
+    console.log(`[getUserPosts] Processing username:`, cleanUsername);
+    const user = await userByUsernameV1(cleanUsername);
+    console.log(`[getUserPosts] userByUsernameV1 result for ", cleanUsername, ":`, user);
+    if (!user || !user.pk) {
+      console.error(`[getUserPosts] User not found for username:`, cleanUsername);
+      continue;
+    }
+    const user_id = user.pk;
+    let nextPageId: string | undefined = undefined;
+    let pageCount = 0;
+    let stopExtraction = false;
+    do {
+      const params: Record<string, unknown> = { user_id };
+      if (nextPageId) params.page_id = nextPageId;
+      console.log(`[getUserPosts] Fetching medias for user_id:`, user_id, 'page_id:', nextPageId);
+      let res, data, medias;
+      try {
+        res = await hikerClient.get("/v2/user/medias", { params });
+        data = res.data;
+        medias = data && data.response && Array.isArray(data.response.items) ? data.response.items : [];
+        console.log(`[getUserPosts] Medias fetched for user_id:`, user_id, 'Count:', medias.length);
+      } catch (err) {
+        if (typeof err === 'object' && err !== null && 'response' in err) {
+          const response = (err as { response?: { status?: number } }).response;
+          if (response && (response.status === 404 || response.status === 403)) {
+            console.warn(`[getUserPosts] Skipping user_id ${user_id} due to error status:`, response.status);
+            break; // Skip this user, continue with next username
+          }
+        }
+        // For other errors, rethrow
+        throw err;
+      }
+      for (const media of medias) {
+        // Filtering logic
+        let includePost = true;
+        // Likes range
+        if (filters && typeof filters.likesMin === 'number' && typeof media.like_count === 'number' && media.like_count < filters.likesMin) {
+          includePost = false;
+          console.log(`[getUserPosts] Post ${media.id} excluded: like_count < likesMin (${media.like_count} < ${filters.likesMin})`);
+        }
+        if (filters && typeof filters.likesMax === 'number' && typeof media.like_count === 'number' && media.like_count > filters.likesMax) {
+          includePost = false;
+          console.log(`[getUserPosts] Post ${media.id} excluded: like_count > likesMax (${media.like_count} > ${filters.likesMax})`);
+        }
+        // Comments range
+        if (filters && typeof filters.commentsMin === 'number' && typeof media.comment_count === 'number' && media.comment_count < filters.commentsMin) {
+          includePost = false;
+          console.log(`[getUserPosts] Post ${media.id} excluded: comment_count < commentsMin (${media.comment_count} < ${filters.commentsMin})`);
+        }
+        if (filters && typeof filters.commentsMax === 'number' && typeof media.comment_count === 'number' && media.comment_count > filters.commentsMax) {
+          includePost = false;
+          console.log(`[getUserPosts] Post ${media.id} excluded: comment_count > commentsMax (${media.comment_count} > ${filters.commentsMax})`);
+        }
+        // Caption contains words (exclude posts)
+        if (filters && typeof filters.captionContains === 'string' && media.caption_text) {
+          const containsWords = String(filters.captionContains).split(/\r?\n/).map(w => w.trim()).filter(Boolean);
+          const captionLower = media.caption_text.toLowerCase();
+          if (containsWords.length > 0) {
+            const found = containsWords.some(word => captionLower.includes(word.toLowerCase()));
+            if (found) {
+              includePost = false;
+              console.log(`[getUserPosts] Post ${media.id} excluded: caption contains word from captionContains filter.`);
+            }
+          }
+        }
+        // Caption stop words (stop extraction)
+        if (filters && typeof filters.captionStopWords === 'string' && media.caption_text) {
+          const stopWords = String(filters.captionStopWords).split(/\r?\n/).map(w => w.trim()).filter(Boolean);
+          const captionLower = media.caption_text.toLowerCase();
+          if (stopWords.length > 0) {
+            const foundStop = stopWords.some(word => captionLower.includes(word.toLowerCase()));
+            if (foundStop) {
+              stopExtraction = true;
+              console.log(`[getUserPosts] STOP triggered: Post ${media.id} caption contains stop word. Extraction will stop and save collected posts.`);
+              break;
+            }
+          }
+        }
+        if (includePost) {
+          extractedPosts.push({
+            id: media.id,
+            code: media.code,
+            caption_text: media.caption_text,
+            media_type: media.media_type,
+            product_type: media.product_type,
+            taken_at: media.taken_at,
+            like_count: media.like_count,
+            comment_count: media.comment_count,
+            thumbnail_url: media.thumbnail_url,
+            user_id,
+            username: cleanUsername,
+          });
+          console.log(`[getUserPosts] Post added:`, media.id, 'Likes:', media.like_count, 'Comments:', media.comment_count);
+        }
+      }
+      pageCount++;
+      if (stopExtraction) {
+        console.log(`[getUserPosts] Extraction stopped due to stop word. Breaking out of pagination loop.`);
+        break;
+      }
+      nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
+      console.log(`[getUserPosts] Next page id:`, nextPageId);
+    } while (nextPageId);
+    console.log(`[getUserPosts] Finished fetching for username:`, cleanUsername, 'Total pages:', pageCount);
+    if (stopExtraction) {
+      console.log(`[getUserPosts] Extraction stopped for username:`, cleanUsername);
+      break;
+    }
+  }
+
+  console.log(`[getUserPosts] Total posts extracted:`, extractedPosts.length);
+  // Save posts to DB (Supabase) and link to extraction
+  if (extractedPosts.length > 0) {
+    try {
+      // Get userId from localStorage (frontend) or pass in payload if available
+      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+      const extractionType = "posts";
+      const targetUsernames = usernames.join(",");
+      const requestedAt = new Date().toISOString();
+      const completedAt = new Date().toISOString();
+      const pageCount = extractedPosts.length; // or use actual page count if needed
+      // Create extraction record
+      const extractionInsert = {
+        user_id: userId,
+        extraction_type: extractionType,
+        target_username: targetUsernames,
+        target_user_id: null,
+        requested_at: requestedAt,
+        completed_at: completedAt,
+        status: "completed",
+        page_count: pageCount,
+        next_page_id: null,
+        error_message: null,
+      };
+      const { data: extraction, error: extractionError } = await supabase
+        .from("extractions")
+        .insert([extractionInsert])
+        .select()
+        .single();
+      if (extractionError) {
+        console.error("[getUserPosts] Error saving extraction record:", extractionError);
+      } else if (extraction && extraction.id) {
+        // Attach extraction_id to each post
+        for (const post of extractedPosts) {
+          post.extraction_id = extraction.id;
+        }
+        console.log('[getUserPosts] Extraction record created with ID:', extraction.id);
+        // Save posts to extracted_posts
+        const { error: postsError } = await supabase
+          .from("extracted_posts")
+          .insert(extractedPosts);
+        if (postsError) {
+          console.error("[getUserPosts] Error saving extracted posts:", postsError);
+        } else {
+          console.log(`[getUserPosts] Posts saved to DB successfully.`);
+        }
+      }
+    } catch (err) {
+      console.error("[getUserPosts] Exception saving posts:", err);
+    }
+  } else {
+    console.warn(`[getUserPosts] No posts extracted, skipping DB save.`);
+  }
+  console.log(`[getUserPosts] Returning extractedPosts. Count:`, extractedPosts.length);
+  return { extractedPosts };
+}
+
+
 
 // Example for posts (media):
 export async function userMediaChunkGql(user_id: string, end_cursor?: string) {
