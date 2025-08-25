@@ -89,7 +89,7 @@ export default function NewExtractionsPage() {
 	return (
 		<div className="min-h-screen flex flex-col bg-gradient-to-br from-[#f7f9fc] via-[#e3e6f3] to-[#dae0ed]">
 			<Navbar coins={coins} />
-			<div className="sticky top-0 z-30 bg-gradient-to-br border-b border-[#d4af37]/20 py-3 flex items-center justify-between px-6">
+			<div className="sticky top-0 z-30 bg-gradient-to-br border-b border-[#d4af37]/20 py-3 flex items-center justify-center px-6 w-full">
 				<h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#bfa233] tracking-tight">New Extraction</h1>
 				<div className="flex gap-2">
 					<button
@@ -196,76 +196,72 @@ export default function NewExtractionsPage() {
 							<form
 								className="flex flex-col sm:flex-row items-center gap-4 mt-2 justify-center w-full"
 										onSubmit={async e => {
-											e.preventDefault();
-											setResult(null);
-											setError(null);
-											setLoading(true);
-											// setStopRequested(false);
-											setLoading(true);
-																	let filterOptions: Record<string, unknown> = {};
-																	if (selected === "posts") {
-																		filterOptions = {
-																			postLikesMin: filters.postLikesMin,
-																			postLikesMax: filters.postLikesMax,
-																			postCommentsMin: filters.postCommentsMin,
-																			postCommentsMax: filters.postCommentsMax,
-																			postCaptionContains: filters.postCaptionContains,
-																			postCaptionStopWords: filters.postCaptionStopWords,
-																			coinLimit: filters.coinLimit,
-																		};
-																	} else {
-																		filterOptions = {
-																			extractPhone: filters.extractPhone,
-																			extractEmail: filters.extractEmail,
-																			extractLinkInBio: filters.extractLinkInBio,
-																			privacy: filters.privacy,
-																			profilePicture: filters.profilePicture,
-																			verifiedAccount: filters.verifiedAccount,
-																			businessAccount: filters.businessAccount,
-																			followersMin: filters.followersMin,
-																			followersMax: filters.followersMax,
-																			followingsMin: filters.followingsMin,
-																			followingsMax: filters.followingsMax,
-																			filterByName: filters.filterByName,
-																			filterByNameInBioContains: filters.filterByNameInBioContains,
-																			filterByNameInBioStop: filters.filterByNameInBioStop,
-																			coinLimit: filters.coinLimit,
-																		};
-																	}
-											
-											try {
-												const mod = await import("@/services/hikerApi");
-												if (selected === "followers" || selected === "followings") {
-													console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
-													const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
-													const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: ExtractedUser[] };
-													const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
-													setExtractedCount(extractedUsers.length);
-												} else if (selected === "likers") {
-													// For likers, parsedTargets are URLs
-													console.log("[Extraction API Call] method: likers, URLs:", parsedTargets, "Filters:", filterOptions);
-													const apiResult = await mod.mediaLikersBulkV1({ urls: parsedTargets, filters: filterOptions });
-													const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
-													setExtractedCount(extractedUsers.length);
-												} else if (selected === "posts") {
-													// For posts extraction
-													console.log("[Extraction API Call] method: posts, Usernames:", parsedTargets, "Filters:", filterOptions);
-													const apiResult = await mod.getUserPosts({ target: parsedTargets, filters: filterOptions });
-													const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
-													setExtractedCount(extractedPosts.length);
-												} else {
-													// ...existing code for hashtags, etc...
-												}
-											} catch (err) {
-												setError(String(err));
+										e.preventDefault();
+										setResult(null);
+										setError(null);
+										setLoading(true);
+										let filterOptions: Record<string, unknown> = {};
+										if (selected === "posts") {
+											filterOptions = {
+												postLikesMin: filters.postLikesMin,
+												postLikesMax: filters.postLikesMax,
+												postCommentsMin: filters.postCommentsMin,
+												postCommentsMax: filters.postCommentsMax,
+												postCaptionContains: filters.postCaptionContains,
+												postCaptionStopWords: filters.postCaptionStopWords,
+												coinLimit: filters.coinLimit,
+											};
+										} else {
+											filterOptions = {
+												extractPhone: filters.extractPhone,
+												extractEmail: filters.extractEmail,
+												extractLinkInBio: filters.extractLinkInBio,
+												privacy: filters.privacy,
+												profilePicture: filters.profilePicture,
+												verifiedAccount: filters.verifiedAccount,
+												businessAccount: filters.businessAccount,
+												followersMin: filters.followersMin,
+												followersMax: filters.followersMax,
+												followingsMin: filters.followingsMin,
+												followingsMax: filters.followingsMax,
+												filterByName: filters.filterByName,
+												filterByNameInBioContains: filters.filterByNameInBioContains,
+												filterByNameInBioStop: filters.filterByNameInBioStop,
+												coinLimit: filters.coinLimit,
+											};
+										}
+										try {
+											const mod = await import("@/services/hikerApi");
+											if (selected === "followers" || selected === "followings") {
+												console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
+												const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
+												const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: ExtractedUser[] };
+												const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
+												setExtractedCount(extractedUsers.length);
+											} else if (selected === "likers") {
+												console.log("[Extraction API Call] method: likers, URLs:", parsedTargets, "Filters:", filterOptions);
+												const apiResult = await mod.mediaLikersBulkV1({ urls: parsedTargets, filters: filterOptions });
+												const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
+												setExtractedCount(extractedUsers.length);
+											} else if (selected === "posts") {
+												console.log("[Extraction API Call] method: posts, Usernames:", parsedTargets, "Filters:", filterOptions);
+												const apiResult = await mod.getUserPosts({ target: parsedTargets, filters: filterOptions });
+												const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
+												setExtractedCount(extractedPosts.length);
+											} else if (selected === "commenters") {
+												// For commenters, parsedTargets are URLs
+												console.log("[Extraction API Call] method: commenters, URLs:", parsedTargets, "Filters:", filterOptions);
+												const apiResult = await mod.extractCommentersBulkV2({ urls: parsedTargets, filters: filterOptions });
+												const extractedUsers = Array.isArray(apiResult?.filteredCommenters) ? apiResult.filteredCommenters : [];
+												setExtractedCount(extractedUsers.length);
+											} else {
+												// ...existing code for hashtags, etc...
 											}
-											setLoading(false);
-												// For example, if you collect them in a variable, save them here
-												// If the backend already saves after each target, you may not need to do anything
-												// If you need to trigger a final save, do it here
-												// Example: show a message or refresh extractions
-												// window.location.href = "/dashboard/your-extractions";
-											}
+										} catch (err) {
+											setError(String(err));
+										}
+										setLoading(false);
+									}
 								// End of async onSubmit
 							}
 							>

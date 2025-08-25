@@ -14,27 +14,32 @@ export default function LoginPage() {
 
 	async function handleLogin(e: React.FormEvent) {
 		e.preventDefault();
-		setError("");
-		setSuccess("");
-		setLoading(true);
-		const { data, error } = await supabase.rpc("login_user_with_hash", {
-			email,
-			password,
-		});
-		setLoading(false);
-		if (error) {
-			setError(error.message);
-		} else if (data && data[0]?.success) {
-			setSuccess("Login successful!");
-			setEmail("");
-			setPassword("");
-			if (data[0]?.user_id) {
-				localStorage.setItem("user_id", data[0].user_id);
+			setError("");
+			setSuccess("");
+			setLoading(true);
+			try {
+				const res = await fetch("/api/login", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ email, password }),
+				});
+				setLoading(false);
+				const result = await res.json();
+				if (!res.ok) {
+					setError(result.error || "Invalid credentials");
+					return;
+				}
+				setSuccess("Login successful!");
+				setEmail("");
+				setPassword("");
+				if (result.user_id) {
+					localStorage.setItem("user_id", result.user_id);
+				}
+				router.push("/dashboard/new-extractions");
+			} catch (err) {
+				setLoading(false);
+				setError("Server error");
 			}
-			router.push("/dashboard/new-extractions");
-		} else {
-			setError("Invalid credentials");
-		}
 	}
 
 	return (

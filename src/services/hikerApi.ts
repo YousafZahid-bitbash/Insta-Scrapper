@@ -1,5 +1,6 @@
 
 
+
 // Type definitions for user extraction
 export interface UserDetails {
   username: string;
@@ -36,6 +37,24 @@ export interface ExtractedUser {
 import { HikerUser } from "../utils/types";
 import axios from "axios";
 import { supabase } from "../supabaseClient";
+
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || "b753b7d56575d996e1f59e0f94f3d005";
+
+export function generateJWT(payload: object): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+}
+
+export function verifyJWT(token: string): object | null {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (typeof decoded === "string") return { sub: decoded };
+    return decoded as object;
+  } catch (err) {
+    return null;
+  }
+}
 const HIKER_API_URL = process.env.NEXT_PUBLIC_HIKER_API_URL || "https://api.hikerapi.com";
 
 
@@ -615,19 +634,145 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 
 
 // Get media object by post URL (returns pk/id)
-export async function mediaByUrlV1(url: string) {
-  try {
-    const params: Record<string, unknown> = { url };
-    const res = await hikerClient.get("/v1/media/by/url", { params });
-    return res.data;
-  } catch (error: unknown) {
-    handleHikerError(error);
-  }
-}
+
 
 /******************************************************/
 /**           USERS EXTRACTION FROM COMMENTS         **/
 /******************************************************/
+
+// Bulk commenters extraction for multiple post URLs
+export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }) {
+
+  const cleanUrls = Array.isArray(payload.urls)
+    ? payload.urls.flatMap((u: string) => String(u).split(/\r?\n/))
+    : String(payload.urls).split(/\r?\n/);
+  const cleanUrlsTrimmed = cleanUrls.map(u => u.trim()).filter(Boolean);
+  console.log('[extractCommentersBulkV2] URLs received:', cleanUrlsTrimmed);
+  const allCommenters: UserLike[] = [];
+  const errorMessages: string[] = [];
+  for (const url of cleanUrlsTrimmed) {
+    try {
+      console.log(`[extractCommentersBulkV2] Processing URL:`, url);
+      const mediaObj = await mediaByUrlV1(url);
+      console.log(`[extractCommentersBulkV2] mediaByUrlV1 result:`, mediaObj);
+      if (!mediaObj || !mediaObj.id) {
+        errorMessages.push(`Could not get media ID for URL: ${url}`);
+        continue;
+      }
+      let nextPageId: string | undefined = undefined;
+      let pageCount = 0;
+      do {
+        console.log(`[extractCommentersBulkV2] Fetching comments for media_id:`, mediaObj.id, 'page_id:', nextPageId);
+        const res = await mediaCommentsV2(mediaObj.id, undefined, nextPageId);
+        const data = res;
+        const commenters = data && data.response && Array.isArray(data.response.comments)
+          ? data.response.comments.map((c: any) => c.user)
+          : [];
+  console.log(`[extractCommentersBulkV2] Commenters fetched:`, commenters.length, commenters.map((u: any) => u.username));
+        if (commenters.length === 0) {
+          errorMessages.push(`No commenters found for media ID: ${mediaObj.id}`);
+        } else {
+          allCommenters.push(...commenters);
+        }
+        nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
+        pageCount++;
+      } while (nextPageId);
+      console.log(`[extractCommentersBulkV2] Finished fetching for URL:`, url, 'Total pages:', pageCount);
+    } catch (err) {
+      errorMessages.push(`Error processing URL: ${url} - ${String(err)}`);
+      console.error(`[extractCommentersBulkV2] Error processing URL:`, url, err);
+    }
+  }
+  console.log('[extractCommentersBulkV2] Total commenters collected:', allCommenters.length);
+  // Remove duplicates by username
+  const uniqueCommenters = Array.from(new Map(allCommenters.map(u => [u.username, u])).values());
+  console.log('[extractCommentersBulkV2] Unique commenters:', uniqueCommenters.length);
+  // Fetch details for each user
+  const detailedCommenters: UserDetails[] = [];
+  for (const commenter of uniqueCommenters) {
+    try {
+      console.log(`[extractCommentersBulkV2] Fetching details for commenter:`, commenter.username);
+      const details = await userByUsernameV1(commenter.username);
+      if (details) {
+        detailedCommenters.push(details);
+        console.log(`[extractCommentersBulkV2] Details fetched for:`, commenter.username);
+      }
+    } catch (err) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const response = (err as { response?: { status?: number } }).response;
+        if (response && (response.status === 404 || response.status === 403)) {
+          console.warn(`[extractCommentersBulkV2] Skipping commenter due to error status:`, commenter.username, response.status);
+          continue;
+        }
+      }
+      errorMessages.push(`Error fetching details for username: ${commenter.username} - ${String(err)}`);
+      console.error(`[extractCommentersBulkV2] Error fetching details for username:`, commenter.username, err);
+    }
+  }
+  console.log('[extractCommentersBulkV2] Total detailed commenters:', detailedCommenters.length);
+  // Filter users
+  const filteredCommenters = await extractFilteredUsers(
+    detailedCommenters as unknown as UserLike[],
+    payload.filters,
+    async (username: string): Promise<UserDetails> => detailedCommenters.find(u => u.username === username) as UserDetails
+  );
+  console.log('[extractCommentersBulkV2] Total filtered commenters:', filteredCommenters.length);
+  // Save filtered commenters to database with extraction record
+  if (filteredCommenters.length > 0) {
+    try {
+      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+      const extractionType = "commenters";
+      const targetUsernames = cleanUrlsTrimmed.join(",");
+      const requestedAt = new Date().toISOString();
+      const completedAt = new Date().toISOString();
+      const pageCount = cleanUrlsTrimmed.length;
+      const extractionInsert = {
+        user_id: userId,
+        extraction_type: extractionType,
+        target_username: targetUsernames,
+        target_user_id: null,
+        requested_at: requestedAt,
+        completed_at: completedAt,
+        status: "completed",
+        page_count: pageCount,
+        next_page_id: null,
+        error_message: null,
+      };
+      console.log('[extractCommentersBulkV2] Saving extraction record:', extractionInsert);
+      const { data: extraction, error: extractionError } = await supabase
+        .from("extractions")
+        .insert([extractionInsert])
+        .select()
+        .single();
+      if (extractionError) {
+        errorMessages.push("Error saving extraction record: " + String(extractionError.message));
+        console.error('[extractCommentersBulkV2] Error saving extraction record:', extractionError);
+      } else if (extraction && extraction.id) {
+        for (const commenter of filteredCommenters) {
+          commenter.extraction_id = extraction.id;
+        }
+        console.log('[extractCommentersBulkV2] Extraction record created with ID:', extraction.id);
+        const { error: usersError } = await supabase
+          .from("extracted_users")
+          .insert(filteredCommenters);
+        if (usersError) {
+          errorMessages.push("Error saving filtered commenters to database: " + String(usersError.message));
+          console.error('[extractCommentersBulkV2] Error saving filtered commenters to database:', usersError);
+        } else {
+          console.log('[extractCommentersBulkV2] Filtered commenters saved to DB:', filteredCommenters.length);
+        }
+      }
+    } catch (err) {
+      errorMessages.push("Exception during DB save: " + String(err));
+      console.error('[extractCommentersBulkV2] Exception during DB save:', err);
+    }
+  } else {
+    console.warn('[extractCommentersBulkV2] No filtered commenters found, skipping DB save.');
+  }
+  console.log('[extractCommentersBulkV2] Returning filteredCommenters. Count:', filteredCommenters.length);
+  return { filteredCommenters, errorMessages };
+}
+
 
 
 // Get media comments (commenters)
@@ -642,6 +787,8 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
     handleHikerError(error);
   }
 }
+
+
 
 /************************************************/
 /**        POSTS EXTRACTION FROM USERS         **/
@@ -725,9 +872,9 @@ export async function getUserPosts(payload: { target: string | string[], filters
           console.log(`[getUserPosts] Post ${media.id} excluded: comment_count > commentsMax (${media.comment_count} > ${filters.commentsMax})`);
         }
         // Caption contains words (exclude posts)
-        if (filters && typeof filters.captionContains === 'string' && media.caption_text) {
+        if (filters && typeof filters.captionContains === 'string' && media.caption && typeof media.caption.text === 'string') {
           const containsWords = String(filters.captionContains).split(/\r?\n/).map(w => w.trim()).filter(Boolean);
-          const captionLower = media.caption_text.toLowerCase();
+          const captionLower = media.caption.text.toLowerCase();
           if (containsWords.length > 0) {
             const found = containsWords.some(word => captionLower.includes(word.toLowerCase()));
             if (found) {
@@ -737,9 +884,9 @@ export async function getUserPosts(payload: { target: string | string[], filters
           }
         }
         // Caption stop words (stop extraction)
-        if (filters && typeof filters.captionStopWords === 'string' && media.caption_text) {
+        if (filters && typeof filters.captionStopWords === 'string' && media.caption && typeof media.caption.text === 'string') {
           const stopWords = String(filters.captionStopWords).split(/\r?\n/).map(w => w.trim()).filter(Boolean);
-          const captionLower = media.caption_text.toLowerCase();
+          const captionLower = media.caption.text.toLowerCase();
           if (stopWords.length > 0) {
             const foundStop = stopWords.some(word => captionLower.includes(word.toLowerCase()));
             if (foundStop) {
@@ -753,13 +900,13 @@ export async function getUserPosts(payload: { target: string | string[], filters
           extractedPosts.push({
             post_id: media.id,
             code: media.code,
-            caption_text: media.caption_text,
+            caption_text: media.caption && typeof media.caption.text === 'string' ? media.caption.text : undefined,
             media_type: media.media_type,
             product_type: media.product_type,
             taken_at: media.taken_at ? new Date(media.taken_at * 1000).toISOString() : undefined,
             like_count: media.like_count,
             comment_count: media.comment_count,
-            thumbnail_url: media.thumbnail_url,
+            thumbnail_url: media.thumbnail_url || (media.image_versions2?.candidates?.[0]?.url),
             user_id,
             username: cleanUsername,
           });
@@ -840,17 +987,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
 
 
 
-// Example for posts (media):
-export async function userMediaChunkGql(user_id: string, end_cursor?: string) {
-  try {
-    const params: Record<string, unknown> = { user_id };
-    if (end_cursor !== undefined) params.end_cursor = end_cursor;
-    const res = await hikerClient.get("/gql/user/media/chunk", { params });
-    return res.data;
-  } catch (error: unknown) {
-    handleHikerError(error);
-  }
-}
+
 
 
 
@@ -1093,4 +1230,23 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
     return false;
   }
   return true;
+}
+
+
+
+  /***********************************/
+ /**          MEDIA BY URL         **/
+/***********************************/
+
+
+
+
+export async function mediaByUrlV1(url: string) {
+  try {
+    const params: Record<string, unknown> = { url };
+    const res = await hikerClient.get("/v1/media/by/url", { params });
+    return res.data;
+  } catch (error: unknown) {
+    handleHikerError(error);
+  }
 }
