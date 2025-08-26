@@ -1,31 +1,4 @@
-/**
- * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
- * @param payload { hashtags: string[], filters: any }
- */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any }) {
-  const { hashtags, filters } = payload;
-  const allResults: any[] = [];
-  for (const hashtag of hashtags) {
-    let nextPageId: string | null = null;
-    do {
-      const params: any = { name: hashtag };
-      if (nextPageId) params.page_id = nextPageId;
-      // Add filters to params if needed
-      if (filters) Object.assign(params, filters);
-      try {
-        const res = await hikerClient.get("/v2/hashtag/medias/clips", { params });
-        if (res.data && Array.isArray(res.data.clips)) {
-          allResults.push(...res.data.clips);
-        }
-        nextPageId = res.data?.next_page_id || null;
-      } catch (err) {
-        console.error(`[hikerApi] Error fetching hashtag clips for #${hashtag}:`, err);
-        break;
-      }
-    } while (nextPageId);
-  }
-  return { clips: allResults };
-}
+
 // Type for extracted commenters (for DB insert)
 export interface ExtractedCommenter {
   comment_id: any;
@@ -1093,6 +1066,42 @@ function handleHikerError(error: unknown) {
   throw new Error((error as { message?: string }).message || "Unknown Hiker API error");
 }
 
+
+
+ /***************************************************/
+ /**          HASHTAG EXTRACTION METHOD           **/
+/**************************************************/
+
+
+
+/**
+ * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
+ * @param payload { hashtags: string[], filters: any }
+ */
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any }) {
+  const { hashtags, filters } = payload;
+  const allResults: any[] = [];
+  for (const hashtag of hashtags) {
+    let nextPageId: string | null = null;
+    do {
+      const params: any = { name: hashtag };
+      if (nextPageId) params.page_id = nextPageId;
+      // Add filters to params if needed
+      if (filters) Object.assign(params, filters);
+      try {
+        const res = await hikerClient.get("/v2/hashtag/medias/clips", { params });
+        if (res.data && Array.isArray(res.data.clips)) {
+          allResults.push(...res.data.clips);
+        }
+        nextPageId = res.data?.next_page_id || null;
+      } catch (err) {
+        console.error(`[hikerApi] Error fetching hashtag clips for #${hashtag}:`, err);
+        break;
+      }
+    } while (nextPageId);
+  }
+  return { clips: allResults };
+}
 
 
 
