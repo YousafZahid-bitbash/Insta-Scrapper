@@ -4,14 +4,20 @@ import { verifyJWT } from "./src/services/hikerApi";
 
 const DASHBOARD_PATH = "/dashboard";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Protect all /dashboard routes
   if (pathname.startsWith(DASHBOARD_PATH)) {
     const token = request.cookies.get("token")?.value;
-    if (!token || !verifyJWT(token)) {
-      // Redirect to login if not authenticated
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+    const verified = token ? await verifyJWT(token) : null;
+    if (!token || !verified) {
+      // Debug: return token and verification result in response
+      return new Response(
+        JSON.stringify({ token, verified }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+      // To enable redirect again, comment out above and uncomment below:
+      // return NextResponse.redirect(new URL("/auth/login", request.url));
     }
   }
   return NextResponse.next();

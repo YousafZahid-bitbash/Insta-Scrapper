@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 		}
 		// Generate JWT
 		const user = data[0];
-		const token = generateJWT({ user_id: user.user_id, email });
+		const token = await generateJWT({ user_id: user.user_id, email });
 		// Set cookie
 		const response = NextResponse.json({ success: true, user_id: user.user_id });
 		response.cookies.set("token", token, {

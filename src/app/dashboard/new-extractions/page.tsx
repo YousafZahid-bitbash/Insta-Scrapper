@@ -195,23 +195,48 @@ export default function NewExtractionsPage() {
 							{/* {<FilterControls />} */}
 							<form
 								className="flex flex-col sm:flex-row items-center gap-4 mt-2 justify-center w-full"
-										onSubmit={async e => {
-										e.preventDefault();
-										setResult(null);
-										setError(null);
-										setLoading(true);
+								onSubmit={async e => {
+									e.preventDefault();
+									setResult(null);
+									setError(null);
+									setLoading(true);
+									try {
+										const mod = await import("@/services/hikerApi");
 										let filterOptions: Record<string, unknown> = {};
 										if (selected === "posts") {
 											filterOptions = {
-												postLikesMin: filters.postLikesMin,
-												postLikesMax: filters.postLikesMax,
-												postCommentsMin: filters.postCommentsMin,
-												postCommentsMax: filters.postCommentsMax,
-												postCaptionContains: filters.postCaptionContains,
-												postCaptionStopWords: filters.postCaptionStopWords,
+												likesMin: filters.postLikesMin,
+												likesMax: filters.postLikesMax,
+												commentsMin: filters.postCommentsMin,
+												commentsMax: filters.postCommentsMax,
+												captionContains: filters.postCaptionContains,
+												captionStopWords: filters.postCaptionStopWords,
 												coinLimit: filters.coinLimit,
 											};
-										} else {
+											console.log("[Extraction API Call] method: posts, Usernames:", parsedTargets, "Filters:", filterOptions);
+											const apiResult = await mod.getUserPosts({ target: parsedTargets, filters: filterOptions });
+											const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
+											setExtractedCount(extractedPosts.length);
+										} else if (selected === "commenters") {
+											filterOptions = {
+												commentExcludeWords: filters.commentExcludeWords,
+												commentStopWords: filters.commentStopWords,
+												coinLimit: filters.coinLimit,
+											};
+											console.log("[Extraction API Call] method: commenters, URLs:", parsedTargets, "Filters:", filterOptions);
+											const apiResult = await mod.extractCommentersBulkV2({ urls: parsedTargets, filters: filterOptions });
+											const extractedUsers = Array.isArray(apiResult?.comments) ? apiResult.comments : [];
+											setExtractedCount(extractedUsers.length);
+										} else if (selected === "hashtags") {
+											filterOptions = {
+												coinLimit: filters.coinLimit,
+											};
+											// parsedTargets is array of hashtags
+											console.log("[Extraction API Call] method: hashtags, Hashtags:", parsedTargets, "Filters:", filterOptions);
+											const apiResult = await mod.extractHashtagClipsBulkV2({ hashtags: parsedTargets, filters: filterOptions });
+											const extractedClips = Array.isArray(apiResult?.clips) ? apiResult.clips : [];
+											setExtractedCount(extractedClips.length);
+										} else if (selected === "followers" || selected === "followings") {
 											filterOptions = {
 												extractPhone: filters.extractPhone,
 												extractEmail: filters.extractEmail,
@@ -229,41 +254,25 @@ export default function NewExtractionsPage() {
 												filterByNameInBioStop: filters.filterByNameInBioStop,
 												coinLimit: filters.coinLimit,
 											};
+											console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
+											const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
+											const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: unknown[] };
+											const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
+											setExtractedCount(extractedUsers.length);
+										} else if (selected === "likers") {
+											filterOptions = {
+												coinLimit: filters.coinLimit,
+											};
+											console.log("[Extraction API Call] method: likers, URLs:", parsedTargets, "Filters:", filterOptions);
+											const apiResult = await mod.mediaLikersBulkV1({ urls: parsedTargets, filters: filterOptions });
+											const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
+											setExtractedCount(extractedUsers.length);
 										}
-										try {
-											const mod = await import("@/services/hikerApi");
-											if (selected === "followers" || selected === "followings") {
-												console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
-												const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
-												const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: ExtractedUser[] };
-												const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
-												setExtractedCount(extractedUsers.length);
-											} else if (selected === "likers") {
-												console.log("[Extraction API Call] method: likers, URLs:", parsedTargets, "Filters:", filterOptions);
-												const apiResult = await mod.mediaLikersBulkV1({ urls: parsedTargets, filters: filterOptions });
-												const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
-												setExtractedCount(extractedUsers.length);
-											} else if (selected === "posts") {
-												console.log("[Extraction API Call] method: posts, Usernames:", parsedTargets, "Filters:", filterOptions);
-												const apiResult = await mod.getUserPosts({ target: parsedTargets, filters: filterOptions });
-												const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
-												setExtractedCount(extractedPosts.length);
-											} else if (selected === "commenters") {
-												// For commenters, parsedTargets are URLs
-												console.log("[Extraction API Call] method: commenters, URLs:", parsedTargets, "Filters:", filterOptions);
-												const apiResult = await mod.extractCommentersBulkV2({ urls: parsedTargets, filters: filterOptions });
-												const extractedUsers = Array.isArray(apiResult?.filteredCommenters) ? apiResult.filteredCommenters : [];
-												setExtractedCount(extractedUsers.length);
-											} else {
-												// ...existing code for hashtags, etc...
-											}
-										} catch (err) {
-											setError(String(err));
-										}
-										setLoading(false);
+									} catch (err) {
+										setError(String(err));
 									}
-								// End of async onSubmit
-							}
+									setLoading(false);
+								}}
 							>
 								<div className="flex w-full gap-4 items-start">
 									<textarea

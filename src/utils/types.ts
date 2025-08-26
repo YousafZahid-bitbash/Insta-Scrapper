@@ -1,3 +1,33 @@
+// ...existing code...
+
+export type FilterOptions = {
+  // Post filters
+  likesMin?: number;
+  likesMax?: number;
+  commentsMin?: number;
+  commentsMax?: number;
+  captionContains?: string;
+  captionStopWords?: string;
+
+  // Commenters filters
+  commentExcludeWords?: string;
+  commentStopWords?: string;
+  // User filters
+  privacy?: string;
+  profilePicture?: string;
+  verifiedAccount?: string;
+  businessAccount?: string;
+  followersMin?: number;
+  followersMax?: number;
+  followingsMin?: number;
+  followingsMax?: number;
+  extractPhone?: boolean;
+  extractEmail?: boolean;
+  extractLinkInBio?: boolean;
+  filterByNameInBioContains?: string;
+  filterByNameInBioStop?: string;
+  filterByName?: string;
+};
 // src/utils/types.ts
 
 export type HikerUser = {

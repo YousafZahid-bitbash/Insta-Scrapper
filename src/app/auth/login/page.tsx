@@ -29,13 +29,12 @@ export default function LoginPage() {
 					setError(result.error || "Invalid credentials");
 					return;
 				}
-				setSuccess("Login successful!");
 				setEmail("");
 				setPassword("");
 				if (result.user_id) {
 					localStorage.setItem("user_id", result.user_id);
+					router.push("/dashboard/new-extractions");
 				}
-				router.push("/dashboard/new-extractions");
 			} catch (err) {
 				setLoading(false);
 				setError("Server error");

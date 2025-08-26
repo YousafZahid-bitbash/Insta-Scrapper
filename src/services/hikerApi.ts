@@ -1,3 +1,48 @@
+/**
+ * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
+ * @param payload { hashtags: string[], filters: any }
+ */
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any }) {
+  const { hashtags, filters } = payload;
+  const allResults: any[] = [];
+  for (const hashtag of hashtags) {
+    let nextPageId: string | null = null;
+    do {
+      const params: any = { name: hashtag };
+      if (nextPageId) params.page_id = nextPageId;
+      // Add filters to params if needed
+      if (filters) Object.assign(params, filters);
+      try {
+        const res = await hikerClient.get("/v2/hashtag/medias/clips", { params });
+        if (res.data && Array.isArray(res.data.clips)) {
+          allResults.push(...res.data.clips);
+        }
+        nextPageId = res.data?.next_page_id || null;
+      } catch (err) {
+        console.error(`[hikerApi] Error fetching hashtag clips for #${hashtag}:`, err);
+        break;
+      }
+    } while (nextPageId);
+  }
+  return { clips: allResults };
+}
+// Type for extracted commenters (for DB insert)
+export interface ExtractedCommenter {
+  comment_id: any;
+  media_id: any;
+  user_id: any;
+  username: any;
+  full_name: any;
+  profile_pic_url: any;
+  is_private: any;
+  is_verified: any;
+  is_mentionable: any;
+  comment_text: any;
+  like_count: any;
+  created_at: string | null;
+  parent_comment_id: any;
+  extraction_id?: any;
+}
 
 
 
@@ -34,23 +79,29 @@ export interface ExtractedUser {
 }
 // Type definitions for user extraction
 // Type definitions for user extraction
-import { HikerUser } from "../utils/types";
+import { HikerUser, FilterOptions } from "../utils/types";
 import axios from "axios";
 import { supabase } from "../supabaseClient";
 
-import jwt from "jsonwebtoken";
+import { SignJWT, jwtVerify, JWTPayload } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXT_PUBLIC_JWT_SECRET || "b753b7d56575d996e1f59e0f94f3d005";
+const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || "b753b7d56575d996e1f59e0f94f3d005";
+const encoder = new TextEncoder();
+const getSecret = () => encoder.encode(JWT_SECRET);
 
-export function generateJWT(payload: object): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+
+export async function generateJWT(payload: Record<string, unknown>): Promise<string> {
+  return await new SignJWT(payload as JWTPayload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("7d")
+    .sign(getSecret());
 }
 
-export function verifyJWT(token: string): object | null {
+
+export async function verifyJWT(token: string): Promise<object | null> {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (typeof decoded === "string") return { sub: decoded };
-    return decoded as object;
+    const { payload } = await jwtVerify(token, getSecret());
+    return payload;
   } catch (err) {
     return null;
   }
@@ -648,9 +699,11 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
     : String(payload.urls).split(/\r?\n/);
   const cleanUrlsTrimmed = cleanUrls.map(u => u.trim()).filter(Boolean);
   console.log('[extractCommentersBulkV2] URLs received:', cleanUrlsTrimmed);
-  const allCommenters: UserLike[] = [];
+  const allComments = [];
   const errorMessages: string[] = [];
+  let stopExtraction = false;
   for (const url of cleanUrlsTrimmed) {
+    if (stopExtraction) break;
     try {
       console.log(`[extractCommentersBulkV2] Processing URL:`, url);
       const mediaObj = await mediaByUrlV1(url);
@@ -665,60 +718,67 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
         console.log(`[extractCommentersBulkV2] Fetching comments for media_id:`, mediaObj.id, 'page_id:', nextPageId);
         const res = await mediaCommentsV2(mediaObj.id, undefined, nextPageId);
         const data = res;
-        const commenters = data && data.response && Array.isArray(data.response.comments)
-          ? data.response.comments.map((c: any) => c.user)
+        const comments = data && data.response && Array.isArray(data.response.comments)
+          ? data.response.comments
           : [];
-  console.log(`[extractCommentersBulkV2] Commenters fetched:`, commenters.length, commenters.map((u: any) => u.username));
-        if (commenters.length === 0) {
-          errorMessages.push(`No commenters found for media ID: ${mediaObj.id}`);
-        } else {
-          allCommenters.push(...commenters);
+        console.log(`[extractCommentersBulkV2] Comments fetched:`, comments.length);
+        for (const comment of comments) {
+          // Filtering logic for comments
+          const commentText = String(comment.text || '').toLowerCase();
+          // 1. Exclude if contains any word in 'excludeWords'
+          let exclude = false;
+          if (payload.filters.commentExcludeWords) {
+            const excludeWords = String(payload.filters.commentExcludeWords)
+              .split(/\r?\n/)
+              .map(w => w.trim().toLowerCase())
+              .filter(Boolean);
+            if (excludeWords.some(word => commentText.includes(word))) {
+              exclude = true;
+            }
+          }
+          if (exclude) continue;
+          // 2. Stop extraction if contains any stop word
+          if (payload.filters.commentStopWords) {
+            const stopWords = String(payload.filters.commentStopWords)
+              .split(/\r?\n/)
+              .map(w => w.trim().toLowerCase())
+              .filter(Boolean);
+            if (stopWords.some(word => commentText.includes(word))) {
+              stopExtraction = true;
+              console.log(`[extractCommentersBulkV2] STOP triggered: Comment contains stop word. Extraction will stop and save collected comments.`);
+              break;
+            }
+          }
+          // Prepare data for DB
+          allComments.push({
+            comment_id: comment.pk,
+            media_id: comment.media_id,
+            user_id: comment.user_id,
+            username: comment.user?.username || '',
+            full_name: comment.user?.full_name || '',
+            profile_pic_url: comment.user?.profile_pic_url || '',
+            is_private: comment.user?.is_private ?? null,
+            is_verified: comment.user?.is_verified ?? null,
+            is_mentionable: comment.user?.is_mentionable ?? null,
+            comment_text: comment.text,
+            like_count: comment.like_count ?? comment.comment_like_count ?? 0,
+            created_at: comment.created_at ? new Date(comment.created_at * 1000).toISOString() : null,
+            parent_comment_id: comment.parent_comment_id ?? null,
+          });
         }
+        if (stopExtraction) break;
         nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
         pageCount++;
-      } while (nextPageId);
+      } while (nextPageId && !stopExtraction);
       console.log(`[extractCommentersBulkV2] Finished fetching for URL:`, url, 'Total pages:', pageCount);
     } catch (err) {
       errorMessages.push(`Error processing URL: ${url} - ${String(err)}`);
       console.error(`[extractCommentersBulkV2] Error processing URL:`, url, err);
     }
   }
-  console.log('[extractCommentersBulkV2] Total commenters collected:', allCommenters.length);
-  // Remove duplicates by username
-  const uniqueCommenters = Array.from(new Map(allCommenters.map(u => [u.username, u])).values());
-  console.log('[extractCommentersBulkV2] Unique commenters:', uniqueCommenters.length);
-  // Fetch details for each user
-  const detailedCommenters: UserDetails[] = [];
-  for (const commenter of uniqueCommenters) {
-    try {
-      console.log(`[extractCommentersBulkV2] Fetching details for commenter:`, commenter.username);
-      const details = await userByUsernameV1(commenter.username);
-      if (details) {
-        detailedCommenters.push(details);
-        console.log(`[extractCommentersBulkV2] Details fetched for:`, commenter.username);
-      }
-    } catch (err) {
-      if (typeof err === 'object' && err !== null && 'response' in err) {
-        const response = (err as { response?: { status?: number } }).response;
-        if (response && (response.status === 404 || response.status === 403)) {
-          console.warn(`[extractCommentersBulkV2] Skipping commenter due to error status:`, commenter.username, response.status);
-          continue;
-        }
-      }
-      errorMessages.push(`Error fetching details for username: ${commenter.username} - ${String(err)}`);
-      console.error(`[extractCommentersBulkV2] Error fetching details for username:`, commenter.username, err);
-    }
-  }
-  console.log('[extractCommentersBulkV2] Total detailed commenters:', detailedCommenters.length);
-  // Filter users
-  const filteredCommenters = await extractFilteredUsers(
-    detailedCommenters as unknown as UserLike[],
-    payload.filters,
-    async (username: string): Promise<UserDetails> => detailedCommenters.find(u => u.username === username) as UserDetails
-  );
-  console.log('[extractCommentersBulkV2] Total filtered commenters:', filteredCommenters.length);
-  // Save filtered commenters to database with extraction record
-  if (filteredCommenters.length > 0) {
+  console.log('[extractCommentersBulkV2] Total comments after filtering:', allComments.length);
+  // Save comments to database with extraction record
+  if (allComments.length > 0) {
     try {
       const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
       const extractionType = "commenters";
@@ -748,18 +808,18 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
         errorMessages.push("Error saving extraction record: " + String(extractionError.message));
         console.error('[extractCommentersBulkV2] Error saving extraction record:', extractionError);
       } else if (extraction && extraction.id) {
-        for (const commenter of filteredCommenters) {
-          commenter.extraction_id = extraction.id;
+        for (const comment of allComments) {
+          (comment as ExtractedCommenter).extraction_id = extraction.id;
         }
         console.log('[extractCommentersBulkV2] Extraction record created with ID:', extraction.id);
-        const { error: usersError } = await supabase
-          .from("extracted_users")
-          .insert(filteredCommenters);
-        if (usersError) {
-          errorMessages.push("Error saving filtered commenters to database: " + String(usersError.message));
-          console.error('[extractCommentersBulkV2] Error saving filtered commenters to database:', usersError);
+        const { error: commentsError } = await supabase
+          .from("extracted_commenters")
+          .insert(allComments);
+        if (commentsError) {
+          errorMessages.push("Error saving filtered comments to database: " + String(commentsError.message));
+          console.error('[extractCommentersBulkV2] Error saving filtered comments to database:', commentsError);
         } else {
-          console.log('[extractCommentersBulkV2] Filtered commenters saved to DB:', filteredCommenters.length);
+          console.log('[extractCommentersBulkV2] Filtered comments saved to DB:', allComments.length);
         }
       }
     } catch (err) {
@@ -767,10 +827,10 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
       console.error('[extractCommentersBulkV2] Exception during DB save:', err);
     }
   } else {
-    console.warn('[extractCommentersBulkV2] No filtered commenters found, skipping DB save.');
+    console.warn('[extractCommentersBulkV2] No comments found, skipping DB save.');
   }
-  console.log('[extractCommentersBulkV2] Returning filteredCommenters. Count:', filteredCommenters.length);
-  return { filteredCommenters, errorMessages };
+  console.log('[extractCommentersBulkV2] Returning comments. Count:', allComments.length);
+  return { comments: allComments, errorMessages };
 }
 
 
@@ -782,6 +842,7 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
     if (can_support_threading !== undefined) params.can_support_threading = can_support_threading;
     if (page_id !== undefined) params.page_id = page_id;
     const res = await hikerClient.get("/v2/media/comments", { params });
+    console.log('[mediaCommentsV2] Hiker API response:', JSON.stringify(res.data, null, 2));
     return res.data;
   } catch (error: unknown) {
     handleHikerError(error);
@@ -811,9 +872,15 @@ export interface ExtractedPost {
   extraction_id?: number;
 }
 
-export async function getUserPosts(payload: { target: string | string[], filters?: Record<string, unknown> }) {
+export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }) {
+  console.log('[getUserPosts] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
   const { target, filters } = payload;
   console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
+  if (!filters || typeof filters !== 'object') {
+    console.warn('[getUserPosts] WARNING: filters is missing or not an object. Filtering will be skipped.');
+  } else {
+    console.log('[getUserPosts] Filters keys:', Object.keys(filters));
+  }
   const usernames = Array.isArray(target) ? target : [target];
   const extractedPosts: ExtractedPost[] = [];
   for (const uname of usernames) {
@@ -850,47 +917,66 @@ export async function getUserPosts(payload: { target: string | string[], filters
         
         throw err;
       }
+      console.log(medias)
       for (const media of medias) {
         // Filtering logic
         let includePost = true;
+        let filterReasons: string[] = [];
         // Likes range
-        if (filters && typeof filters.likesMin === 'number' && typeof media.like_count === 'number' && media.like_count < filters.likesMin) {
-          includePost = false;
-          console.log(`[getUserPosts] Post ${media.id} excluded: like_count < likesMin (${media.like_count} < ${filters.likesMin})`);
-        }
-        if (filters && typeof filters.likesMax === 'number' && typeof media.like_count === 'number' && media.like_count > filters.likesMax) {
-          includePost = false;
-          console.log(`[getUserPosts] Post ${media.id} excluded: like_count > likesMax (${media.like_count} > ${filters.likesMax})`);
+        const likesMin = typeof filters?.likesMin === 'string' ? Number(filters.likesMin) : filters?.likesMin;
+        const likesMax = typeof filters?.likesMax === 'string' ? Number(filters.likesMax) : filters?.likesMax;
+        console.log(`[getUserPosts][Filter][DEBUG] typeof media.like_count:`, typeof media.like_count, 'media.like_count:', media.like_count, 'likesMin:', likesMin, 'likesMax:', likesMax);
+        if (typeof likesMin === 'number' && typeof media.like_count === 'number') {
+          if (media.like_count < likesMin) {
+            includePost = false;
+            filterReasons.push(`like_count < likesMin (${media.like_count} < ${likesMin})`);
+          }
+  // ...existing code continues...
+        if (typeof likesMax === 'number' && typeof media.like_count === 'number') {
+          if (media.like_count > likesMax) {
+            includePost = false;
+            filterReasons.push(`like_count > likesMax (${media.like_count} > ${likesMax})`);
+          }
         }
         // Comments range
-        if (filters && typeof filters.commentsMin === 'number' && typeof media.comment_count === 'number' && media.comment_count < filters.commentsMin) {
-          includePost = false;
-          console.log(`[getUserPosts] Post ${media.id} excluded: comment_count < commentsMin (${media.comment_count} < ${filters.commentsMin})`);
+        const commentsMin = typeof filters?.commentsMin === 'string' ? Number(filters.commentsMin) : filters?.commentsMin;
+        const commentsMax = typeof filters?.commentsMax === 'string' ? Number(filters.commentsMax) : filters?.commentsMax;
+        console.log(`[getUserPosts][Filter][DEBUG] typeof media.comment_count:`, typeof media.comment_count, 'media.comment_count:', media.comment_count, 'commentsMin:', commentsMin, 'commentsMax:', commentsMax);
+        if (typeof commentsMin === 'number' && typeof media.comment_count === 'number') {
+          if (media.comment_count < commentsMin) {
+            includePost = false;
+            filterReasons.push(`comment_count < commentsMin (${media.comment_count} < ${commentsMin})`);
+          }
         }
-        if (filters && typeof filters.commentsMax === 'number' && typeof media.comment_count === 'number' && media.comment_count > filters.commentsMax) {
-          includePost = false;
-          console.log(`[getUserPosts] Post ${media.id} excluded: comment_count > commentsMax (${media.comment_count} > ${filters.commentsMax})`);
+        if (typeof commentsMax === 'number' && typeof media.comment_count === 'number') {
+          if (media.comment_count > commentsMax) {
+            includePost = false;
+            filterReasons.push(`comment_count > commentsMax (${media.comment_count} > ${commentsMax})`);
+          }
+        }
         }
         // Caption contains words (exclude posts)
-        if (filters && typeof filters.captionContains === 'string' && media.caption && typeof media.caption.text === 'string') {
+        if (typeof filters?.captionContains === 'string' && media.caption && typeof media.caption.text === 'string') {
           const containsWords = String(filters.captionContains).split(/\r?\n/).map(w => w.trim()).filter(Boolean);
           const captionLower = media.caption.text.toLowerCase();
+          console.log(`[getUserPosts][Filter] Comparing captionContains: captionLower='${captionLower}', containsWords=`, containsWords);
           if (containsWords.length > 0) {
             const found = containsWords.some(word => captionLower.includes(word.toLowerCase()));
             if (found) {
               includePost = false;
-              console.log(`[getUserPosts] Post ${media.id} excluded: caption contains word from captionContains filter.`);
+              filterReasons.push(`caption contains word from captionContains filter`);
             }
           }
         }
         // Caption stop words (stop extraction)
-        if (filters && typeof filters.captionStopWords === 'string' && media.caption && typeof media.caption.text === 'string') {
+        if (typeof filters?.captionStopWords === 'string' && media.caption && typeof media.caption.text === 'string') {
           const stopWords = String(filters.captionStopWords).split(/\r?\n/).map(w => w.trim()).filter(Boolean);
           const captionLower = media.caption.text.toLowerCase();
           if (stopWords.length > 0) {
             const foundStop = stopWords.some(word => captionLower.includes(word.toLowerCase()));
             if (foundStop) {
               stopExtraction = true;
+              filterReasons.push(`STOP triggered: caption contains stop word`);
               console.log(`[getUserPosts] STOP triggered: Post ${media.id} caption contains stop word. Extraction will stop and save collected posts.`);
               break;
             }
@@ -911,6 +997,8 @@ export async function getUserPosts(payload: { target: string | string[], filters
             username: cleanUsername,
           });
           console.log(`[getUserPosts] Post added:`, media.id, 'Likes:', media.like_count, 'Comments:', media.comment_count);
+        } else {
+          console.log(`[getUserPosts] Post ${media.id} excluded for reasons:`, filterReasons.join(", "));
         }
       }
       pageCount++;
@@ -930,6 +1018,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
 
   console.log(`[getUserPosts] Total posts extracted:`, extractedPosts.length);
   // Save posts to DB (Supabase) and link to extraction
+  console.log(`[getUserPosts] Attempting to save ${extractedPosts.length} posts to DB.`);
   if (extractedPosts.length > 0) {
     try {
       // Get userId from localStorage (frontend) or pass in payload if available
@@ -952,6 +1041,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
         next_page_id: null,
         error_message: null,
       };
+      console.log('[getUserPosts] Inserting extraction record:', extractionInsert);
       const { data: extraction, error: extractionError } = await supabase
         .from("extractions")
         .insert([extractionInsert])
@@ -965,6 +1055,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
           post.extraction_id = extraction.id;
         }
         console.log('[getUserPosts] Extraction record created with ID:', extraction.id);
+        console.log('[getUserPosts] Saving extracted posts:', extractedPosts);
         // Save posts to extracted_posts
         const { error: postsError } = await supabase
           .from("extracted_posts")
@@ -1009,24 +1100,6 @@ function handleHikerError(error: unknown) {
 /**          FILTERED FOLLOWERS EXTRACTION          **/
 /*****************************************************/
 
-
-// Type definitions for better safety
-interface FilterOptions {
-  privacy?: string;
-  profilePicture?: string;
-  verifiedAccount?: string;
-  businessAccount?: string;
-  followersMin?: number;
-  followersMax?: number;
-  followingsMin?: number;
-  followingsMax?: number;
-  extractPhone?: boolean;
-  extractEmail?: boolean;
-  extractLinkInBio?: boolean;
-  filterByNameInBioContains?: string;
-  filterByNameInBioStop?: string;
-  filterByName?: string;
-}
 
 
 // Generic user type for dynamic extraction

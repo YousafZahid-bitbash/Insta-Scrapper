@@ -146,8 +146,14 @@ export default function YourExtractionsPage() {
     setSelectedExtraction(extraction);
     setShowModal(true);
     setLoading(true);
+    let table = "extracted_users";
+    if (extraction.extraction_type === "posts") {
+      table = "extracted_posts";
+    } else if (extraction.extraction_type === "commenters") {
+      table = "extracted_commenters";
+    }
     const { data, error } = await supabase
-      .from("extracted_users")
+      .from(table)
       .select("*")
       .eq("extraction_id", extraction.id);
     setLoading(false);
@@ -285,7 +291,15 @@ export default function YourExtractionsPage() {
                             <thead>
                               <tr className="bg-blue-100">
                                 {extractedUsers.length > 0 && Object.keys(extractedUsers[0])
-                                  .filter((key) => key !== "profile_pic_url" && key !== "extraction_id" && key !== "id" && key !== "pk")
+                                  .filter((key) => {
+                                    // Hide technical columns for both tables
+                                    if (["id", "extraction_id", "pk"].includes(key)) return false;
+                                    // Hide columns specific to extracted_users
+                                    if (selectedExtraction.extraction_type !== "posts" && ["profile_pic_url"].includes(key)) return false;
+                                    // Hide columns specific to extracted_posts
+                                    if (selectedExtraction.extraction_type === "posts" && ["thumbnail_url", "user_id"].includes(key)) return false;
+                                    return true;
+                                  })
                                   .map((key) => (
                                     <th key={key} className="p-3 font-serif text-black capitalize">{key.replace(/_/g, ' ')}</th>
                                   ))}
@@ -295,7 +309,12 @@ export default function YourExtractionsPage() {
                               {extractedUsers.map((u) => (
                                 <tr key={u.id} className="border-t">
                                   {Object.keys(u)
-                                    .filter((key) => key !== "profile_pic_url" && key !== "extraction_id" && key !== "id" && key !== "pk")
+                                    .filter((key) => {
+                                      if (["id", "extraction_id", "pk"].includes(key)) return false;
+                                      if (selectedExtraction.extraction_type !== "posts" && ["profile_pic_url"].includes(key)) return false;
+                                      if (selectedExtraction.extraction_type === "posts" && ["thumbnail_url", "user_id"].includes(key)) return false;
+                                      return true;
+                                    })
                                     .map((key) => (
                                       <td key={key} className="p-3 text-black text-center">{String(u[key as keyof typeof u])}</td>
                                     ))}
