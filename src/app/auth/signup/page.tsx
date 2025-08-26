@@ -37,10 +37,10 @@ export default function SignupPage() {
 		setSuccess("");
 		setLoading(true);
 		// Replace with your actual signup logic
-		const { data, error } = await supabase.rpc("signup_user_with_hash", {
-			name,
+		const { data, error } = await supabase.rpc("create_user_with_hash", {
 			email,
 			password,
+			username: name,
 		});
 		setLoading(false);
 		if (error) {
