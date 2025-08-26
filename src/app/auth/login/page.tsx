@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase } from "../../../supabaseClient";
+// import { supabase } from "../../../supabaseClient";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
@@ -35,7 +35,7 @@ export default function LoginPage() {
 					localStorage.setItem("user_id", result.user_id);
 					router.push("/dashboard/new-extractions");
 				}
-			} catch (err) {
+			} catch {
 				setLoading(false);
 				setError("Server error");
 			}

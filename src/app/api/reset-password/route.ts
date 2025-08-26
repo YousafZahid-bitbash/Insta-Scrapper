@@ -1,19 +1,21 @@
+
 import { NextResponse } from "next/server";
 import { supabase } from "../../../supabaseClient";
 import { verifyJWT } from "../../../services/hikerApi";
-
+type ResetPayload = { type: string; user_id: string };
 export async function POST(req: Request) {
   const { token, password } = await req.json();
   if (!token || !password) {
     return NextResponse.json({ error: "Missing token or password" }, { status: 400 });
   }
   // Verify token
-  const payload = verifyJWT(token);
-  if (!payload || (typeof payload !== "object") || (payload as any).type !== "reset") {
+  
+  const payload = await verifyJWT(token);
+  if (!payload || typeof payload !== "object" || (payload as ResetPayload).type !== "reset") {
     return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
   }
   // Find user by id and token
-  const { user_id, email } = payload as any;
+  const { user_id } = payload as ResetPayload;
   const { data: user, error } = await supabase
     .from("users")
     .select("id, reset_token, reset_token_expires")
