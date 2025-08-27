@@ -124,7 +124,7 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
  * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
  * Resolves user_id(s), fetches followers, filters, and saves to DB.
  */
-export async function userFollowersChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }) {
+export async function userFollowersChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void) {
   const { target, filters, force, end_cursor } = payload;
   console.log(`[hikerApi] userFollowersChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
   console.log('[hikerApi] [userFollowersChunkGqlByUsername] Filters received:', filters);
@@ -153,11 +153,11 @@ export async function userFollowersChunkGqlByUsername(payload: { target: string 
   // Pass array of user IDs to main function for DB save
   // Wrap filters in a Record<string, FilterOptions> for compatibility
   const filtersRecord: Record<string, FilterOptions> = { followers: filters };
-  return userFollowersChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord);
+  return userFollowersChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress);
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string | string[], filters?: Record<string, FilterOptions>) {
+export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string | string[], filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void) {
   try {
     type Follower = {
       pk: string;
@@ -189,6 +189,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
           } else {
             allFollowers = allFollowers.concat(users);
             pageCount++;
+            if (onProgress) onProgress(allFollowers.length);
           }
           nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
           console.log(`[hikerApi] [FollowersV2] Next page id for user_id ${singleUserId}:`, nextPageId);
@@ -321,7 +322,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
  * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
  * Resolves user_id(s), fetches followings, filters, and saves to DB.
  */
-export async function userFollowingChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }) {
+export async function userFollowingChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void) {
   const { target, filters, force, end_cursor } = payload;
   console.log(`[hikerApi] userFollowingChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
   console.log('[hikerApi] [userFollowingChunkGqlByUsername] Filters received:', filters);
@@ -343,11 +344,11 @@ export async function userFollowingChunkGqlByUsername(payload: { target: string 
   }
   // Wrap filters in a Record<string, FilterOptions> for compatibility
   const filtersRecord: Record<string, FilterOptions> = { following: filters };
-  return userFollowingChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord);
+  return userFollowingChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress);
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowingChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>) {
+export async function userFollowingChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void) {
   try {
     type Following = {
       pk: string;
@@ -375,6 +376,7 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
           } else {
             allFollowings = allFollowings.concat(users);
             pageCount++;
+            if (onProgress) onProgress(allFollowings.length);
           }
           nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
           console.log(`[hikerApi] [FollowingV2] Next page id for user_id ${singleUserId}:`, nextPageId);
@@ -514,7 +516,7 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
 /***********************************************************/
 
 // Bulk likers extraction for multiple post URLs
-export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }) {
+export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
   const { urls, filters } = payload;
   // Support both array and single string with newlines
   const urlList: string[] = Array.isArray(urls)
@@ -524,6 +526,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
   const allLikers: UserLike[] = [];
   const errorMessages: string[] = [];
   for (const url of cleanUrls) {
+    if (onProgress) onProgress(allLikers.length);
     try {
       const mediaObj = await mediaByUrlV1(url);
       if (!mediaObj || !mediaObj.id) {
@@ -665,7 +668,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 /******************************************************/
 
 // Bulk commenters extraction for multiple post URLs
-export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }) {
+export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
 
   const cleanUrls = Array.isArray(payload.urls)
     ? payload.urls.flatMap((u: string) => String(u).split(/\r?\n/))
@@ -676,6 +679,7 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
   const errorMessages: string[] = [];
   let stopExtraction = false;
   for (const url of cleanUrlsTrimmed) {
+    if (onProgress) onProgress(allComments.length);
     if (stopExtraction) break;
     try {
       console.log(`[extractCommentersBulkV2] Processing URL:`, url);
@@ -845,7 +849,7 @@ export interface ExtractedPost {
   extraction_id?: number;
 }
 
-export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }) {
+export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }, onProgress?: (count: number) => void) {
   console.log('[getUserPosts] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
   const { target, filters } = payload;
   console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
@@ -857,6 +861,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
   const usernames = Array.isArray(target) ? target : [target];
   const extractedPosts: ExtractedPost[] = [];
   for (const uname of usernames) {
+    if (onProgress) onProgress(extractedPosts.length);
     const cleanUsername = uname.replace(/^@/, "");
     console.log(`[getUserPosts] Processing username:`, cleanUsername);
     const user = await userByUsernameV1(cleanUsername);
@@ -1078,7 +1083,7 @@ function handleHikerError(error: unknown) {
  * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
  * @param payload { hashtags: string[], filters: any }
  */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any, extraction_id?: number }) {
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any, extraction_id?: number }, onProgress?: (count: number) => void) {
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
@@ -1115,6 +1120,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   // 2. Collect all hashtag posts
   const allResults = [];
   for (const hashtag of hashtags) {
+    if (onProgress) onProgress(allResults.length);
     console.log(`[extractHashtagClipsBulkV2] Fetching clips for hashtag: #${hashtag}`);
     let nextPageId = null;
     let hashtagClipCount = 0;

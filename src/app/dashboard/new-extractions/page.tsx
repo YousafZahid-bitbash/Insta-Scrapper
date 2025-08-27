@@ -33,8 +33,10 @@ export default function NewExtractionsPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [extractedCount, setExtractedCount] = useState<number>(0);
-	// const [progress, setProgress] = useState<{ status: string; target: string; error?: string }[]>([]);
-	// Removed unused itemsCollected
+	//Progress count
+	const [progressCount, setProgressCount] = useState<number>(0);
+	const [progressTotal, setProgressTotal] = useState<number>(0);
+	
 	// const [coinsSpent, setCoinsSpent] = useState<number>(0);
 	const [filterOpen, setFilterOpen] = useState(false);
 	const [filters, setFilters] = useState<FiltersState>({
@@ -175,7 +177,7 @@ export default function NewExtractionsPage() {
 					<div className="w-full max-w-4xl mx-auto">
 						<div className="bg-white/90 rounded-3xl shadow-2xl p-12 border border-[#d4af37] mt-8 mb-8 relative">
 							{/* Filter Option Button */}
-							
+							{/* ...existing code... */}
 							<h1 className="text-3xl sm:text-4xl font-serif font-bold text-center mb-4 text-gray-900 tracking-tight">New Extraction</h1>
 							<p className="text-lg text-gray-600 mb-8 text-center">Choose what you want to extract from Instagram</p>
 							<div className="flex flex-wrap gap-3 mb-10 justify-center">
@@ -214,7 +216,15 @@ export default function NewExtractionsPage() {
 												coinLimit: filters.coinLimit,
 											};
 											console.log("[Extraction API Call] method: posts, Usernames:", parsedTargets, "Filters:", filterOptions);
-											const apiResult = await mod.getUserPosts({ target: parsedTargets, filters: filterOptions });
+											setProgressCount(0);
+											setProgressTotal(0);
+											const apiResult = await mod.getUserPosts(
+												{ target: parsedTargets, filters: filterOptions },
+												(count: number) => {
+													setProgressCount(count);
+													setProgressTotal(prev => prev || count);
+												}
+											);
 											const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
 											setExtractedCount(extractedPosts.length);
 										} else if (selected === "commenters") {
@@ -224,19 +234,35 @@ export default function NewExtractionsPage() {
 												coinLimit: filters.coinLimit,
 											};
 											console.log("[Extraction API Call] method: commenters, URLs:", parsedTargets, "Filters:", filterOptions);
-											const apiResult = await mod.extractCommentersBulkV2({ urls: parsedTargets, filters: filterOptions });
+											setProgressCount(0);
+											setProgressTotal(0);
+											const apiResult = await mod.extractCommentersBulkV2(
+												{ urls: parsedTargets, filters: filterOptions },
+												(count: number) => {
+													setProgressCount(count);
+													setProgressTotal(prev => prev || count);
+												}
+											);
 											const extractedUsers = Array.isArray(apiResult?.comments) ? apiResult.comments : [];
 											setExtractedCount(extractedUsers.length);
 										} else if (selected === "hashtags") {
-														filterOptions = {
-															coinLimit: filters.coinLimit,
-															hashtagLimit: filters.hashtagLimit,
-														};
-														// parsedTargets is array of hashtags
-														console.log("[Extraction API Call] method: hashtags, Hashtags:", parsedTargets, "Filters:", filterOptions);
-														const apiResult = await mod.extractHashtagClipsBulkV2({ hashtags: parsedTargets, filters: filterOptions });
-														const extractedClips = Array.isArray(apiResult?.clips) ? apiResult.clips : [];
-														setExtractedCount(extractedClips.length);
+											filterOptions = {
+												coinLimit: filters.coinLimit,
+												hashtagLimit: filters.hashtagLimit,
+											};
+											// parsedTargets is array of hashtags
+											console.log("[Extraction API Call] method: hashtags, Hashtags:", parsedTargets, "Filters:", filterOptions);
+											setProgressCount(0);
+											setProgressTotal(0);
+											const apiResult = await mod.extractHashtagClipsBulkV2(
+												{ hashtags: parsedTargets, filters: filterOptions },
+												(count: number) => {
+													setProgressCount(count);
+													setProgressTotal(prev => prev || count);
+												}
+											);
+											const extractedClips = Array.isArray(apiResult?.clips) ? apiResult.clips : [];
+											setExtractedCount(extractedClips.length);
 										} else if (selected === "followers" || selected === "followings") {
 											filterOptions = {
 												extractPhone: filters.extractPhone,
@@ -257,7 +283,16 @@ export default function NewExtractionsPage() {
 											};
 											console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
 											const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
-											const apiResult = (await apiFn({ target: parsedTargets, filters: filterOptions })) as { filteredFollowers?: unknown[] };
+											setProgressCount(0);
+											setProgressTotal(0);
+											const apiResult = (await apiFn(
+												{ target: parsedTargets, filters: filterOptions },
+												(count: number) => {
+													setProgressCount(count);
+													// If you know the total, set it here. Otherwise, fallback to previous logic:
+													setProgressTotal(prev => prev || count); // This will set total to first count, update if you have a better estimate
+												}
+											)) as { filteredFollowers?: unknown[] };
 											const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
 											setExtractedCount(extractedUsers.length);
 										} else if (selected === "likers") {
@@ -265,7 +300,15 @@ export default function NewExtractionsPage() {
 												coinLimit: filters.coinLimit,
 											};
 											console.log("[Extraction API Call] method: likers, URLs:", parsedTargets, "Filters:", filterOptions);
-											const apiResult = await mod.mediaLikersBulkV1({ urls: parsedTargets, filters: filterOptions });
+											setProgressCount(0);
+											setProgressTotal(0);
+											const apiResult = await mod.mediaLikersBulkV1(
+												{ urls: parsedTargets, filters: filterOptions },
+												(count: number) => {
+													setProgressCount(count);
+													setProgressTotal(prev => prev || count);
+												}
+											);
 											const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
 											setExtractedCount(extractedUsers.length);
 										}
@@ -303,6 +346,21 @@ export default function NewExtractionsPage() {
 								
 							</form>
 							{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
+							{/* Progress bar at the bottom, only visible when loading */}
+							{loading && (
+								<div className="w-full flex flex-col items-center gap-4 mt-8">
+									<div className="w-full max-w-md flex flex-col items-center">
+										<span className="font-bold text-lg text-[#bfa233] mb-2 tracking-wide">Extracting... {progressCount} / {progressTotal || "?"}</span>
+										<div className="w-full bg-gray-200 rounded-full h-6 shadow-inner overflow-hidden">
+											<div
+												className="bg-gradient-to-r from-[#d4af37] via-[#bfa233] to-[#f7f9fc] h-6 rounded-full transition-all duration-300"
+												style={{ width: `${progressTotal ? Math.min(100, (progressCount / progressTotal) * 100) : 0}%` }}
+											></div>
+										</div>
+										<span className="text-xs text-gray-500 mt-1">Please wait while we collect your data.</span>
+									</div>
+								</div>
+							)}
 							{typeof result === 'object' && result !== null && !loading && (
 								<div className="mt-10 bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 shadow flex flex-col items-center">
 									<div className="text-xl font-bold text-[#bfa233] mb-2">Extraction Complete!</div>
