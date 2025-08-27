@@ -18,6 +18,7 @@ export const COIN_RULES = {
   },
   commenters: {
     perChunk: { users: 2, coins: 1 }, // 1 coin per 2 users
+    perTwoUsers: 1,
   },
   hashtags: {
     perData: 2, // 2 coins per data

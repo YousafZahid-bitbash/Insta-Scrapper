@@ -547,6 +547,11 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
 
 // Bulk likers extraction for multiple post URLs
 export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
+  // Coin deduction logic
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userIdStr: any = userId ?? "";
+  let coins: any = await getUserCoins(userIdStr, supabase);
+  let stopExtraction: any = false;
   const { urls, filters } = payload;
   // Support both array and single string with newlines
   const urlList: string[] = Array.isArray(urls)
@@ -572,13 +577,24 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
       } else {
         errorMessages.push(`No likers found for media ID: ${mediaObj.id}`);
       }
+      // Deduct coins: 2 coins per 10 users (0.5 per user)
+      if (newLikers.length > 0) {
+        const chunkCoinCost = Math.ceil(newLikers.length * 0.5); // 0.5 coin per user
+        if (coins < chunkCoinCost) {
+          stopExtraction = true;
+          break;
+        }
+        coins = await deductCoins(userIdStr, chunkCoinCost, supabase);
+      }
       for (const liker of newLikers) {
         allLikers.push(liker);
         if (onProgress) onProgress(allLikers.length);
       }
+      if (stopExtraction) break;
     } catch (err) {
       errorMessages.push(`Error processing URL: ${url} - ${String(err)}`);
     }
+    if (stopExtraction) break;
   }
   console.log('[mediaLikersBulkV1] All likers collected:', allLikers.length, allLikers);
 
@@ -597,24 +613,33 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
   }
   console.log('[mediaLikersBulkV1] Likers after pre-filtering:', preFilteredLikers.length, preFilteredLikers);
 
+  // Deduct coins for all likers before fetching details
+  const perUserTotalCost = preFilteredLikers.length * COIN_RULES.likers.perUser;
+  if (coins < perUserTotalCost) {
+    stopExtraction = true;
+  } else {
+    coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+  }
   // 2. Fetch details for each remaining user
   const detailedLikers: UserDetails[] = [];
-  for (const liker of preFilteredLikers) {
-    try {
-      const details = await userByUsernameV1(liker.username);
-      if (details) {
-        detailedLikers.push(details);
-      }
-    } catch (err) {
-      // If error is 403 or 404, skip and continue
-      if (typeof err === 'object' && err !== null && 'response' in err) {
-        const response = (err as { response?: { status?: number } }).response;
-        if (response && (response.status === 404 || response.status === 403)) {
-          // Ignore and continue
-          continue;
+  if (!stopExtraction) {
+    for (const liker of preFilteredLikers) {
+      try {
+        const details = await userByUsernameV1(liker.username);
+        if (details) {
+          detailedLikers.push(details);
         }
+      } catch (err) {
+        // If error is 403 or 404, skip and continue
+        if (typeof err === 'object' && err !== null && 'response' in err) {
+          const response = (err as { response?: { status?: number } }).response;
+          if (response && (response.status === 404 || response.status === 403)) {
+            // Ignore and continue
+            continue;
+          }
+        }
+        errorMessages.push(`Error fetching details for username: ${liker.username} - ${String(err)}`);
       }
-      errorMessages.push(`Error fetching details for username: ${liker.username} - ${String(err)}`);
     }
   }
   console.log('[mediaLikersBulkV1] Detailed likers fetched:', detailedLikers.length, detailedLikers);
@@ -703,6 +728,11 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 
 // Bulk commenters extraction for multiple post URLs
 export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
+  // Coin deduction logic
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userIdStr: any = userId ?? "";
+  let coins: any = await getUserCoins(userIdStr, supabase);
+  let commentersSinceLastDeduction = 0;
 
   const cleanUrls = Array.isArray(payload.urls)
     ? payload.urls.flatMap((u: string) => String(u).split(/\r?\n/))
@@ -759,6 +789,17 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
               break;
             }
           }
+          // Coin deduction logic: 1 coin per 2 commenters
+          commentersSinceLastDeduction++;
+          if (commentersSinceLastDeduction >= COIN_RULES.commenters.perChunk.users) {
+            if (coins < COIN_RULES.commenters.perChunk.coins) {
+              stopExtraction = true;
+              break;
+            }
+            coins = await deductCoins(userIdStr, COIN_RULES.commenters.perChunk.coins, supabase);
+            commentersSinceLastDeduction = 0;
+          }
+          if (stopExtraction) break;
           // Prepare data for DB
           allComments.push({
             comment_id: comment.pk,
@@ -884,6 +925,10 @@ export interface ExtractedPost {
 }
 
 export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }, onProgress?: (count: number) => void) {
+  // Coin deduction logic
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userIdStr: any = userId ?? "";
+  let coins: any = await getUserCoins(userIdStr, supabase);
   console.log('[getUserPosts] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
   const { target, filters } = payload;
   console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
@@ -931,6 +976,12 @@ export async function getUserPosts(payload: { target: string | string[], filters
       }
       console.log(medias)
       for (const media of medias) {
+        // Deduct coins: 2 coins per post
+        if (coins < COIN_RULES.posts.perPost) {
+          stopExtraction = true;
+          break;
+        }
+        coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabase);
         // Filtering logic
         let includePost = true;
         let filterReasons: string[] = [];
@@ -1013,6 +1064,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
         } else {
           console.log(`[getUserPosts] Post ${media.id} excluded for reasons:`, filterReasons.join(", "));
         }
+        if (stopExtraction) break;
       }
       pageCount++;
       if (stopExtraction) {
@@ -1125,6 +1177,8 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   // 1. Create extraction record
   console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userIdStr: any = userId ?? "";
+  let coins: any = await getUserCoins(userIdStr, supabase);
   const extractionType = "hashtags";
   const targetUsernames = hashtags.join(",");
   const requestedAt = new Date().toISOString();
@@ -1176,6 +1230,12 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
             console.log(`[extractHashtagClipsBulkV2] First clip object for #${hashtag}:`, JSON.stringify(res.data.clips[0], null, 2));
           }
           for (const clip of res.data.clips) {
+            // Deduct 10 coins per post
+            if (coins < 10) {
+              stopExtraction = true;
+              break;
+            }
+            coins = await deductCoins(userIdStr, 10, supabase);
             console.log('hashtagLimit:', hashtagLimit)
             if (hashtagLimit !== undefined && allResults.length >= hashtagLimit) {
               console.log(`[extractHashtagClipsBulkV2] Hashtag limit (${hashtagLimit}) reached. Stopping extraction.`);
