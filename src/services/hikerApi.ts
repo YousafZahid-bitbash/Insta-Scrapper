@@ -55,6 +55,7 @@ export interface ExtractedUser {
 import { HikerUser, FilterOptions } from "../utils/types";
 import axios from "axios";
 import { supabase } from "../supabaseClient";
+import { COIN_RULES, deductCoins, getUserCoins } from "../utils/coinLogic";
 
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
 
@@ -158,6 +159,11 @@ export async function userFollowersChunkGqlByUsername(payload: { target: string 
 
 // Original function (still available if you already have user_id)
 export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string | string[], filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void) {
+  // Coin deduction logic
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userIdStr = userId ?? "";
+  let coins = await getUserCoins(userIdStr, supabase);
+  let stopExtraction = false;
   try {
     type Follower = {
       pk: string;
@@ -169,7 +175,10 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     };
     let allFollowers: Follower[] = [];
     let pageCount = 0;
-    const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userIdStr = userId ?? "";
+  let coins = await getUserCoins(userIdStr, supabase);
+  let stopExtraction = false;
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
     
     const errorMessages: string[] = [];
@@ -178,22 +187,35 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
       const singleUserId = validUserIds[i];
       let nextPageId: string | undefined = undefined;
       try {
+        let users: any = [];
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;
           const res = await hikerClient.get("/v2/user/followers", { params });
           const data = res.data;
-          const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
+          users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
+          // Deduct coins: 2 coins per 10 users (0.5 per user)
+          if (users.length > 0) {
+            const chunkCoinCost = Math.ceil(users.length * 0.5); // 0.5 coin per user
+            if (coins < chunkCoinCost) {
+              stopExtraction = true;
+              break;
+            }
+            coins = await deductCoins(userIdStr, chunkCoinCost, supabase);
+          }
           if (users.length === 0) {
             console.warn(`[hikerApi] [FollowersV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
           } else {
-            allFollowers = allFollowers.concat(users);
+            for (const user of users) {
+              allFollowers.push(user);
+              if (onProgress) onProgress(allFollowers.length);
+            }
+            if (stopExtraction) break;
             pageCount++;
-            if (onProgress) onProgress(allFollowers.length);
           }
           nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
           console.log(`[hikerApi] [FollowersV2] Next page id for user_id ${singleUserId}:`, nextPageId);
-        } while (nextPageId);
+        } while (nextPageId && !stopExtraction);
       } catch (err) {
         if (typeof err === 'object' && err !== null && 'response' in err) {
           const response = (err as { response?: { status?: number } }).response;
@@ -208,12 +230,20 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
           throw err;
         }
       }
+      if (stopExtraction) break;
     }
   const safeFilters = filters || {};
   // Pick the correct filter options object (followers)
   const filterOptions = safeFilters.followers || {};
   console.log('[Backend] [userFollowersChunkGql] Filters received:', filterOptions);
   console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
+  // Deduct coins for allFollowers before calling extractFilteredUsers
+  const perUserTotalCost = allFollowers.length * COIN_RULES.followers.perUser;
+  if (coins < perUserTotalCost) {
+    stopExtraction = true;
+  } else {
+    coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+  }
   const result = await extractFilteredUsers(
     allFollowers,
     filterOptions,
@@ -237,7 +267,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     console.log('[Backend] Filters used:', filterOptions);
     console.log(`[hikerApi] [FollowersV2] Total followers collected:`, allFollowers.length);
     // Save extraction and extracted users to DB only if followers found
-    if (userId && filteredFollowers.length > 0) {
+  if (userIdStr && filteredFollowers.length > 0) {
       try {
         const { data: extraction, error: extractionError } = await supabase
           .from("extractions")
@@ -249,10 +279,10 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
               target_user_id: Array.isArray(user_id) ? user_id.join(",") : user_id,
               requested_at: new Date().toISOString(),
               completed_at: new Date().toISOString(),
-              status: "completed",
+              status: stopExtraction ? "stopped" : "completed",
               page_count: pageCount,
               next_page_id: null,
-              error_message: null,
+              error_message: stopExtraction ? "Stopped due to insufficient coins" : null,
             },
           ])
           .select()
@@ -270,30 +300,6 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
             if (usersError) {
               console.error("[hikerApi] Error saving extracted users:", usersError);
             }
-          }
-          // Deduct coins for current user
-          try {
-            const { data: userData, error: coinsError } = await supabase
-              .from("users")
-              .select("coins")
-              .eq("id", userId)
-              .single();
-            if (!coinsError && userData && typeof userData.coins === "number") {
-              const newCoins = Math.max(0, userData.coins - filteredFollowers.length);
-              const { error: updateError } = await supabase
-                .from("users")
-                .update({ coins: newCoins })
-                .eq("id", userId);
-              if (updateError) {
-                console.error(`[hikerApi] Error updating coins:`, updateError);
-              } else {
-                console.log(`[hikerApi] Coins updated. Deducted:`, filteredFollowers.length, `New balance:`, newCoins);
-              }
-            } else {
-              console.error(`[hikerApi] Error fetching coins for deduction:`, coinsError);
-            }
-          } catch (err) {
-            console.error(`[hikerApi] Exception during coin deduction:`, err);
           }
         }
       } catch (err) {
@@ -358,29 +364,45 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
       is_private: boolean;
       is_verified: boolean;
     };
-    let allFollowings: Following[] = [];
-    let pageCount = 0;
-    const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-    const userIds = Array.isArray(user_id) ? user_id : [user_id];
+  let allFollowings: Following[] = [];
+  let pageCount = 0;
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userIdStr: any = userId ?? "";
+  let coins: any = await getUserCoins(userIdStr, supabase);
+  let stopExtraction: any = false;
+  const userIds = Array.isArray(user_id) ? user_id : [user_id];
     for (const singleUserId of userIds) {
       let nextPageId: string | undefined = undefined;
       try {
+        let users: any = [];
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;
           const res = await hikerClient.get("/v2/user/following", { params });
           const data = res.data;
-          const users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
+          users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
+          // Deduct coins: 2 coins per 10 users (0.5 per user)
+          if (users.length > 0) {
+            const chunkCoinCost = Math.ceil(users.length * 0.5); // 0.5 coin per user
+            if (coins < chunkCoinCost) {
+              stopExtraction = true;
+              break;
+            }
+            coins = await deductCoins(userIdStr, chunkCoinCost, supabase);
+          }
           if (users.length === 0) {
             console.warn(`[hikerApi] [FollowingV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
           } else {
-            allFollowings = allFollowings.concat(users);
+            for (const user of users) {
+              allFollowings.push(user);
+              if (onProgress) onProgress(allFollowings.length);
+            }
+            if (stopExtraction) break;
             pageCount++;
-            if (onProgress) onProgress(allFollowings.length);
           }
           nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
           console.log(`[hikerApi] [FollowingV2] Next page id for user_id ${singleUserId}:`, nextPageId);
-        } while (nextPageId);
+        } while (nextPageId && !stopExtraction);
       } catch (err) {
         if (typeof err === 'object' && err !== null && 'response' in err) {
           const response = (err as { response?: { status?: number } }).response;
@@ -405,12 +427,20 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
           throw err;
         }
       }
+      if (stopExtraction) break;
     }
   const safeFilters = filters || {};
   // Pick the correct filter options object (following)
   const filterOptions = safeFilters.following || {};
   console.log('[Backend] [userFollowingChunkGql] Filters received:', filterOptions);
   console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowings.length);
+  // Deduct coins for allFollowings before calling extractFilteredUsers
+  const perUserTotalCost = allFollowings.length * COIN_RULES.followings.perUser;
+  if (coins < perUserTotalCost) {
+    stopExtraction = true;
+  } else {
+    coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+  }
   const result = await extractFilteredUsers(
     allFollowings,
     filterOptions,
@@ -438,7 +468,7 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
     console.log('[Backend] Filters used:', filterOptions);
     console.log(`[hikerApi] [FollowingV2] Total followings collected:`, allFollowings.length);
     // Save extraction and extracted users to DB only if followings found
-    if (userId && filteredFollowings.length > 0) {
+  if (userIdStr && filteredFollowings.length > 0) {
       try {
         const { data: extraction, error: extractionError } = await supabase
           .from("extractions")
@@ -526,7 +556,6 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
   const allLikers: UserLike[] = [];
   const errorMessages: string[] = [];
   for (const url of cleanUrls) {
-    if (onProgress) onProgress(allLikers.length);
     try {
       const mediaObj = await mediaByUrlV1(url);
       if (!mediaObj || !mediaObj.id) {
@@ -535,12 +564,17 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
       }
       const params: Record<string, unknown> = { id: mediaObj.id };
       const res = await hikerClient.get("/v1/media/likers", { params });
+      let newLikers = [];
       if (Array.isArray(res.data)) {
-        allLikers.push(...res.data);
+        newLikers = res.data;
       } else if (Array.isArray(res.data?.users)) {
-        allLikers.push(...res.data.users);
+        newLikers = res.data.users;
       } else {
         errorMessages.push(`No likers found for media ID: ${mediaObj.id}`);
+      }
+      for (const liker of newLikers) {
+        allLikers.push(liker);
+        if (onProgress) onProgress(allLikers.length);
       }
     } catch (err) {
       errorMessages.push(`Error processing URL: ${url} - ${String(err)}`);
@@ -679,7 +713,6 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
   const errorMessages: string[] = [];
   let stopExtraction = false;
   for (const url of cleanUrlsTrimmed) {
-    if (onProgress) onProgress(allComments.length);
     if (stopExtraction) break;
     try {
       console.log(`[extractCommentersBulkV2] Processing URL:`, url);
@@ -742,6 +775,7 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
             created_at: comment.created_at ? new Date(comment.created_at * 1000).toISOString() : null,
             parent_comment_id: comment.parent_comment_id ?? null,
           });
+          if (onProgress) onProgress(allComments.length);
         }
         if (stopExtraction) break;
         nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
@@ -974,6 +1008,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
             user_id,
             username: cleanUsername,
           });
+          if (onProgress) onProgress(extractedPosts.length);
           console.log(`[getUserPosts] Post added:`, media.id, 'Likes:', media.like_count, 'Comments:', media.comment_count);
         } else {
           console.log(`[getUserPosts] Post ${media.id} excluded for reasons:`, filterReasons.join(", "));
@@ -1162,6 +1197,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
               is_private: (clip.user && clip.user.is_private) || false,
             };
             allResults.push(dbRow);
+            if (onProgress) onProgress(allResults.length);
             hashtagClipCount++;
           }
           console.log(`[extractHashtagClipsBulkV2] Total clips collected for #${hashtag} so far:`, hashtagClipCount);
