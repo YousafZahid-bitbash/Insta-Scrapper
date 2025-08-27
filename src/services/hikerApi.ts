@@ -1,3 +1,24 @@
+  // Type for hashtag clip objects
+  type HashtagClip = {
+    id?: string;
+    pk?: string;
+    media_url?: string;
+    video_url?: string;
+    image_url?: string;
+    taken_at?: number;
+    like_count?: number;
+    caption?: string;
+    caption_text?: string;
+    hashtags?: string[] | string;
+    username?: string;
+    user?: {
+      username?: string;
+      full_name?: string;
+      profile_pic_url?: string;
+      is_verified?: boolean;
+      is_private?: boolean;
+    };
+  };
 
 // Type for extracted commenters (for DB insert)
 export interface ExtractedCommenter {
@@ -1223,7 +1244,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
       if (nextPageId) params.page_id = nextPageId;
       // Only pass API-relevant filters; strip client-only ones like hashtagLimit
       if (filters) {
-        const { hashtagLimit: _omitHashtagLimit, ...apiFilterParams } = filters as Record<string, unknown>;
+        const { hashtagLimit, ...apiFilterParams } = filters as Record<string, unknown>;
         Object.assign(params, apiFilterParams);
       }
       try {
@@ -1231,13 +1252,13 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
 
         // Normalize clips from possible response shapes
         const data = res.data ?? {};
-        let clips: any[] = [];
+        let clips: HashtagClip[] = [];
         if (Array.isArray(data?.clips)) {
-          clips = data.clips;
+          clips = data.clips as HashtagClip[];
         } else if (Array.isArray(data?.response?.items)) {
-          clips = data.response.items;
+          clips = data.response.items as HashtagClip[];
         } else if (Array.isArray(data?.items)) {
-          clips = data.items;
+          clips = data.items as HashtagClip[];
         }
 
         console.log(`[extractHashtagClipsBulkV2] Data accessed for #${hashtag}:`, JSON.stringify(data, null, 2));
