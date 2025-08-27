@@ -173,7 +173,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
       is_private: boolean;
       is_verified: boolean;
     };
-    let allFollowers: Follower[] = [];
+  const allFollowers: Follower[] = [];
     let pageCount = 0;
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr = userId ?? "";
@@ -187,7 +187,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
       const singleUserId = validUserIds[i];
       let nextPageId: string | undefined = undefined;
       try {
-        let users: any = [];
+  let users: Follower[] = [];
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;
@@ -364,7 +364,7 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
       is_private: boolean;
       is_verified: boolean;
     };
-  let allFollowings: Following[] = [];
+  const allFollowings: Following[] = [];
   let pageCount = 0;
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr: any = userId ?? "";
@@ -374,7 +374,7 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
     for (const singleUserId of userIds) {
       let nextPageId: string | undefined = undefined;
       try {
-        let users: any = [];
+  let users: Following[] = [];
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;
@@ -549,9 +549,9 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
 export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr: any = userId ?? "";
-  let coins: any = await getUserCoins(userIdStr, supabase);
-  let stopExtraction: any = false;
+  const userIdStr: string = userId ?? "";
+  let coins: number = await getUserCoins(userIdStr, supabase);
+  let stopExtraction: boolean = false;
   const { urls, filters } = payload;
   // Support both array and single string with newlines
   const urlList: string[] = Array.isArray(urls)
@@ -730,8 +730,8 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr: any = userId ?? "";
-  let coins: any = await getUserCoins(userIdStr, supabase);
+  const userIdStr: string = userId ?? "";
+  let coins: number = await getUserCoins(userIdStr, supabase);
   let commentersSinceLastDeduction = 0;
 
   const cleanUrls = Array.isArray(payload.urls)
@@ -928,7 +928,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr: any = userId ?? "";
-  let coins: any = await getUserCoins(userIdStr, supabase);
+  let coins: number = await getUserCoins(userIdStr, supabase);
   console.log('[getUserPosts] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
   const { target, filters } = payload;
   console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
@@ -984,7 +984,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
         coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabase);
         // Filtering logic
         let includePost = true;
-        let filterReasons: string[] = [];
+  const filterReasons: string[] = [];
         // Likes range
         const likesMin = typeof filters?.likesMin === 'string' ? Number(filters.likesMin) : filters?.likesMin;
         const likesMax = typeof filters?.likesMax === 'string' ? Number(filters.likesMax) : filters?.likesMax;
@@ -1170,7 +1170,7 @@ function handleHikerError(error: unknown) {
  * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
  * @param payload { hashtags: string[], filters: any }
  */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any, extraction_id?: number }, onProgress?: (count: number) => void) {
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number }, onProgress?: (count: number) => void) {
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
@@ -1215,7 +1215,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
     let hashtagClipCount = 0;
     let stopExtraction = false;
     do {
-      const params: Record<string, any> = { name: hashtag };
+  const params: Record<string, unknown> = { name: hashtag };
       if (nextPageId) params.page_id = nextPageId;
       if (filters) Object.assign(params, filters);
       try {

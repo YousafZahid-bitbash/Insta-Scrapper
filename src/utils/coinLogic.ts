@@ -1,3 +1,4 @@
+import { SupabaseClient } from "@supabase/supabase-js";
 // Centralized coin deduction logic for all extraction types
 
 export const COIN_RULES = {
@@ -25,7 +26,7 @@ export const COIN_RULES = {
   },
 };
 
-export async function deductCoins(userId: string, amount: number, supabase: any): Promise<number> {
+export async function deductCoins(userId: string, amount: number, supabase: SupabaseClient): Promise<number> {
   // Deduct coins from user, return new balance
   const { data: userData, error: coinsError } = await supabase
     .from("users")
@@ -46,7 +47,7 @@ export async function deductCoins(userId: string, amount: number, supabase: any)
   return newCoins;
 }
 
-export async function getUserCoins(userId: string, supabase: any): Promise<number> {
+export async function getUserCoins(userId: string, supabase: SupabaseClient): Promise<number> {
   const { data: userData, error: coinsError } = await supabase
     .from("users")
     .select("coins")
