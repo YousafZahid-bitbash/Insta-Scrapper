@@ -196,7 +196,11 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
               stopExtraction = true;
               break;
             }
+            const prevFollowersCoins = coins;
+            const prevFollowingsCoins = coins;
             coins = await deductCoins(userIdStr, chunkCoinCost, supabase);
+            console.log(`[hikerApi] [FollowingV2] Deducted ${chunkCoinCost} coins from user ${userIdStr}. Previous balance: ${prevFollowingsCoins}, New balance: ${coins}`);
+            console.log(`[hikerApi] [FollowersV2] Deducted ${chunkCoinCost} coins from user ${userIdStr}. Previous balance: ${prevFollowersCoins}, New balance: ${coins}`);
           }
           if (users.length === 0) {
             console.warn(`[hikerApi] [FollowersV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
@@ -791,7 +795,9 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
               stopExtraction = true;
               break;
             }
+            const prevCommentersCoins = coins;
             coins = await deductCoins(userIdStr, COIN_RULES.commenters.perChunk.coins, supabase);
+            console.log(`[hikerApi] [CommentersV2] Deducted ${COIN_RULES.commenters.perChunk.coins} coins from user ${userIdStr}. Previous balance: ${prevCommentersCoins}, New balance: ${coins}`);
             commentersSinceLastDeduction = 0;
           }
           if (stopExtraction) break;
@@ -976,7 +982,9 @@ export async function getUserPosts(payload: { target: string | string[], filters
           stopExtraction = true;
           break;
         }
-        coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabase);
+  const prevPostsCoins = coins;
+  coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabase);
+  console.log(`[hikerApi] [PostsV2] Deducted ${COIN_RULES.posts.perPost} coins from user ${userIdStr}. Previous balance: ${prevPostsCoins}, New balance: ${coins}`);
         // Filtering logic
         let includePost = true;
   const filterReasons: string[] = [];
@@ -1230,7 +1238,9 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
               stopExtraction = true;
               break;
             }
+            const prevHashtagCoins = coins;
             coins = await deductCoins(userIdStr, 10, supabase);
+            console.log(`[hikerApi] [HashtagV2] Deducted 10 coins from user ${userIdStr}. Previous balance: ${prevHashtagCoins}, New balance: ${coins}`);
             console.log('hashtagLimit:', hashtagLimit)
             if (hashtagLimit !== undefined && allResults.length >= hashtagLimit) {
               console.log(`[extractHashtagClipsBulkV2] Hashtag limit (${hashtagLimit}) reached. Stopping extraction.`);

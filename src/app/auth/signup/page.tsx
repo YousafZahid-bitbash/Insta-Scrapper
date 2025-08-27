@@ -37,6 +37,7 @@ export default function SignupPage() {
 		setSuccess("");
 		setLoading(true);
 		// Replace with your actual signup logic
+		console.log({ email, password, username: name });
 		const { data, error } = await supabase.rpc("create_user_with_hash", {
 			email,
 			password,
@@ -44,7 +45,15 @@ export default function SignupPage() {
 		});
 		setLoading(false);
 		if (error) {
-			setError(error.message);
+			// Check for unique constraint violation
+			if (
+				error.message?.toLowerCase().includes("duplicate key") ||
+				error.message?.toLowerCase().includes("unique constraint")
+			) {
+				setError("Email or username already exists. Please choose a different one.");
+			} else {
+				setError(error.message);
+			}
 		} else if (data && data[0]?.success) {
 			setSuccess("Signup successful! Please login.");
 			setEmail("");
