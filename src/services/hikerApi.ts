@@ -1,20 +1,20 @@
 
 // Type for extracted commenters (for DB insert)
 export interface ExtractedCommenter {
-  comment_id: any;
-  media_id: any;
-  user_id: any;
-  username: any;
-  full_name: any;
-  profile_pic_url: any;
-  is_private: any;
-  is_verified: any;
-  is_mentionable: any;
-  comment_text: any;
-  like_count: any;
+  comment_id: string;
+  media_id: string;
+  user_id: string;
+  username: string;
+  full_name: string;
+  profile_pic_url: string;
+  is_private: boolean | null;
+  is_verified: boolean | null;
+  is_mentionable: boolean | null;
+  comment_text: string;
+  like_count: number;
   created_at: string | null;
-  parent_comment_id: any;
-  extraction_id?: any;
+  parent_comment_id: string | null;
+  extraction_id?: string;
 }
 
 
@@ -162,8 +162,8 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr = userId ?? "";
-  let coins = await getUserCoins(userIdStr, supabase);
-  let stopExtraction = false;
+  // const coins = await getUserCoins(userIdStr, supabase); // Removed unused variable
+  // const stopExtraction = false; // Removed unused variable
   try {
     type Follower = {
       pk: string;
@@ -367,9 +367,9 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
   const allFollowings: Following[] = [];
   let pageCount = 0;
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr: any = userId ?? "";
-  let coins: any = await getUserCoins(userIdStr, supabase);
-  let stopExtraction: any = false;
+  const userIdStr: string = userId ?? "";
+  let coins: number = await getUserCoins(userIdStr, supabase);
+  let stopExtraction: boolean = false;
   const userIds = Array.isArray(user_id) ? user_id : [user_id];
     for (const singleUserId of userIds) {
       let nextPageId: string | undefined = undefined;
@@ -927,7 +927,7 @@ export interface ExtractedPost {
 export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }, onProgress?: (count: number) => void) {
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr: any = userId ?? "";
+  const userIdStr: string = userId ?? "";
   let coins: number = await getUserCoins(userIdStr, supabase);
   console.log('[getUserPosts] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
   const { target, filters } = payload;
