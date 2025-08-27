@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,19 +38,28 @@ export default function ResetPasswordPage() {
           className="w-full p-2 border rounded mb-4"
           placeholder="Enter new password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
           required
           minLength={6}
         />
         <button
           type="submit"
-          className="w-full bg-black text-white py-2 rounded"
+          className="w-full bg-blue-500 text-white py-2 rounded font-bold"
           disabled={loading}
         >
           {loading ? "Resetting..." : "Reset Password"}
         </button>
-        {message && <div className="mt-4 text-center text-sm text-gray-700">{message}</div>}
+        {message && <p className="mt-4 text-center text-sm text-red-500">{message}</p>}
       </form>
     </main>
   );
 }
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+         
