@@ -161,7 +161,7 @@ export async function userFollowersChunkGqlByUsername(payload: { target: string 
 export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string | string[], filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void) {
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr = userId ?? "";
+  // const userIdStr = userId ?? "";
   // const coins = await getUserCoins(userIdStr, supabase); // Removed unused variable
   // const stopExtraction = false; // Removed unused variable
   try {
@@ -1177,8 +1177,8 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   // 1. Create extraction record
   console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr: any = userId ?? "";
-  let coins: any = await getUserCoins(userIdStr, supabase);
+  const userIdStr: string = userId ?? "";
+  let coins: number = await getUserCoins(userIdStr, supabase);
   const extractionType = "hashtags";
   const targetUsernames = hashtags.join(",");
   const requestedAt = new Date().toISOString();
