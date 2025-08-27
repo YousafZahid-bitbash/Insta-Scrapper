@@ -1,6 +1,6 @@
 "use client"
 	
-import type { ExtractedUser } from "@/services/hikerApi";
+// import type { ExtractedUser } from "@/services/hikerApi";
 import { useEffect, useState } from "react";
 
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
@@ -228,14 +228,15 @@ export default function NewExtractionsPage() {
 											const extractedUsers = Array.isArray(apiResult?.comments) ? apiResult.comments : [];
 											setExtractedCount(extractedUsers.length);
 										} else if (selected === "hashtags") {
-											filterOptions = {
-												coinLimit: filters.coinLimit,
-											};
-											// parsedTargets is array of hashtags
-											console.log("[Extraction API Call] method: hashtags, Hashtags:", parsedTargets, "Filters:", filterOptions);
-											const apiResult = await mod.extractHashtagClipsBulkV2({ hashtags: parsedTargets, filters: filterOptions });
-											const extractedClips = Array.isArray(apiResult?.clips) ? apiResult.clips : [];
-											setExtractedCount(extractedClips.length);
+														filterOptions = {
+															coinLimit: filters.coinLimit,
+															hashtagLimit: filters.hashtagLimit,
+														};
+														// parsedTargets is array of hashtags
+														console.log("[Extraction API Call] method: hashtags, Hashtags:", parsedTargets, "Filters:", filterOptions);
+														const apiResult = await mod.extractHashtagClipsBulkV2({ hashtags: parsedTargets, filters: filterOptions });
+														const extractedClips = Array.isArray(apiResult?.clips) ? apiResult.clips : [];
+														setExtractedCount(extractedClips.length);
 										} else if (selected === "followers" || selected === "followings") {
 											filterOptions = {
 												extractPhone: filters.extractPhone,
@@ -278,11 +279,15 @@ export default function NewExtractionsPage() {
 									<textarea
 										rows={6}
 										className="flex-1 px-5 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37] font-serif text-lg shadow-sm resize-y"
-										placeholder={selected === "followers" || selected === "followings" || selected === "posts"
-											? "Enter each username on a unique line\n@johndoe\n@janedoe"
-											: selected === "likers"
-												? "Add the URL of the Instagram post (e.g. https://instagram.com/p/CA2aJYrg6cZ/)"
-												: "Paste targets here (one per line):\n@username, username, post URL, #hashtag, word..."}
+										placeholder={
+											selected === "followers" || selected === "followings" || selected === "posts"
+												? "Enter each username on a unique line\n@johndoe\n@janedoe"
+												: selected === "likers"
+													? "Add the URL of the Instagram post (e.g. https://instagram.com/p/CA2aJYrg6cZ/)"
+													: selected === "hashtags"
+														? "Enter hashtags, one word per line (without the # sign):\ntravel\nsunset\nfood"
+														: "Paste targets here (one per line):\n@username, username, post URL, #hashtag, word..."
+										}
 										value={targetsInput}
 										onChange={e => setTargetsInput(e.target.value)}
 										required

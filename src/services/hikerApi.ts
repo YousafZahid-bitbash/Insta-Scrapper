@@ -75,7 +75,7 @@ export async function verifyJWT(token: string): Promise<object | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
     return payload;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -1078,29 +1078,119 @@ function handleHikerError(error: unknown) {
  * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
  * @param payload { hashtags: string[], filters: any }
  */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any }) {
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: any, extraction_id?: number }) {
   const { hashtags, filters } = payload;
-  const allResults: any[] = [];
+  // Extract hashtagLimit from filters, ensure it's a number
+  const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
+  // 1. Create extraction record
+  console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const extractionType = "hashtags";
+  const targetUsernames = hashtags.join(",");
+  const requestedAt = new Date().toISOString();
+  const extractionInsert = {
+    user_id: userId,
+    extraction_type: extractionType,
+    target_username: targetUsernames,
+    target_user_id: null,
+    requested_at: requestedAt,
+    status: "completed",
+    page_count: hashtags.length,
+    next_page_id: null,
+    error_message: null,
+  };
+  console.log('[extractHashtagClipsBulkV2] Inserting extraction record:', extractionInsert);
+  const { data: extraction, error: extractionError } = await supabase
+    .from("extractions")
+    .insert([extractionInsert])
+    .select()
+    .single();
+  if (extractionError || !extraction) {
+    console.error('[extractHashtagClipsBulkV2] Failed to create extraction record:', extractionError);
+    throw new Error("Failed to create extraction record");
+  }
+  const extraction_id = extraction.id;
+  console.log('[extractHashtagClipsBulkV2] Extraction record created with ID:', extraction_id);
+
+  // 2. Collect all hashtag posts
+  const allResults = [];
   for (const hashtag of hashtags) {
-    let nextPageId: string | null = null;
+    console.log(`[extractHashtagClipsBulkV2] Fetching clips for hashtag: #${hashtag}`);
+    let nextPageId = null;
+    let hashtagClipCount = 0;
+    let stopExtraction = false;
     do {
-      const params: any = { name: hashtag };
+      const params: Record<string, any> = { name: hashtag };
       if (nextPageId) params.page_id = nextPageId;
-      // Add filters to params if needed
       if (filters) Object.assign(params, filters);
       try {
         const res = await hikerClient.get("/v2/hashtag/medias/clips", { params });
+        
+        // Log the full response for debugging
+        // console.log(`[extractHashtagClipsBulkV2] Raw API response for #${hashtag}:`, JSON.stringify(res.data, null, 2));
         if (res.data && Array.isArray(res.data.clips)) {
-          allResults.push(...res.data.clips);
+          console.log(`[extractHashtagClipsBulkV2] Clips fetched for #${hashtag}:`, res.data.clips.length);
+          // Log the first clip for structure verification
+          if (res.data.clips.length > 0) {
+            console.log(`[extractHashtagClipsBulkV2] First clip object for #${hashtag}:`, JSON.stringify(res.data.clips[0], null, 2));
+          }
+          for (const clip of res.data.clips) {
+            console.log('hashtagLimit:', hashtagLimit)
+            if (hashtagLimit !== undefined && allResults.length >= hashtagLimit) {
+              console.log(`[extractHashtagClipsBulkV2] Hashtag limit (${hashtagLimit}) reached. Stopping extraction.`);
+              stopExtraction = true;
+              break;
+            }
+            const dbRow = {
+              extraction_id,
+              post_id: clip.id || clip.pk || null,
+              media_url: clip.media_url || clip.video_url || clip.image_url || null,
+              taken_at: clip.taken_at ? new Date(clip.taken_at * 1000).toISOString() : null,
+              like_count: clip.like_count || 0,
+              caption: clip.caption || clip.caption_text || null,
+              hashtags: Array.isArray(clip.hashtags) ? clip.hashtags.join(",") : (clip.hashtags || null),
+              username: clip.username || (clip.user && clip.user.username) || null,
+              full_name: (clip.user && clip.user.full_name) || null,
+              profile_pic_url: (clip.user && clip.user.profile_pic_url) || null,
+              is_verified: (clip.user && clip.user.is_verified) || false,
+              is_private: (clip.user && clip.user.is_private) || false,
+            };
+            allResults.push(dbRow);
+            hashtagClipCount++;
+          }
+          console.log(`[extractHashtagClipsBulkV2] Total clips collected for #${hashtag} so far:`, hashtagClipCount);
+        } else {
+          console.log(`[extractHashtagClipsBulkV2] No clips found for #${hashtag} on this page. Response:`, JSON.stringify(res.data, null, 2));
         }
         nextPageId = res.data?.next_page_id || null;
       } catch (err) {
-        console.error(`[hikerApi] Error fetching hashtag clips for #${hashtag}:`, err);
+        console.error(`[extractHashtagClipsBulkV2] Error fetching hashtag clips for #${hashtag}:`, err);
         break;
       }
-    } while (nextPageId);
+    } while (nextPageId && !stopExtraction);
+    console.log(`[extractHashtagClipsBulkV2] Finished fetching for #${hashtag}. Total clips:`, hashtagClipCount);
+    if (stopExtraction) {
+      console.log(`[extractHashtagClipsBulkV2] Extraction stopped due to hashtag limit.`);
+      break;
+    }
   }
-  return { clips: allResults };
+
+  //3. Save all hashtag posts in bulk
+  console.log('[extractHashtagClipsBulkV2] Attempting to save', allResults.length, 'hashtag posts to DB.');
+  if (allResults.length > 0) {
+    const { error: postsError } = await supabase
+      .from("extracted_hashtag_posts")
+      .insert(allResults);
+    if (postsError) {
+      console.error("[extractHashtagClipsBulkV2] Error saving hashtag posts:", postsError);
+    } else {
+      console.log(`[extractHashtagClipsBulkV2] Hashtag posts saved to DB successfully. Total:`, allResults.length);
+    }
+  } else {
+    console.warn("[extractHashtagClipsBulkV2] No hashtag posts extracted, skipping DB save.");
+  }
+  console.log('[extractHashtagClipsBulkV2] Extraction complete. Returning', allResults.length, 'clips.');
+   return { clips: allResults };
 }
 
 
