@@ -47,9 +47,9 @@ export default function SignupPage() {
 			setError(error.message);
 		} else if (data && data[0]?.success) {
 			setSuccess("Signup successful! Please login.");
-			setName("");
 			setEmail("");
 			setPassword("");
+			setName("");
 			setTimeout(() => router.push("/auth/login"), 1500);
 		} else {
 			setError("Signup failed");
