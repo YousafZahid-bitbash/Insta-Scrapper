@@ -27,7 +27,7 @@ export const COIN_RULES = {
 };
 
 export async function deductCoins(userId: string, amount: number, supabase: SupabaseClient): Promise<number> {
-  // Deduct coins from user, return new balance
+  // Deduct coins from user, return new balance and updated user
   const { data: userData, error: coinsError } = await supabase
     .from("users")
     .select("coins")
@@ -37,14 +37,19 @@ export async function deductCoins(userId: string, amount: number, supabase: Supa
     throw new Error("Could not fetch user coins");
   }
   const newCoins = Math.max(0, userData.coins - amount);
-  const { error: updateError } = await supabase
+  const { data: updatedUser, error: updateError } = await supabase
     .from("users")
     .update({ coins: newCoins })
-    .eq("id", userId);
+    .eq("id", userId)
+    .select()
+    .single();
   if (updateError) {
     throw new Error("Could not update user coins");
   }
-  return newCoins;
+ 
+    // setCoins(newCoins); // This will update the Navbar if it uses the coins state
+  // Return new balance and updated user object for frontend
+  return updatedUser?.coins ?? newCoins;
 }
 
 export async function getUserCoins(userId: string, supabase: SupabaseClient): Promise<number> {

@@ -1177,6 +1177,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
+  console.log('[extractHashtagClipsBulkV2] hashtagLimit extracted:', hashtagLimit, 'from filters:', filters);
   // 1. Create extraction record
   console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
@@ -1217,36 +1218,52 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
     let nextPageId = null;
     let hashtagClipCount = 0;
     let stopExtraction = false;
-    do {
-  const params: Record<string, unknown> = { name: hashtag };
+    // do {
+      const params: Record<string, unknown> = { name: hashtag };
       if (nextPageId) params.page_id = nextPageId;
-      if (filters) Object.assign(params, filters);
+      // Only pass API-relevant filters; strip client-only ones like hashtagLimit
+      if (filters) {
+        const { hashtagLimit: _omitHashtagLimit, ...apiFilterParams } = filters as Record<string, unknown>;
+        Object.assign(params, apiFilterParams);
+      }
       try {
         const res = await hikerClient.get("/v2/hashtag/medias/clips", { params });
-        
-        // Log the full response for debugging
-        // console.log(`[extractHashtagClipsBulkV2] Raw API response for #${hashtag}:`, JSON.stringify(res.data, null, 2));
-        if (res.data && Array.isArray(res.data.clips)) {
-          console.log(`[extractHashtagClipsBulkV2] Clips fetched for #${hashtag}:`, res.data.clips.length);
-          // Log the first clip for structure verification
-          if (res.data.clips.length > 0) {
-            console.log(`[extractHashtagClipsBulkV2] First clip object for #${hashtag}:`, JSON.stringify(res.data.clips[0], null, 2));
-          }
-          for (const clip of res.data.clips) {
+
+        // Normalize clips from possible response shapes
+        const data = res.data ?? {};
+        let clips: any[] = [];
+        if (Array.isArray(data?.clips)) {
+          clips = data.clips;
+        } else if (Array.isArray(data?.response?.items)) {
+          clips = data.response.items;
+        } else if (Array.isArray(data?.items)) {
+          clips = data.items;
+        }
+
+        console.log(`[extractHashtagClipsBulkV2] Data accessed for #${hashtag}:`, JSON.stringify(data, null, 2));
+        console.log(`[extractHashtagClipsBulkV2] Normalized clips array for #${hashtag}:`, clips.length, 'clips:', clips);
+
+        if (clips.length > 0) {
+          console.log(`[extractHashtagClipsBulkV2] Clips fetched for #${hashtag}:`, clips.length);
+          console.log(`[extractHashtagClipsBulkV2] First clip object for #${hashtag}:`, JSON.stringify(clips[0], null, 2));
+          for (const clip of clips) {
+            // Enforce hashtag limit BEFORE deducting coins or saving
+            console.log(`[extractHashtagClipsBulkV2] Comparing hashtagLimit (${hashtagLimit}) with allResults.length (${allResults.length})`);
+            if (hashtagLimit !== undefined && allResults.length >= hashtagLimit) {
+              console.log(`[extractHashtagClipsBulkV2] Hashtag limit (${hashtagLimit}) reached. Stopping extraction. allResults.length:`, allResults.length);
+              stopExtraction = true;
+              break;
+            }
             // Deduct 10 coins per post
             if (coins < 10) {
+              console.log(`[extractHashtagClipsBulkV2] Not enough coins to continue. Coins:`, coins);
               stopExtraction = true;
               break;
             }
             const prevHashtagCoins = coins;
             coins = await deductCoins(userIdStr, 10, supabase);
             console.log(`[hikerApi] [HashtagV2] Deducted 10 coins from user ${userIdStr}. Previous balance: ${prevHashtagCoins}, New balance: ${coins}`);
-            console.log('hashtagLimit:', hashtagLimit)
-            if (hashtagLimit !== undefined && allResults.length >= hashtagLimit) {
-              console.log(`[extractHashtagClipsBulkV2] Hashtag limit (${hashtagLimit}) reached. Stopping extraction.`);
-              stopExtraction = true;
-              break;
-            }
+
             const dbRow = {
               extraction_id,
               post_id: clip.id || clip.pk || null,
@@ -1261,6 +1278,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
               is_verified: (clip.user && clip.user.is_verified) || false,
               is_private: (clip.user && clip.user.is_private) || false,
             };
+            console.log(`[extractHashtagClipsBulkV2] Saving dbRow to allResults:`, JSON.stringify(dbRow, null, 2));
             allResults.push(dbRow);
             if (onProgress) onProgress(allResults.length);
             hashtagClipCount++;
@@ -1269,15 +1287,15 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
         } else {
           console.log(`[extractHashtagClipsBulkV2] No clips found for #${hashtag} on this page. Response:`, JSON.stringify(res.data, null, 2));
         }
-        nextPageId = res.data?.next_page_id || null;
+        nextPageId = data?.next_page_id || data?.response?.next_page_id || null;
       } catch (err) {
         console.error(`[extractHashtagClipsBulkV2] Error fetching hashtag clips for #${hashtag}:`, err);
         break;
       }
-    } while (nextPageId && !stopExtraction);
+    // } while (nextPageId && !stopExtraction);
     console.log(`[extractHashtagClipsBulkV2] Finished fetching for #${hashtag}. Total clips:`, hashtagClipCount);
     if (stopExtraction) {
-      console.log(`[extractHashtagClipsBulkV2] Extraction stopped due to hashtag limit.`);
+      console.log(`[extractHashtagClipsBulkV2] Extraction stopped due to hashtag limit or coins.`);
       break;
     }
   }
