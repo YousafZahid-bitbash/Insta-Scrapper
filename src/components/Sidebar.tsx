@@ -26,12 +26,10 @@ export default function Sidebar() {
 
       {/* Sidebar for desktop and mobile drawer */}
       <aside
-        className={
-          `w-64 bg-white border-r flex flex-col justify-between p-6 fixed left-0 z-30 transition-transform duration-300
+        className={`w-64 h-[calc(100vh-4rem)] bg-white border-r p-6 fixed left-0 z-30 transition-transform duration-300
           md:top-0 md:translate-x-0 md:block
-          ${open ? 'translate-x-0' : '-translate-x-full'} md:relative`
-        }
-        style={{ top: open ? '4rem' : undefined, display: open ? 'block' : undefined }}
+          ${open ? 'translate-x-0' : '-translate-x-full'} md:relative flex flex-col`}
+        style={{ display: open ? 'block' : undefined }}
       >
         {/* Close button for mobile */}
         <button
@@ -41,17 +39,16 @@ export default function Sidebar() {
         >
           &times;
         </button>
-  <div className="mb-8">
+        <div className="mb-8">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</span>
           <nav className="mt-3 flex flex-col gap-2">
-            {/* Dashboard nav item removed */}
             <Link href="/dashboard/new-extractions" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium" onClick={() => setOpen(false)}>New Extractions</Link>
             <Link href="/dashboard/your-extractions" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium" onClick={() => setOpen(false)}>Your extractions</Link>
             <Link href="#" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium" onClick={() => setOpen(false)}>Support</Link>
             <Link href="#" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium" onClick={() => setOpen(false)}>Affiliates</Link>
           </nav>
         </div>
-  <div className="mb-4">
+        <div className="mt-auto mb-4">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account</span>
           <nav className="mt-3 flex flex-col gap-2">
             <Link href="/dashboard/billing" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium" onClick={() => setOpen(false)}>Billing</Link>
