@@ -200,15 +200,22 @@ export default function NewExtractionsPage() {
 								className="flex flex-col sm:flex-row items-center gap-4 mt-2 justify-center w-full"
 								onSubmit={async e => {
 									e.preventDefault();
-														setResult(null);
-														setError(null);
-														if (coins <= 0) {
-															setShowCoinError(true);
-															setTimeout(() => setShowCoinError(false), 5000);
-															return;
-														}
-														setLoading(true);
-														try {
+									setResult(null);
+									setError(null);
+									// Check coin balance
+									if (coins <= 0) {
+										setShowCoinError(true);
+										setTimeout(() => setShowCoinError(false), 5000);
+										return;
+									}
+									// Check coin limit filter
+									const coinLimitNum = Number(filters.coinLimit);
+									if (filters.coinLimit && (!Number.isFinite(coinLimitNum) || coinLimitNum < coins)) {
+										setError(`Coin limit must be equal to or greater than your current coin balance (${coins}).`);
+										return;
+									}
+									setLoading(true);
+									try {
 										const mod = await import("@/services/hikerApi");
 										let filterOptions: Record<string, unknown> = {};
 										if (selected === "posts") {
@@ -354,33 +361,33 @@ export default function NewExtractionsPage() {
 								
 							</form>
 							{error && <div className="text-red-500 mt-4 text-center font-semibold">{error}</div>}
-															{showCoinError && (
-																<>
-																	{/* Dimmed overlay: subtle white with opacity and blur for professional effect */}
-																	<div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-sm z-40" />
-																	{/* Error modal */}
-																	<div className="fixed bottom-90 left-1/2 transform -translate-x-1/2 bg-gray-900 border border-[#bfa233] rounded-2xl p-6 shadow-2xl flex flex-col items-center z-50 animate-fade-in" style={{ minWidth: 600 }}>
-														<div className="flex items-center gap-3 mb-4">
-															<svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-[#d4af37]"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01"/></svg>
-															<span className="text-2xl font-extrabold text-[#d4af37] drop-shadow">Insufficient Coin Balance</span>
-														</div>
-														<div className="text-lg text-white mb-4 text-center font-medium drop-shadow" style={{ textShadow: '0 1px 6px #222' }}>
-															You need more coins to start extraction.<br/>Please refill your balance to continue.
-														</div>
-														<div className="flex items-center gap-2 mb-6">
-															<span className="text-base text-[#f7f9fc] font-semibold">Current coins:</span>
-															<span className="font-extrabold text-xl text-[#d4af37] bg-[#222] px-4 py-2 rounded-full border-2 border-[#d4af37] shadow-lg">{coins}</span>
-														</div>
-														<button
-															className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#d4af37] via-[#222] to-black text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all font-serif border-2 border-[#d4af37]"
-															style={{ letterSpacing: '0.03em' }}
-															onClick={() => window.location.href = "/dashboard/billing"}
-														>
-															Get Coins
-														</button>
-													</div>
-												</>
-											)}
+										{showCoinError && (
+											<>
+												{/* Dimmed overlay: subtle white with opacity and blur for professional effect */}
+												<div className="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-sm z-40" />
+												{/* Error modal */}
+												<div className="fixed bottom-90 left-1/2 transform -translate-x-1/2 bg-gray-900 border border-[#bfa233] rounded-2xl p-6 shadow-2xl flex flex-col items-center z-50 animate-fade-in" style={{ minWidth: 600 }}>
+										<div className="flex items-center gap-3 mb-4">
+											<svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-[#d4af37]"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01"/></svg>
+											<span className="text-2xl font-extrabold text-[#d4af37] drop-shadow">Insufficient Coin Balance</span>
+										</div>
+										<div className="text-lg text-white mb-4 text-center font-medium drop-shadow" style={{ textShadow: '0 1px 6px #222' }}>
+											You need more coins to start extraction.<br/>Please refill your balance to continue.
+										</div>
+										<div className="flex items-center gap-2 mb-6">
+											<span className="text-base text-[#f7f9fc] font-semibold">Current coins:</span>
+											<span className="font-extrabold text-xl text-[#d4af37] bg-[#222] px-4 py-2 rounded-full border-2 border-[#d4af37] shadow-lg">{coins}</span>
+										</div>
+										<button
+											className="px-8 py-3 rounded-2xl bg-gradient-to-r from-[#d4af37] via-[#222] to-black text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all font-serif border-2 border-[#d4af37]"
+											style={{ letterSpacing: '0.03em' }}
+											onClick={() => window.location.href = "/dashboard/billing"}
+										>
+											Get Coins
+										</button>
+									</div>
+								</>
+							)}
 							{/* Progress bar at the bottom, only visible when loading */}
 							{loading && (
 								<div className="w-full flex flex-col items-center gap-4 mt-8">

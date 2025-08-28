@@ -478,6 +478,18 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
                     <label htmlFor="commentStopWords" className="text-base font-semibold text-gray-700 mb-1">Stop Extraction if Comment Contains (one word per line)</label>
                     <textarea id="commentStopWords" className="min-h-[80px] rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none" rows={2} placeholder="Stop words in comments" value={value.commentStopWords || ''} onChange={e => onChange({ ...value, commentStopWords: e.target.value })} />
                   </div>
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="coinLimit" className="text-base font-semibold text-gray-700 mb-1">Coin Limit</label>
+                    <input
+                      type="number"
+                      id="coinLimit"
+                      placeholder="Enter coin limit"
+                      className="px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full"
+                      value={value.coinLimit ?? ''}
+                      onChange={e => onChange({ ...value, coinLimit: e.target.value })}
+                      min={0}
+                    />
+                  </div>
                 </div>
               </AccordionSection>
             </>
@@ -491,7 +503,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
               >
                 <div className="grid gap-4 pt-2">
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="hashtagLimit" className="text-base font-semibold text-gray-700 mb-1">hashtag limit</label>
+                    <label htmlFor="hashtagLimit" className="text-base font-semibold text-gray-700 mb-1">Hashtag Limit</label>
                     <input
                       type="number"
                       id="hashtagLimit"
@@ -502,7 +514,18 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ open, value, onChange,
                       min={0}
                     />
                   </div>
-                  
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="coinLimit" className="text-base font-semibold text-gray-700 mb-1">Coin Limit</label>
+                    <input
+                      type="number"
+                      id="coinLimit"
+                      placeholder="Enter coin limit"
+                      className="px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#d4af37] focus:outline-none w-full"
+                      value={value.coinLimit ?? ''}
+                      onChange={e => onChange({ ...value, coinLimit: e.target.value })}
+                      min={0}
+                    />
+                  </div>
                 </div>
               </AccordionSection>
             </>
