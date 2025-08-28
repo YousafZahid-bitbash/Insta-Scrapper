@@ -151,6 +151,8 @@ export default function YourExtractionsPage() {
       table = "extracted_posts";
     } else if (extraction.extraction_type === "commenters") {
       table = "extracted_commenters";
+    } else if (extraction.extraction_type === "hashtags") {
+      table = "extracted_hashtag_posts";
     }
     const { data, error } = await supabase
       .from(table)
