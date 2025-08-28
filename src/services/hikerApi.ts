@@ -196,7 +196,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     };
   const allFollowers: Follower[] = [];
     let pageCount = 0;
-  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null; // Get user ID from local storage
   const userIdStr = userId ?? "";
   let coins = await getUserCoins(userIdStr, supabase);
   let stopExtraction = false;
@@ -263,7 +263,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
   console.log('[Backend] [userFollowersChunkGql] Filters received:', filterOptions);
   console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
   // Deduct coins for allFollowers before calling extractFilteredUsers
-  const perUserTotalCost = allFollowers.length * COIN_RULES.followers.perUser;
+  const perUserTotalCost = allFollowers.length * COIN_RULES.followers.perUser; // Calculate total cost based on followers
   if (coins < perUserTotalCost) {
     stopExtraction = true;
   } else {
@@ -1262,7 +1262,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
         const data = res.data ?? {};
         // Extract clips and media from response.sections
         const sections = data?.response?.sections ?? [];
-  const clips: HashtagClip[] = [];
+        const clips: HashtagClip[] = [];
         for (const section of sections) {
           // Extract clips from one_by_two_item
           const oneByTwoClips = section?.layout_content?.one_by_two_item?.clips?.items;

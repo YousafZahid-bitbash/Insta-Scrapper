@@ -41,7 +41,7 @@ export default function Sidebar() {
         >
           &times;
         </button>
-        <div className="mb-8">
+    <div className="mb-8 sticky top-0 h-screen">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</span>
           <nav className="mt-3 flex flex-col gap-2">
             {/* Dashboard nav item removed */}
