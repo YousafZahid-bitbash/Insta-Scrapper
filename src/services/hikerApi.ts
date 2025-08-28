@@ -1303,6 +1303,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
             console.log(`[hikerApi] [HashtagV2] Creating dbRow for clip:`, JSON.stringify(clip, null, 2));
             // If clip has a nested 'media' object, extract fields from there
             const mediaObj = clip.media || clip;
+            console.log(`[hikerApi] [HashtagV2] media id:`, mediaObj.id, "||" ,  mediaObj.pk);
             const dbRow = {
               extraction_id,
               post_id: mediaObj.id || mediaObj.pk || null,
