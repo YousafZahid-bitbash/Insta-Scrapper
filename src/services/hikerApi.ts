@@ -1338,11 +1338,18 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   //3. Save all hashtag posts in bulk
   console.log('[extractHashtagClipsBulkV2] Attempting to save', allResults.length, 'hashtag posts to DB.');
   if (allResults.length > 0) {
+    console.log('[extractHashtagClipsBulkV2] Data to be inserted:', JSON.stringify(allResults, null, 2));
     const { error: postsError } = await supabase
       .from("extracted_hashtag_posts")
       .insert(allResults);
     if (postsError) {
       console.error("[extractHashtagClipsBulkV2] Error saving hashtag posts:", postsError);
+      if (postsError.details) {
+        console.error('[extractHashtagClipsBulkV2] Supabase error details:', postsError.details);
+      }
+      if (postsError.message) {
+        console.error('[extractHashtagClipsBulkV2] Supabase error message:', postsError.message);
+      }
     } else {
       console.log(`[extractHashtagClipsBulkV2] Hashtag posts saved to DB successfully. Total:`, allResults.length);
     }
