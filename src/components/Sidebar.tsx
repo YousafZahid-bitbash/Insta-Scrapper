@@ -27,7 +27,7 @@ export default function Sidebar() {
       {/* Sidebar for desktop and mobile drawer */}
       <aside
         className={
-          `w-64 h-[calc(100vh-4rem)] bg-white border-r flex flex-col p-6 fixed left-0 z-30 transition-transform duration-300
+          `w-64 bg-white border-r flex flex-col justify-between p-6 fixed left-0 z-30 transition-transform duration-300
           md:top-0 md:translate-x-0 md:block
           ${open ? 'translate-x-0' : '-translate-x-full'} md:relative`
         }
@@ -41,7 +41,7 @@ export default function Sidebar() {
         >
           &times;
         </button>
-    <div className="mb-8 sticky top-0 h-screen">
+  <div className="mb-8">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</span>
           <nav className="mt-3 flex flex-col gap-2">
             {/* Dashboard nav item removed */}
@@ -51,7 +51,7 @@ export default function Sidebar() {
             <Link href="#" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium" onClick={() => setOpen(false)}>Affiliates</Link>
           </nav>
         </div>
-        <div className="mt-auto">
+  <div className="mb-4">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account</span>
           <nav className="mt-3 flex flex-col gap-2">
             <Link href="/dashboard/billing" className="px-3 py-2 rounded hover:bg-gray-100 text-gray-900 font-medium" onClick={() => setOpen(false)}>Billing</Link>
