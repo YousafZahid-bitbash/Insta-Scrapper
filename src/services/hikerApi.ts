@@ -7,7 +7,7 @@
     image_url?: string;
     taken_at?: number;
     like_count?: number;
-    caption?: string;
+    caption?: string | { text?: string };
     caption_text?: string;
     hashtags?: string[] | string;
     username?: string;
@@ -18,6 +18,7 @@
       is_verified?: boolean;
       is_private?: boolean;
     };
+    media?: HashtagClip; // Allow nested media objects
   };
 
 // Type for extracted commenters (for DB insert)
@@ -1261,7 +1262,9 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
           // Extract clips from one_by_two_item
           const oneByTwoClips = section?.layout_content?.one_by_two_item?.clips?.items;
           if (Array.isArray(oneByTwoClips)) {
-            clips.push(...oneByTwoClips);
+            for (const clip of oneByTwoClips) {
+              clips.push(clip);
+            }
           }
           // Extract media from fill_items
           const fillItems = section?.layout_content?.fill_items;
@@ -1298,19 +1301,24 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
             coins = await deductCoins(userIdStr, 10, supabase);
             console.log(`[hikerApi] [HashtagV2] Deducted 10 coins from user ${userIdStr}. Previous balance: ${prevHashtagCoins}, New balance: ${coins}`);
             console.log(`[hikerApi] [HashtagV2] Creating dbRow for clip:`, JSON.stringify(clip, null, 2));
+            // If clip has a nested 'media' object, extract fields from there
+            const mediaObj = clip.media || clip;
             const dbRow = {
               extraction_id,
-              post_id: clip.id || clip.pk || null,
-              media_url: clip.media_url || clip.video_url || clip.image_url || null,
-              taken_at: clip.taken_at ? new Date(clip.taken_at * 1000).toISOString() : null,
-              like_count: clip.like_count || 0,
-              caption: clip.caption || clip.caption_text || null,
-              hashtags: Array.isArray(clip.hashtags) ? clip.hashtags.join(",") : (clip.hashtags || null),
-              username: clip.username || (clip.user && clip.user.username) || null,
-              full_name: (clip.user && clip.user.full_name) || null,
-              profile_pic_url: (clip.user && clip.user.profile_pic_url) || null,
-              is_verified: (clip.user && clip.user.is_verified) || false,
-              is_private: (clip.user && clip.user.is_private) || false,
+              post_id: mediaObj.id || mediaObj.pk || null,
+              media_url: mediaObj.media_url || mediaObj.video_url || mediaObj.image_url || ((mediaObj as any).image_versions2?.candidates?.[0]?.url) || null,
+              taken_at: mediaObj.taken_at ? new Date(mediaObj.taken_at * 1000).toISOString() : null,
+              like_count: mediaObj.like_count || 0,
+              caption:
+                typeof mediaObj.caption === 'object' && mediaObj.caption !== null
+                  ? mediaObj.caption.text || null
+                  : mediaObj.caption || mediaObj.caption_text || null,
+              hashtags: Array.isArray(mediaObj.hashtags) ? mediaObj.hashtags.join(",") : (mediaObj.hashtags || null),
+              username: mediaObj.username || (mediaObj.user && mediaObj.user.username) || null,
+              full_name: (mediaObj.user && mediaObj.user.full_name) || null,
+              profile_pic_url: (mediaObj.user && mediaObj.user.profile_pic_url) || null,
+              is_verified: (mediaObj.user && mediaObj.user.is_verified) || false,
+              is_private: (mediaObj.user && mediaObj.user.is_private) || false,
             };
             if (dbRow.post_id) {
               console.log(`[extractHashtagClipsBulkV2] Saving dbRow to allResults:`, JSON.stringify(dbRow, null, 2));
