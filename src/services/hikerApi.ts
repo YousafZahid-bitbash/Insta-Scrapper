@@ -1197,8 +1197,11 @@ function handleHikerError(error: unknown) {
 export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number }, onProgress?: (count: number) => void) {
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
+  // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
   const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
   console.log('[extractHashtagClipsBulkV2] hashtagLimit extracted:', hashtagLimit, 'from filters:', filters);
+ 
+  // console.log('[extractHashtagClipsBulkV2] hashtagLimit extracted:', hashtagLimit, 'from filters:', filters);
   // 1. Create extraction record
   console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
@@ -1253,7 +1256,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
         const data = res.data ?? {};
         // Extract clips and media from response.sections
         const sections = data?.response?.sections ?? [];
-        let clips: HashtagClip[] = [];
+  const clips: HashtagClip[] = [];
         for (const section of sections) {
           // Extract clips from one_by_two_item
           const oneByTwoClips = section?.layout_content?.one_by_two_item?.clips?.items;
