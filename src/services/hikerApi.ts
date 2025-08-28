@@ -1297,7 +1297,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
             const prevHashtagCoins = coins;
             coins = await deductCoins(userIdStr, 10, supabase);
             console.log(`[hikerApi] [HashtagV2] Deducted 10 coins from user ${userIdStr}. Previous balance: ${prevHashtagCoins}, New balance: ${coins}`);
-
+            console.log(`[hikerApi] [HashtagV2] Creating dbRow for clip:`, JSON.stringify(clip, null, 2));
             const dbRow = {
               extraction_id,
               post_id: clip.id || clip.pk || null,
@@ -1312,8 +1312,12 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
               is_verified: (clip.user && clip.user.is_verified) || false,
               is_private: (clip.user && clip.user.is_private) || false,
             };
-            console.log(`[extractHashtagClipsBulkV2] Saving dbRow to allResults:`, JSON.stringify(dbRow, null, 2));
-            allResults.push(dbRow);
+            if (dbRow.post_id) {
+              console.log(`[extractHashtagClipsBulkV2] Saving dbRow to allResults:`, JSON.stringify(dbRow, null, 2));
+              allResults.push(dbRow);
+            } else {
+              console.warn('[extractHashtagClipsBulkV2] Skipping row with missing post_id:', JSON.stringify(dbRow, null, 2));
+            }
             if (onProgress) onProgress(allResults.length);
             hashtagClipCount++;
           }
