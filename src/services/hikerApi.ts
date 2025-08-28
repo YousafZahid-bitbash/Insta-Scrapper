@@ -1240,6 +1240,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
     let hashtagClipCount = 0;
     let stopExtraction = false;
     // do {
+    
       const params: Record<string, unknown> = { name: hashtag };
       if (nextPageId) params.page_id = nextPageId;
       // Only pass API-relevant filters; strip client-only ones like hashtagLimit
@@ -1249,16 +1250,25 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
       }
       try {
         const res = await hikerClient.get("/v2/hashtag/medias/clips", { params });
-
-        // Normalize clips from possible response shapes
         const data = res.data ?? {};
+        // Extract clips and media from response.sections
+        const sections = data?.response?.sections ?? [];
         let clips: HashtagClip[] = [];
-        if (Array.isArray(data?.clips)) {
-          clips = data.clips as HashtagClip[];
-        } else if (Array.isArray(data?.response?.items)) {
-          clips = data.response.items as HashtagClip[];
-        } else if (Array.isArray(data?.items)) {
-          clips = data.items as HashtagClip[];
+        for (const section of sections) {
+          // Extract clips from one_by_two_item
+          const oneByTwoClips = section?.layout_content?.one_by_two_item?.clips?.items;
+          if (Array.isArray(oneByTwoClips)) {
+            clips.push(...oneByTwoClips);
+          }
+          // Extract media from fill_items
+          const fillItems = section?.layout_content?.fill_items;
+          if (Array.isArray(fillItems)) {
+            for (const item of fillItems) {
+              if (item?.media) {
+                clips.push(item.media);
+              }
+            }
+          }
         }
 
         console.log(`[extractHashtagClipsBulkV2] Data accessed for #${hashtag}:`, JSON.stringify(data, null, 2));
@@ -1313,6 +1323,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
         console.error(`[extractHashtagClipsBulkV2] Error fetching hashtag clips for #${hashtag}:`, err);
         break;
       }
+    
     // } while (nextPageId && !stopExtraction);
     console.log(`[extractHashtagClipsBulkV2] Finished fetching for #${hashtag}. Total clips:`, hashtagClipCount);
     if (stopExtraction) {
