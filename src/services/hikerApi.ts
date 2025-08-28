@@ -19,7 +19,11 @@
       is_private?: boolean;
     };
     media?: HashtagClip; // Allow nested media objects
+    image_versions2?: {
+      candidates?: { url?: string }[];
+    };
   };
+  // Extract hashtagLimit from filters, ensure it's a number
 
 // Type for extracted commenters (for DB insert)
 export interface ExtractedCommenter {
@@ -1199,11 +1203,12 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
-  const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
-  console.log('[extractHashtagClipsBulkV2] hashtagLimit extracted:', hashtagLimit, 'from filters:', filters);
+  // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
  
   // console.log('[extractHashtagClipsBulkV2] hashtagLimit extracted:', hashtagLimit, 'from filters:', filters);
   // 1. Create extraction record
+  const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
+
   console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr: string = userId ?? "";
@@ -1307,7 +1312,12 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
             const dbRow = {
               extraction_id,
               post_id: mediaObj.id || mediaObj.pk || null,
-              media_url: mediaObj.media_url || mediaObj.video_url || mediaObj.image_url || ((mediaObj as any).image_versions2?.candidates?.[0]?.url) || null,
+              media_url:
+                mediaObj.media_url ||
+                mediaObj.video_url ||
+                mediaObj.image_url ||
+                (typeof mediaObj.image_versions2 === 'object' && mediaObj.image_versions2?.candidates?.[0]?.url) ||
+                null,
               taken_at: mediaObj.taken_at ? new Date(mediaObj.taken_at * 1000).toISOString() : null,
               like_count: mediaObj.like_count || 0,
               caption:
