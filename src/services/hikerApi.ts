@@ -76,7 +76,7 @@ export interface ExtractedUser {
   is_verified?: boolean;
   is_business?: boolean;
 }
-// Type definitions for user extraction
+
 // Type definitions for user extraction
 import { HikerUser, FilterOptions } from "../utils/types";
 import axios from "axios";
@@ -201,14 +201,13 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
   let coins = await getUserCoins(userIdStr, supabase);
   let stopExtraction = false;
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
-    
     const errorMessages: string[] = [];
     const validUserIds: string[] = [...userIds];
     for (let i = 0; i < validUserIds.length; i++) {
       const singleUserId = validUserIds[i];
       let nextPageId: string | undefined = undefined;
       try {
-  let users: Follower[] = [];
+        let users: Follower[] = [];
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;

@@ -326,7 +326,17 @@ export default function LandingPage() {
                     )}
                   </span>
                   {deal.sale_price && <span className="text-sm text-green-600 font-semibold mb-4">On Sale!</span>}
-                  <button className="w-full px-6 py-3 rounded bg-[#d4af37] text-white font-semibold text-lg shadow hover:bg-[#bfa233] transition font-serif">Buy Now</button>
+                  <button 
+                    className="w-full px-6 py-3 rounded bg-[#d4af37] text-white font-semibold text-lg shadow hover:bg-[#bfa233] transition font-serif"
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        name: deal.Name || deal.coins + ' Coins',
+                        price: String(deal.sale_price || deal.price),
+                        coins: String(deal.coins)
+                      }).toString();
+                      window.location.href = `/dashboard/purchase?${params}`;
+                    }}
+                  >Buy Now</button>
                 </div>
               ))
             )}
