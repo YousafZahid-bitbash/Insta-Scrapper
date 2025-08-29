@@ -17,32 +17,24 @@ export default function PurchasePage() {
   const searchParams = useSearchParams();
   const [selectedPayment, setSelectedPayment] = useState("eth");
   const [deal, setDeal] = useState<{ name: string; price: string; coins: string } | null>(null);
+    const [startPayment, setStartPayment] = useState(false);
 
   // Create payment when deal is loaded and Crypto Pay is selected
 useEffect(() => {
     
     console.log("Deal:", deal);
 
-    if (selectedPayment !== 'cryptopay' || !deal) return;
-    async function createPayment() {
-      const res = await fetch('/app/api/create-crypto-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: deal?.price ?? 0,
-          currency: 'USD',
-          description: deal?.name ?? '',
-        }),
-      });
-      const data = await res.json();
-      setPaymentId(data.id);
-    }
-    createPayment();
-  }, [selectedPayment, deal]);
-
-  // Render Crypto.com Pay button when paymentId is available
-  useEffect(() => {
-    if (selectedPayment !== 'cryptopay' || !paymentId) return;
+    // Payment is now created only after clicking Make Payment
+    useEffect(() => {
+      // Get deal info from query params
+      if (!searchParams) return;
+      const name = searchParams.get("name") || "";
+      const price = searchParams.get("price") || "";
+      const coins = searchParams.get("coins") || "";
+      if (name && price && coins) {
+        setDeal({ name, price, coins });
+      }
+    }, [searchParams]);
     if (typeof window !== 'undefined' && (window as any).cryptopay) {
       (window as any).cryptopay.Button({
         createPayment: function(actions: any) {
