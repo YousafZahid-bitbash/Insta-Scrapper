@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Script from "next/script";
+import { Suspense } from "react";
 
 const paymentOptions = [
   { label: "Crypto Pay", value: "cryptopay" },
@@ -70,9 +71,9 @@ export default function PurchasePage() {
   }, [searchParams]);
 
   return (
-    <>
-  {/* Use Next.js Script for async loading */}
-  <Script src={`https://js.crypto.com/sdk?publishable-key=${process.env.NEXT_PUBLIC_CRYPTO_PUBLISHABLE_KEY}`} strategy="afterInteractive" />
+    <Suspense fallback={<div>Loading...</div>}>
+      {/* Use Next.js Script for async loading */}
+      <Script src={`https://js.crypto.com/sdk?publishable-key=${process.env.NEXT_PUBLIC_CRYPTO_PUBLISHABLE_KEY}`} strategy="afterInteractive" />
       <Navbar />
       <div className="min-h-screen w-full bg-[#fafafa] px-4 py-12 flex flex-col">
         <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -182,6 +183,6 @@ export default function PurchasePage() {
       </div>
         
     </div>
-    </>
+    </Suspense>
   );
 }
