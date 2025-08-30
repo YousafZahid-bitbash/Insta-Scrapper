@@ -1,7 +1,8 @@
 
 import PurchaseClient from "./PurchaseClient";
 
-export default function PurchasePage({ searchParams }: { searchParams?: Record<string, string | string[]> }) {
+export default async function PurchasePage(props: any) {
+  const { searchParams } = await props;
   const deal = {
     name: typeof searchParams?.name === "string" ? searchParams.name : "",
     price: typeof searchParams?.price === "string" ? searchParams.price : "",
