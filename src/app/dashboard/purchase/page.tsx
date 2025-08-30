@@ -1,15 +1,11 @@
 
 import PurchaseClient from "./PurchaseClient";
 
-type PageProps = {
-  searchParams?: { [key: string]: string | undefined }
-};
-
-export default function PurchasePage({ searchParams }: PageProps) {
+export default function PurchasePage({ searchParams }: { searchParams?: Record<string, string | string[]> }) {
   const deal = {
-    name: searchParams?.name || "",
-    price: searchParams?.price || "",
-    coins: searchParams?.coins || "",
+    name: typeof searchParams?.name === "string" ? searchParams.name : "",
+    price: typeof searchParams?.price === "string" ? searchParams.price : "",
+    coins: typeof searchParams?.coins === "string" ? searchParams.coins : "",
   };
   return <PurchaseClient deal={deal} />;
 }
