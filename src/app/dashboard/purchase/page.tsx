@@ -31,7 +31,7 @@ export default function PurchasePage() {
     if (name && price && coins) {
       setDeal({ name, price, coins });
     }
-  }, []);
+  }, [searchParams]);
 
   // Render Crypto.com Pay button when paymentId is available and payment started
   useEffect(() => {
