@@ -1,8 +1,9 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
-import Head from 'next/head';
+import Script from "next/script";
 
 const paymentOptions = [
   { label: "Crypto Pay", value: "cryptopay" },
@@ -17,36 +18,45 @@ export default function PurchasePage() {
   const searchParams = useSearchParams();
   const [selectedPayment, setSelectedPayment] = useState("eth");
   const [deal, setDeal] = useState<{ name: string; price: string; coins: string } | null>(null);
-    const [startPayment, setStartPayment] = useState(false);
+  const [startPayment, setStartPayment] = useState(false);
 
-  // Create payment when deal is loaded and Crypto Pay is selected
-useEffect(() => {
-    
-    console.log("Deal:", deal);
+  // Get deal info from query params (run once)
+  useEffect(() => {
+    const name = searchParams.get("name") || "";
+    const price = searchParams.get("price") || "";
+    const coins = searchParams.get("coins") || "";
+    if (name && price && coins) {
+      setDeal({ name, price, coins });
+    }
+  }, []);
 
-    // Payment is now created only after clicking Make Payment
-    useEffect(() => {
-      // Get deal info from query params
-      if (!searchParams) return;
-      const name = searchParams.get("name") || "";
-      const price = searchParams.get("price") || "";
-      const coins = searchParams.get("coins") || "";
-      if (name && price && coins) {
-        setDeal({ name, price, coins });
-      }
-    }, [searchParams]);
-    if (typeof window !== 'undefined' && (window as any).cryptopay) {
-      (window as any).cryptopay.Button({
-        createPayment: function(actions: any) {
+  // Render Crypto.com Pay button when paymentId is available and payment started
+  useEffect(() => {
+    if (selectedPayment !== 'cryptopay' || !paymentId || !startPayment) return;
+    if (typeof window !== 'undefined' && (window as { cryptopay?: {
+      Button: (config: {
+        createPayment: (actions: { payment: { fetch: (id: string) => unknown } }) => unknown;
+        onApprove: (data: unknown, actions: unknown) => void;
+        defaultLang: string;
+      }) => { render: (selector: string) => void };
+    }}).cryptopay) {
+      (window as { cryptopay?: {
+        Button: (config: {
+          createPayment: (actions: { payment: { fetch: (id: string) => unknown } }) => unknown;
+          onApprove: (data: unknown, actions: unknown) => void;
+          defaultLang: string;
+        }) => { render: (selector: string) => void };
+      }}).cryptopay!.Button({
+        createPayment: function(actions: { payment: { fetch: (id: string) => unknown } }) {
           return actions.payment.fetch(paymentId);
         },
-        onApprove: function(_data: any, _actions: any) {
+        onApprove: function() {
           // TODO: Optionally notify backend or update UI
         },
         defaultLang: 'en-US'
       }).render('#pay-button');
     }
-  }, [selectedPayment, paymentId]);
+  }, [selectedPayment, paymentId, startPayment, deal, searchParams]);
 
   useEffect(() => {
     // Get deal info from query params
@@ -61,9 +71,8 @@ useEffect(() => {
 
   return (
     <>
-      <Head>
-        <script src={`https://js.crypto.com/sdk?publishable-key=${process.env.NEXT_PUBLIC_CRYPTO_PUBLISHABLE_KEY}`} />
-      </Head>
+  {/* Use Next.js Script for async loading */}
+  <Script src={`https://js.crypto.com/sdk?publishable-key=${process.env.NEXT_PUBLIC_CRYPTO_PUBLISHABLE_KEY}`} strategy="afterInteractive" />
       <Navbar />
       <div className="min-h-screen w-full bg-[#fafafa] px-4 py-12 flex flex-col">
         <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -81,23 +90,23 @@ useEffect(() => {
                   <div className="flex items-center justify-center gap-2">
                     {/* Payment logos only */}
                     {opt.value === "cryptopay" && (
-                      <img src="/cryptocom.svg" alt="Crypto" className="w-40 h-40" />
+                      <Image src="/cryptocom.svg" alt="Crypto" width={160} height={160} />
                     )}
                     {opt.value === "visa" && (
-                      <img src="/visa.svg" alt="Visa" className="w-25 h-25" />
+                      <Image src="/visa.svg" alt="Visa" width={100} height={50} />
                     )}
                     {opt.value === "paypal" && (
-                      <img src="/paypal.svg" alt="PayPal" className="w-25 h-25" />
+                      <Image src="/paypal.svg" alt="PayPal" width={100} height={50} />
                     )}
                     {opt.value === "mastercard" && (
-                      <img src="/mastercard.svg" alt="MasterCard" className="w-30 h-15" />
+                      <Image src="/mastercard.svg" alt="MasterCard" width={120} height={60} />
                     )}
                   </div>
                 </div>
               ))}
             </div>
-            {/* Crypto.com Pay Button shown when selected */}
-            {selectedPayment === 'cryptopay' && paymentId && (
+            {/* Crypto.com Pay Button shown when selected and payment started */}
+            {selectedPayment === 'cryptopay' && paymentId && startPayment && (
               <div className="w-full flex flex-col items-center mt-8">
                 <div id="pay-button" data-payment-id={paymentId}></div>
               </div>
@@ -136,6 +145,25 @@ useEffect(() => {
                 <button
                   className={`w-80 px-8 py-4 rounded-xl font-extrabold text-lg shadow-lg font-serif border-2 border-black transition-all ${selectedPayment ? "bg-black text-white hover:scale-105" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
                   disabled={!selectedPayment}
+                  onClick={async () => {
+                    if (!selectedPayment) return;
+                    setStartPayment(true);
+                    if (selectedPayment === "cryptopay" && deal) {
+                      const res = await fetch('/app/api/create-crypto-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          amount: deal.price,
+                          currency: 'USD',
+                          description: deal.name,
+                        }),
+                      });
+                      const data = await res.json();
+                      setPaymentId(data.id);
+                    } else {
+                      alert(`Payment method ${selectedPayment} not implemented yet.`);
+                    }
+                  }}
                 >
                   Make Payment
                 </button>
