@@ -1,15 +1,12 @@
 
 import PurchaseClient from "./PurchaseClient";
 
-interface PurchasePageProps {
-  searchParams?: Record<string, string | string[]>;
-}
-
-export default function PurchasePage({ searchParams }: PurchasePageProps) {
+export default async function PurchasePage({ searchParams }: { searchParams: Promise<any> }) {
+  const params = await searchParams;
   const deal = {
-    name: typeof searchParams?.name === "string" ? searchParams.name : "",
-    price: typeof searchParams?.price === "string" ? searchParams.price : "",
-    coins: typeof searchParams?.coins === "string" ? searchParams.coins : "",
+    name: typeof params?.name === "string" ? params.name : "",
+    price: typeof params?.price === "string" ? params.price : "",
+    coins: typeof params?.coins === "string" ? params.coins : "",
   };
   return <PurchaseClient deal={deal} />;
 }
