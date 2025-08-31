@@ -108,11 +108,12 @@ function CardInputs({ onChange, errors }: { onChange: (field: string, value: str
   );
 }
 
-export default function PurchasePage({ searchParams }: { searchParams?: SearchParams }) {
+export default async function PurchasePage({ searchParams }: { searchParams: Promise<any> }) {
+  const params = await searchParams;
   const deal = {
-    name: typeof searchParams?.name === "string" ? searchParams.name : "Item",
-    price: typeof searchParams?.price === "string" ? searchParams.price : "0.00",
-    coins: typeof searchParams?.coins === "string" ? searchParams.coins : "0",
+    name: typeof params?.name === "string" ? params.name : "Item",
+    price: typeof params?.price === "string" ? params.price : "0.00",
+    coins: typeof params?.coins === "string" ? params.coins : "0",
   };
   const [selectedMethod, setSelectedMethod] = useState("paypal");
   const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
