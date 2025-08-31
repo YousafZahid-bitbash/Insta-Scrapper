@@ -1,6 +1,5 @@
-
 import ServerComponent from "./components/ServerComponent";
-
-export default function PurchasePage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
-  return <ServerComponent searchParams={searchParams} />;
+export default async function PurchasePage({ searchParams }: { searchParams: Promise<any> }) {
+  const params = await searchParams;
+  return <ServerComponent searchParams={params} />;
 }
