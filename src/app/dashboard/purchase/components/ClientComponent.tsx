@@ -112,6 +112,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   const [cardFields, setCardFields] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [termsChecked, setTermsChecked] = useState(false);
 
   const validateCard = (fields: Record<string, string>) => {
     const errors: Record<string, string> = {};
@@ -209,13 +210,26 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
               <button className="w-full py-3 mt-6 rounded-lg bg-blue-600 text-white font-bold text-lg shadow hover:bg-blue-700 transition">Login / Authorize with PayPal</button>
             )}
             {selectedMethod === "zerocryptopay" && (
-              <button
-                className="w-full py-3 mt-6 rounded-lg bg-blue-600 text-white font-bold text-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
-                onClick={handleZerocryptopayPayment}
-                disabled={loading}
-              >
-                {loading ? "Redirecting..." : "Pay with Zerocryptopay"}
-              </button>
+              <>
+                <div className="flex items-center gap-2 mt-4">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={termsChecked}
+                    onChange={e => setTermsChecked(e.target.checked)}
+                  />
+                  <label htmlFor="terms" className="text-sm text-black">
+                    I agree to the <a href="/terms" target="_blank" className="underline hover:text-blue-600">Terms of Service</a> and <a href="/privacy" target="_blank" className="underline hover:text-blue-600">Privacy Policy</a> and <a href="https://zerocryptopay.com/page/agreement" target="_blank" className="underline hover:text-blue-600">Zerocryptopay User Agreement</a>
+                  </label>
+                </div>
+                <button
+                  className="w-full py-3 mt-6 rounded-lg bg-blue-600 text-white font-bold text-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
+                  onClick={handleZerocryptopayPayment}
+                  disabled={loading || !termsChecked}
+                >
+                  {loading ? "Redirecting..." : "Pay with Zerocryptopay"}
+                </button>
+              </>
             )}
             {(selectedMethod === "visa" || selectedMethod === "mastercard") && (
               <CardInputs onChange={handleCardChange} errors={cardErrors} />

@@ -7,20 +7,22 @@ const SECRET_KEY = process.env.ZEROCRYPTOPAY_SECRET_KEY || "";
 const TOKEN = process.env.ZEROCRYPTOPAY_TOKEN || "";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Log incoming request for debugging
+  console.log("Incoming request to /api/zerocryptopay/process", { method: req.method, body: req.body });
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   // If webhook notification (Zerocryptopay sends these fields)
   if (
-    req.body &&
-    req.body.id_track &&
-    req.body.amount_for_pay &&
-    req.body.hash_trans &&
-    req.body.method_pay &&
-    req.body.signature &&
-    req.body.order_id &&
-    req.body.status
+  req.body &&
+  req.body.id_track &&
+  req.body.amount_for_pay &&
+  req.body.hash_trans &&
+  req.body.method_pay &&
+  req.body.signature &&
+  req.body.order_id &&
+  req.body.status
   ) {
     // Webhook signature verification
     const webhookSignString = `${TOKEN}${req.body.amount_for_pay}${SECRET_KEY}${req.body.hash_trans}${req.body.method_pay}${LOGIN}`;
@@ -61,8 +63,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body: formData.toString(),
     });
     const data = await response.json();
+    console.log("Zerocryptopay response:", data);
     return res.status(response.ok ? 200 : 400).json(data);
   } catch (error) {
+    console.error("Error in /api/zerocryptopay/process:", error);
     let errorMessage = "Unknown error";
     if (typeof error === "object" && error !== null && "message" in error) {
       errorMessage = (error as { message: string }).message;
