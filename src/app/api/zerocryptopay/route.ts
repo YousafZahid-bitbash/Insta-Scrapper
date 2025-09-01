@@ -14,7 +14,13 @@ export async function POST(req: Request) {
 	}
 	console.log("Incoming request to /api/zerocryptopay/process", { method: "POST", body });
 
-	// If webhook notification (Zerocryptopay sends these fields)
+		// Log environment variables and incoming payment request
+		console.log("ZEROCRYPTOPAY ENV:", {
+			LOGIN,
+			SECRET_KEY,
+			TOKEN
+		});
+		console.log("Incoming payment request:", { amount: body.amount, order_id: body.order_id });
 	if (
 		body &&
 		body.id_track &&
@@ -42,18 +48,28 @@ export async function POST(req: Request) {
 		return new Response(JSON.stringify({ error: "Missing required parameters" }), { status: 400 });
 	}
 
-	// Calculate signature for payment creation
-	const signString = `${amount}${SECRET_KEY}${order_id}${LOGIN}`;
-	const signature = crypto.createHash("sha256").update(signString).digest("hex");
+		// Calculate signature for payment creation
+		const signString = `${amount}${SECRET_KEY}${order_id}${LOGIN}`;
+		const signature = crypto.createHash("sha256").update(signString).digest("hex");
+		console.log("Signature calculation:", {
+			signString,
+			signature,
+			amount,
+			order_id,
+			LOGIN,
+			SECRET_KEY,
+			TOKEN
+		});
 
-	// Prepare request to Zerocryptopay
-	const formData = new URLSearchParams({
-		amount: String(amount),
-		token: TOKEN,
-		sign: signature,
-		login: LOGIN,
-		order_id: String(order_id),
-	});
+		// Prepare request to Zerocryptopay
+		const formData = new URLSearchParams({
+			amount: String(amount),
+			token: TOKEN,
+			sign: signature,
+			login: LOGIN,
+			order_id: String(order_id),
+		});
+		console.log("Form data sent to Zerocryptopay:", Object.fromEntries(formData.entries()));
 
 	try {
 		const response = await fetch("https://zerocryptopay.com/pay/newtrack", {
