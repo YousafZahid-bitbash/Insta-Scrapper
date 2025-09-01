@@ -73,6 +73,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       errorMessage = String(error);
     }
-    return res.status(500).json({ error: "Payment creation failed", details: errorMessage });
+    return res.status(500).json({ error: "asdasdasdPayment creation failed", details: errorMessage });
   }
 }
