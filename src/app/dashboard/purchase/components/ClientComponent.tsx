@@ -143,7 +143,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/zerocryptopay/process", {
+  const response = await fetch("/api/zerocryptopay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
