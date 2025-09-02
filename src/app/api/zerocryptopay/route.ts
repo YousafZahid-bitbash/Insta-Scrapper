@@ -1,4 +1,3 @@
-
 import crypto from "crypto";
 const LOGIN = process.env.ZEROCRYPTOPAY_LOGIN || "";
 const SECRET_KEY = process.env.ZEROCRYPTOPAY_SECRET_KEY || "";

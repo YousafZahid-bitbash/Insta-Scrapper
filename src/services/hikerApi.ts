@@ -23,9 +23,11 @@
       candidates?: { url?: string }[];
     };
   };
-  // Extract hashtagLimit from filters, ensure it's a number
 
-// Type for extracted commenters (for DB insert)
+  /**************************************************/
+ /* Type for extracted commenters (for DB insert)  */
+/**************************************************/ 
+
 export interface ExtractedCommenter {
   comment_id: string;
   media_id: string;
@@ -77,12 +79,10 @@ export interface ExtractedUser {
   is_business?: boolean;
 }
 
-// Type definitions for user extraction
 import { HikerUser, FilterOptions } from "../utils/types";
 import axios from "axios";
 import { supabase } from "../supabaseClient";
 import { COIN_RULES, deductCoins, getUserCoins } from "../utils/coinLogic";
-
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
 
 const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || "b753b7d56575d996e1f59e0f94f3d005";
@@ -171,8 +171,6 @@ export async function userFollowersChunkGqlByUsername(payload: { target: string 
     userIds.push(user.pk);
   }
   // If no userIds found, assign a test user_id for debugging
-
- 
   
   if (userIds.length === 0) {
     throw new Error("No valid user IDs found for provided usernames");
@@ -194,12 +192,15 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
       is_private: boolean;
       is_verified: boolean;
     };
-  const allFollowers: Follower[] = [];
+    const allFollowers: Follower[] = [];
     let pageCount = 0;
-  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null; // Get user ID from local storage
-  const userIdStr = userId ?? "";
-  let coins = await getUserCoins(userIdStr, supabase);
-  let stopExtraction = false;
+    const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null; // Get user ID from local storage
+    const userIdStr = userId ?? "";
+    let coins = await getUserCoins(userIdStr, supabase);
+    let stopExtraction = false;
+  let usersExtracted = 0;
+  // Get coin limit from filters (integer, no decimals)
+  const coinLimit = filters?.followers?.coinLimit ? Math.floor(filters.followers.coinLimit) : undefined;
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
     const errorMessages: string[] = [];
     const validUserIds: string[] = [...userIds];
@@ -214,18 +215,30 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
           const res = await hikerClient.get("/v2/user/followers", { params });
           const data = res.data;
           users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
-          // Deduct coins: 2 coins per 10 users (0.5 per user)
+          // Deduct coins dynamically using COIN_RULES.followers.perChunk and coin limit
           if (users.length > 0) {
-            const chunkCoinCost = Math.ceil(users.length * 0.5); // 0.5 coin per user
-            if (coins < chunkCoinCost) {
-              stopExtraction = true;
-              break;
+            const perUserCoin = COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users;
+            for (const user of users) {
+              // If coin limit is set, stop when usersExtracted equals integer coinLimit
+              if (coinLimit !== undefined && usersExtracted === Math.floor(coinLimit)) {
+                stopExtraction = true;
+                break;
+              }
+              if (coins < perUserCoin) {
+                stopExtraction = true;
+                break;
+              }
+              coins = await deductCoins(userIdStr, perUserCoin, supabase);
+              if (filters && filters.followers && typeof filters.followers.coinLimit === 'number') {
+                filters.followers.coinLimit -= perUserCoin;
+              }
+              allFollowers.push(user);
+              usersExtracted++;
+              if (onProgress) onProgress(allFollowers.length);
             }
-            const prevFollowersCoins = coins;
-            const prevFollowingsCoins = coins;
-            coins = await deductCoins(userIdStr, chunkCoinCost, supabase);
-            console.log(`[hikerApi] [FollowingV2] Deducted ${chunkCoinCost} coins from user ${userIdStr}. Previous balance: ${prevFollowingsCoins}, New balance: ${coins}`);
-            console.log(`[hikerApi] [FollowersV2] Deducted ${chunkCoinCost} coins from user ${userIdStr}. Previous balance: ${prevFollowersCoins}, New balance: ${coins}`);
+            console.log(`[hikerApi] [FollowersV2] Extracted ${usersExtracted} users so far. Coin limit: ${coinLimit}`);
+            if (stopExtraction) break;
+            pageCount++;
           }
           if (users.length === 0) {
             console.warn(`[hikerApi] [FollowersV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
@@ -398,21 +411,39 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
     for (const singleUserId of userIds) {
       let nextPageId: string | undefined = undefined;
       try {
-  let users: Following[] = [];
+        let users: Following[] = [];
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;
           const res = await hikerClient.get("/v2/user/following", { params });
           const data = res.data;
           users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
-          // Deduct coins: 2 coins per 10 users (0.5 per user)
+          // Deduct coins dynamically using COIN_RULES.followings.perChunk and coin limit
           if (users.length > 0) {
-            const chunkCoinCost = Math.ceil(users.length * 0.5); // 0.5 coin per user
-            if (coins < chunkCoinCost) {
-              stopExtraction = true;
-              break;
+            const perUserCoin = COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users;
+            let usersExtracted = 0;
+            // Get coin limit from filters (integer, no decimals)
+            const coinLimit = filters?.following?.coinLimit ? Math.floor(filters.following.coinLimit) : undefined;
+            for (const user of users) {
+              // If coin limit is set, stop when usersExtracted equals integer coinLimit
+              if (coinLimit !== undefined && usersExtracted === Math.floor(coinLimit)) {
+                stopExtraction = true;
+                break;
+              }
+              if (coins < perUserCoin) {
+                stopExtraction = true;
+                break;
+              }
+              coins = await deductCoins(userIdStr, perUserCoin, supabase);
+              if (filters && filters.following && typeof filters.following.coinLimit === 'number') {
+                filters.following.coinLimit -= perUserCoin;
+              }
+              allFollowings.push(user);
+              usersExtracted++;
+              if (onProgress) onProgress(allFollowings.length);
             }
-            coins = await deductCoins(userIdStr, chunkCoinCost, supabase);
+            if (stopExtraction) break;
+            pageCount++;
           }
           if (users.length === 0) {
             console.warn(`[hikerApi] [FollowingV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
@@ -601,18 +632,30 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
       } else {
         errorMessages.push(`No likers found for media ID: ${mediaObj.id}`);
       }
-      // Deduct coins: 2 coins per 10 users (0.5 per user)
+      // Deduct coins dynamically using COIN_RULES.likers.perChunk and coin limit
+      let usersExtracted = 0;
+  // Get coin limit from filters (integer, no decimals)
+  const coinLimit = filters?.coinLimit ? Math.floor(filters.coinLimit) : undefined;
       if (newLikers.length > 0) {
-        const chunkCoinCost = Math.ceil(newLikers.length * 0.5); // 0.5 coin per user
-        if (coins < chunkCoinCost) {
-          stopExtraction = true;
-          break;
+        const perUserCoin = COIN_RULES.likers.perChunk.coins / COIN_RULES.likers.perChunk.users;
+        for (const liker of newLikers) {
+          // If coin limit is set, stop when usersExtracted equals integer coinLimit
+          if (coinLimit !== undefined && usersExtracted === Math.floor(coinLimit)) {
+            stopExtraction = true;
+            break;
+          }
+          if (coins < perUserCoin) {
+            stopExtraction = true;
+            break;
+          }
+          coins = await deductCoins(userIdStr, perUserCoin, supabase);
+          if (filters && typeof filters.coinLimit === 'number') {
+            filters.coinLimit -= perUserCoin;
+          }
+          allLikers.push(liker);
+          usersExtracted++;
+          if (onProgress) onProgress(allLikers.length);
         }
-        coins = await deductCoins(userIdStr, chunkCoinCost, supabase);
-      }
-      for (const liker of newLikers) {
-        allLikers.push(liker);
-        if (onProgress) onProgress(allLikers.length);
       }
       if (stopExtraction) break;
     } catch (err) {
@@ -757,6 +800,10 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
   const userIdStr: string = userId ?? "";
   let coins: number = await getUserCoins(userIdStr, supabase);
   let commentersSinceLastDeduction = 0;
+  
+  // Get coin limit from filters and track total coins deducted
+  const coinLimit = payload.filters?.coinLimit ? Math.floor(payload.filters.coinLimit) : undefined;
+  let totalCoinsDeducted = 0;
 
   const cleanUrls = Array.isArray(payload.urls)
     ? payload.urls.flatMap((u: string) => String(u).split(/\r?\n/))
@@ -816,13 +863,19 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
           // Coin deduction logic: 1 coin per 2 commenters
           commentersSinceLastDeduction++;
           if (commentersSinceLastDeduction >= COIN_RULES.commenters.perChunk.users) {
+            // Check coin limit before deducting
+            if (coinLimit !== undefined && totalCoinsDeducted + COIN_RULES.commenters.perChunk.coins >= coinLimit) {
+              stopExtraction = true;
+              break;
+            }
             if (coins < COIN_RULES.commenters.perChunk.coins) {
               stopExtraction = true;
               break;
             }
             const prevCommentersCoins = coins;
             coins = await deductCoins(userIdStr, COIN_RULES.commenters.perChunk.coins, supabase);
-            console.log(`[hikerApi] [CommentersV2] Deducted ${COIN_RULES.commenters.perChunk.coins} coins from user ${userIdStr}. Previous balance: ${prevCommentersCoins}, New balance: ${coins}`);
+            totalCoinsDeducted += COIN_RULES.commenters.perChunk.coins;
+            console.log(`[hikerApi] [CommentersV2] Deducted ${COIN_RULES.commenters.perChunk.coins} coins from user ${userIdStr}. Previous balance: ${prevCommentersCoins}, New balance: ${coins}. Total deducted: ${totalCoinsDeducted}`);
             commentersSinceLastDeduction = 0;
           }
           if (stopExtraction) break;
@@ -955,6 +1008,11 @@ export async function getUserPosts(payload: { target: string | string[], filters
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr: string = userId ?? "";
   let coins: number = await getUserCoins(userIdStr, supabase);
+  
+  // Get coin limit from filters and track total coins deducted
+  const coinLimit = payload.filters?.coinLimit ? Math.floor(payload.filters.coinLimit) : undefined;
+  let totalCoinsDeducted = 0;
+  
   console.log('[getUserPosts] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
   const { target, filters } = payload;
   console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
@@ -1002,6 +1060,11 @@ export async function getUserPosts(payload: { target: string | string[], filters
       }
       console.log(medias)
       for (const media of medias) {
+        // Check coin limit before deducting
+        if (coinLimit !== undefined && totalCoinsDeducted + COIN_RULES.posts.perPost >= coinLimit) {
+          stopExtraction = true;
+          break;
+        }
         // Deduct coins: 2 coins per post
         if (coins < COIN_RULES.posts.perPost) {
           stopExtraction = true;
@@ -1009,7 +1072,8 @@ export async function getUserPosts(payload: { target: string | string[], filters
         }
   const prevPostsCoins = coins;
   coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabase);
-  console.log(`[hikerApi] [PostsV2] Deducted ${COIN_RULES.posts.perPost} coins from user ${userIdStr}. Previous balance: ${prevPostsCoins}, New balance: ${coins}`);
+  totalCoinsDeducted += COIN_RULES.posts.perPost;
+  console.log(`[hikerApi] [PostsV2] Deducted ${COIN_RULES.posts.perPost} coins from user ${userIdStr}. Previous balance: ${prevPostsCoins}, New balance: ${coins}. Total deducted: ${totalCoinsDeducted}`);
         // Filtering logic
         let includePost = true;
   const filterReasons: string[] = [];

@@ -1,16 +1,13 @@
 "use client"
-	
-// import type { ExtractedUser } from "@/services/hikerApi";
 import { useEffect, useState } from "react";
-
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
 import Navbar from "@/components/Navbar";
-// import Shimmer from "@/components/Shimmer";
 import { supabase } from "../../../supabaseClient";
 import Sidebar from "@/components/Sidebar";
 import "../../globals.css";
-// import { userFollowersChunkGqlByUsername, userFollowingChunkGqlByUsername } from "@/services/hikerApi";
 import { FilterPanel, FiltersState } from "@/components/FilterPanel";
+
+
 
 const extractOptions = [
 	{ label: "Followers", icon: <FaUserFriends />, value: "followers" },

@@ -27,6 +27,9 @@ export type FilterOptions = {
   filterByNameInBioContains?: string;
   filterByNameInBioStop?: string;
   filterByName?: string;
+
+  //Everyfilter
+  coinLimit?: number;
 };
 // src/utils/types.ts
 
