@@ -1,8 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import StripeProvider from "@/components/StripeProvider";
+import StripePaymentForm from "@/components/StripePaymentForm";
 const paymentMethods = [
   { label: "Zerocryptopay", value: "zerocryptopay", logo: "/zerocryptopay.svg" },
   { label: "PayPal", value: "paypal", logo: "/paypal.svg" },
@@ -113,6 +115,8 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [termsChecked, setTermsChecked] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const validateCard = (fields: Record<string, string>) => {
     const errors: Record<string, string> = {};
@@ -136,6 +140,50 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   const handleCardChange = (field: string, value: string) => {
     setCardFields(prev => ({ ...prev, [field]: value }));
     setCardErrors(validateCard({ ...cardFields, [field]: value }));
+  };
+
+  // Stripe payment handler
+  const handleStripePayment = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/stripe/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: deal.price,
+          metadata: {
+            coins: deal.coins,
+            dealName: deal.name,
+            // You can add userId here when you have user authentication
+          },
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+      } else {
+        setError('Failed to initialize payment');
+      }
+    } catch (err) {
+      setError('Failed to initialize payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    setPaymentSuccess(true);
+    // Redirect to success page or update UI
+    window.location.href = '/dashboard/purchase/success';
+  };
+
+  const handlePaymentError = (errorMessage: string) => {
+    setError(errorMessage);
+    setClientSecret(null);
   };
 
   // Zerocryptopay payment handler
@@ -231,8 +279,39 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
                 </button>
               </>
             )}
-            {(selectedMethod === "visa" || selectedMethod === "mastercard") && (
-              <CardInputs onChange={handleCardChange} errors={cardErrors} />
+            {(selectedMethod === "visa" || selectedMethod === "mastercard") && !clientSecret && (
+              <>
+                <div className="flex items-center gap-2 mt-4">
+                  <input
+                    type="checkbox"
+                    id="stripe-terms"
+                    checked={termsChecked}
+                    onChange={e => setTermsChecked(e.target.checked)}
+                  />
+                  <label htmlFor="stripe-terms" className="text-sm text-black">
+                    I agree to the <a href="/terms" target="_blank" className="underline hover:text-blue-600">Terms of Service</a> and <a href="/privacy" target="_blank" className="underline hover:text-blue-600">Privacy Policy</a>
+                  </label>
+                </div>
+                <button
+                  className="w-full py-3 mt-6 rounded-lg bg-blue-600 text-white font-bold text-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
+                  onClick={handleStripePayment}
+                  disabled={loading || !termsChecked}
+                >
+                  {loading ? "Initializing..." : "Initialize Payment"}
+                </button>
+              </>
+            )}
+            {(selectedMethod === "visa" || selectedMethod === "mastercard") && clientSecret && (
+              <div className="w-full mt-6">
+                <StripeProvider clientSecret={clientSecret}>
+                  <StripePaymentForm 
+                    amount={deal.price}
+                    coins={deal.coins}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                  />
+                </StripeProvider>
+              </div>
             )}
           </div>
           {/* Payment Details Box */}
@@ -240,13 +319,32 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
             <h1 className="text-3xl font-extrabold mb-4 text-black tracking-tight">Secure Payment</h1>
             <PaymentDetails deal={deal} />
             <div className="w-full flex gap-4 mt-8">
-              <button
-                className="flex-1 py-4 rounded-xl bg-green-600 text-white font-bold text-lg shadow hover:bg-green-700 transition"
-                disabled={selectedMethod === "visa" || selectedMethod === "mastercard" ? Object.keys(cardErrors).length > 0 : false}
-                onClick={selectedMethod === "zerocryptopay" ? handleZerocryptopayPayment : undefined}
-              >
-                Make Payment
-              </button>
+              {(selectedMethod === "visa" || selectedMethod === "mastercard") && clientSecret ? (
+                // Stripe payment form is already rendered above
+                null
+              ) : (
+                <button
+                  className="flex-1 py-4 rounded-xl bg-green-600 text-white font-bold text-lg shadow hover:bg-green-700 transition disabled:opacity-50"
+                  disabled={
+                    loading || 
+                    (selectedMethod === "zerocryptopay" && !termsChecked) ||
+                    ((selectedMethod === "visa" || selectedMethod === "mastercard") && !termsChecked)
+                  }
+                  onClick={
+                    selectedMethod === "zerocryptopay" 
+                      ? handleZerocryptopayPayment 
+                      : (selectedMethod === "visa" || selectedMethod === "mastercard") 
+                        ? handleStripePayment
+                        : undefined
+                  }
+                >
+                  {loading ? "Processing..." : 
+                   selectedMethod === "paypal" ? "Login with PayPal" :
+                   selectedMethod === "zerocryptopay" ? "Pay with Zerocryptopay" :
+                   (selectedMethod === "visa" || selectedMethod === "mastercard") ? "Initialize Payment" :
+                   "Make Payment"}
+                </button>
+              )}
               <button
                 className="flex-1 py-4 rounded-xl bg-gray-300 text-black font-bold text-lg shadow hover:bg-gray-400 transition"
               >
