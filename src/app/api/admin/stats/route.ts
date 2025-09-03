@@ -4,19 +4,40 @@ import { requireAdmin } from '@/utils/adminAuth';
 
 async function getUserStats(_req: NextRequest) {
   try {
+    console.log('📊 [Admin Stats] Starting stats calculation...');
+    
     // Get total users
-    const { count: totalUsers } = await supabase
+    console.log('📊 [Admin Stats] Getting total users...');
+    const { count: totalUsers, error: usersError } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true });
 
+    if (usersError) {
+      console.error('📊 [Admin Stats] Error getting total users:', usersError);
+    }
+
     // Get active users
-    const { count: activeUsers } = await supabase
+    console.log('📊 [Admin Stats] Getting active users...');
+    const { count: activeUsers, error: activeError } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true);
 
-    // Get admin users (temporary: count as 0 until is_admin column exists)
-    const adminUsers = 0;
+    if (activeError) {
+      console.error('📊 [Admin Stats] Error getting active users:', activeError);
+    }
+
+    // Get admin users
+    console.log('📊 [Admin Stats] Getting admin users...');
+    const { count: adminUsers, error: adminError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_admin', true);
+
+    if (adminError) {
+      console.error('📊 [Admin Stats] Error getting admin users:', adminError);
+      console.log('📊 [Admin Stats] This might be because is_admin column does not exist');
+    }
 
     // Get users registered today
     const today = new Date();
