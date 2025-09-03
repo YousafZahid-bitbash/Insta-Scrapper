@@ -199,7 +199,7 @@ export default function AdminUsers() {
               placeholder="Search users by email or username..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
             />
             <button
               type="submit"
