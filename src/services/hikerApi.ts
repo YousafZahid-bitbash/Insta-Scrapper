@@ -89,6 +89,12 @@ const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || "b753b7d56575d996e1f59e
 const encoder = new TextEncoder();
 const getSecret = () => encoder.encode(JWT_SECRET);
 
+export interface JWTUserPayload {
+  user_id: string;
+  email: string;
+  iat?: number;
+  exp?: number;
+}
 
 export async function generateJWT(payload: Record<string, unknown>): Promise<string> {
   return await new SignJWT(payload as JWTPayload)
@@ -97,11 +103,10 @@ export async function generateJWT(payload: Record<string, unknown>): Promise<str
     .sign(getSecret());
 }
 
-
-export async function verifyJWT(token: string): Promise<object | null> {
+export async function verifyJWT(token: string): Promise<JWTUserPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    return payload;
+    return payload as unknown as JWTUserPayload;
   } catch {
     return null;
   }

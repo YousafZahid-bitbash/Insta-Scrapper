@@ -33,7 +33,12 @@ export default function LoginPage() {
 				setPassword("");
 				if (result.user_id) {
 					localStorage.setItem("user_id", result.user_id);
-					router.push("/dashboard/new-extractions");
+					// Redirect based on admin status
+					if (result.is_admin) {
+						router.push("/admin");
+					} else {
+						router.push("/dashboard/new-extractions");
+					}
 				}
 			} catch {
 				setLoading(false);

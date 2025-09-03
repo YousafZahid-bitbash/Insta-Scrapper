@@ -11,11 +11,11 @@ export async function POST(req: Request) {
   // Verify token
   
   const payload = await verifyJWT(token);
-  if (!payload || typeof payload !== "object" || (payload as ResetPayload).type !== "reset") {
+  if (!payload || typeof payload !== "object" || (payload as unknown as ResetPayload).type !== "reset") {
     return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
   }
   // Find user by id and token
-  const { user_id } = payload as ResetPayload;
+  const { user_id } = payload as unknown as ResetPayload;
   const { data: user, error } = await supabase
     .from("users")
     .select("id, reset_token, reset_token_expires")
