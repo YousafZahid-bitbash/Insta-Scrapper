@@ -203,24 +203,30 @@ export default function AdminUsers() {
       </nav>
       
       {/* Content */}
-      <div className="max-w-7xl mx-auto py-6 px-4">
-        <div className="space-y-6">
+      <div className="max-w-7xl mx-auto py-8 px-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">User Management</h2>
+          <p className="text-gray-600">Manage and monitor all registered users</p>
+        </div>
+
         {/* Search and Controls */}
-        <div className="bg-white shadow rounded-lg p-4">
+        <div className="bg-white shadow-lg rounded-xl border border-gray-100 p-6 mb-8">
           <form onSubmit={handleSearchSubmit} className="flex gap-4">
             <input
               type="text"
               placeholder="Search users by email or username..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 shadow-sm"
             />
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
             >
               Search
             </button>
+            
             {search && (
               <button
                 type="button"
@@ -433,6 +439,6 @@ export default function AdminUsers() {
         </div>
       </div>
     </div>
-    </div>
+    
   );
 }
