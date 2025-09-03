@@ -6,7 +6,7 @@ async function getAllUsers(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const limit = parseInt(url.searchParams.get('limit') || '100'); // Increased default to 100
     const search = url.searchParams.get('search') || '';
     
     const offset = (page - 1) * limit;
@@ -20,6 +20,7 @@ async function getAllUsers(req: NextRequest) {
         username,
         coins,
         is_active,
+        is_admin,
         created_at,
         updated_at,
         last_login
@@ -43,9 +44,15 @@ async function getAllUsers(req: NextRequest) {
     }
 
     // Get total count for pagination
-    const { count: totalCount } = await supabase
+    let countQuery = supabase
       .from('users')
       .select('*', { count: 'exact', head: true });
+    
+    if (search) {
+      countQuery = countQuery.or(`email.ilike.%${search}%,username.ilike.%${search}%`);
+    }
+    
+    const { count: totalCount } = await countQuery;
 
     return NextResponse.json({
       users: users || [],

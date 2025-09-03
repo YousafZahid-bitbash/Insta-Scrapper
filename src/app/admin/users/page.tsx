@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '@/components/AdminLayout';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -23,12 +23,21 @@ interface Pagination {
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 100, total: 0, totalPages: 0 }); // Increased to 100
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [editingCoins, setEditingCoins] = useState<{ userId: string; coins: number } | null>(null);
   const router = useRouter();
+
+  // Logout handler
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      window.location.href = '/auth/login';
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -110,17 +119,78 @@ export default function AdminUsers() {
 
   if (loading && users.length === 0) {
     return (
-      <AdminLayout currentPage="users">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-100">
+        {/* Navigation Header */}
+        <nav className="bg-white shadow-lg border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-8">
+                <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+                <div className="hidden md:flex space-x-4">
+                  <Link href="/admin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                    Dashboard
+                  </Link>
+                  <Link href="/admin/users" className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium">
+                    All Users
+                  </Link>
+                  <Link href="/admin/stats" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                    Statistics
+                  </Link>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </nav>
+        
+        {/* Content */}
+        <div className="max-w-7xl mx-auto py-6 px-4">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          </div>
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
   return (
-    <AdminLayout currentPage="users">
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gray-100">
+      {/* Navigation Header */}
+      <nav className="bg-white shadow-lg border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-8">
+              <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+              <div className="hidden md:flex space-x-4">
+                <Link href="/admin" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                  Dashboard
+                </Link>
+                <Link href="/admin/users" className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium">
+                  All Users
+                </Link>
+                <Link href="/admin/stats" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                  Statistics
+                </Link>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+      
+      {/* Content */}
+      <div className="max-w-7xl mx-auto py-6 px-4">
+        <div className="space-y-6">
         {/* Search and Controls */}
         <div className="bg-white shadow rounded-lg p-4">
           <form onSubmit={handleSearchSubmit} className="flex gap-4">
@@ -348,6 +418,7 @@ export default function AdminUsers() {
           )}
         </div>
       </div>
-    </AdminLayout>
+    </div>
+    </div>
   );
 }
