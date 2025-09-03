@@ -16,7 +16,7 @@ export default function SuccessPage() {
         <h2 className="text-2xl font-bold text-green-600 mb-2">Payment Successful!</h2>
         <p className="text-lg mb-4">Thank you for your purchase. Your payment was processed successfully.</p>
         <p className="text-sm text-gray-500 mb-2">You can now access your purchased features.</p>
-        <Link href="/dashboard">
+        <Link href="/dashboard/new-extractions">
           <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-green-400">
             Go to Dashboard
           </button>
