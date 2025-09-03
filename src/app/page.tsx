@@ -52,14 +52,22 @@ export default function LandingPage() {
 
   useEffect(() => {
     async function fetchPricing() {
-      // Log the anon key from the environment
-      console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-      // Also log the key from the supabase client
-  // @ts-expect-error: supabase.rest.headers.apikey is not part of the public API, used for debugging anon key
-      console.log('supabase anon key:', supabase?.rest?.headers?.apikey || 'Not available');
+      // Log environment variable availability (this only works during build/server-side)
+      console.log('Environment check - SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.log('Environment check - SUPABASE_ANON_KEY exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      
+      // Test supabase connection by making a simple query
+      console.log('Testing Supabase connection...');
       const { data, error } = await supabase
         .from("deals")
         .select("id, coins, price, sale_price, description, Name");
+      
+      if (error) {
+        console.error('Supabase connection error:', error);
+      } else {
+        console.log('Supabase connection successful, found', data?.length, 'deals');
+      }
+      
       if (!error && Array.isArray(data)) {
         setPricing(data as PricingDeal[]);
       }
