@@ -19,6 +19,7 @@ interface RecentUser {
   created_at: string;
   coins: number;
   last_login: string | null;
+  is_active: boolean;
 }
 
 export default function AdminDashboard() {
@@ -72,6 +73,41 @@ export default function AdminDashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleUserStatusToggle = async (userId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch('/api/admin/toggle-user-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          isActive: !currentStatus
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update user status');
+      }
+
+      // Update the user in the recent users list
+      setRecentUsers(prev => 
+        prev.map(user => 
+          user.id === userId 
+            ? { ...user, is_active: !currentStatus }
+            : user
+        )
+      );
+
+      // Refresh stats to update active user count
+      fetchStats();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    }
   };
 
   if (loading) {
@@ -356,13 +392,20 @@ export default function AdminDashboard() {
                           {user.username && (
                             <div className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">@{user.username}</div>
                           )}
+                          <div className={`ml-2 text-xs px-2 py-1 rounded-full font-medium ${
+                            user.is_active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {user.is_active ? 'Active' : 'Banned'}
+                          </div>
                         </div>
                         <div className="text-sm text-gray-500 mt-1">
                           Joined {formatDate(user.created_at)}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-4">
                       <div className="text-sm text-gray-900 bg-yellow-50 px-3 py-1 rounded-full">
                         <span className="font-semibold">{user.coins}</span> coins
                       </div>
@@ -371,6 +414,16 @@ export default function AdminDashboard() {
                           Last login: {formatDate(user.last_login)}
                         </div>
                       )}
+                      <button
+                        onClick={() => handleUserStatusToggle(user.id, user.is_active)}
+                        className={`px-4 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                          user.is_active
+                            ? 'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg'
+                            : 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
+                        }`}
+                      >
+                        {user.is_active ? 'Ban User' : 'Unban User'}
+                      </button>
                     </div>
                   </div>
                 </div>

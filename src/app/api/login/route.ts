@@ -19,15 +19,22 @@ export async function POST(req: Request) {
 		// Generate JWT
 		const user = data[0];
 		
-		// Get user details including admin status
+		// Get user details including admin status and active status
 		const { data: userDetails, error: userError } = await supabase
 			.from('users')
-			.select('email, is_admin')
+			.select('email, is_admin, is_active')
 			.eq('id', user.user_id)
 			.single();
 		
 		if (userError) {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
+		}
+
+		// Check if user is active (not banned)
+		if (!userDetails.is_active) {
+			return NextResponse.json({ 
+				error: "Your account has been suspended. Please contact support." 
+			}, { status: 403 });
 		}
 		
 		// Update last_login timestamp after successful authentication

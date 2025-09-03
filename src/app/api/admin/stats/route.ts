@@ -6,22 +6,24 @@ async function getUserStats(_req: NextRequest) {
   try {
     console.log('📊 [Admin Stats] Starting stats calculation...');
     
-    // Get total users
+    // Get total users (exclude admin users)
     console.log('📊 [Admin Stats] Getting total users...');
     const { count: totalUsers, error: usersError } = await supabase
       .from('users')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('is_admin', false);
 
     if (usersError) {
       console.error('📊 [Admin Stats] Error getting total users:', usersError);
     }
 
-    // Get active users
+    // Get active users (exclude admin users)
     console.log('📊 [Admin Stats] Getting active users...');
     const { count: activeUsers, error: activeError } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .eq('is_admin', false);
 
     if (activeError) {
       console.error('📊 [Admin Stats] Error getting active users:', activeError);
@@ -39,33 +41,37 @@ async function getUserStats(_req: NextRequest) {
       console.log('📊 [Admin Stats] This might be because is_admin column does not exist');
     }
 
-    // Get users registered today
+    // Get users registered today (exclude admin users)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const { count: todayUsers } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .gte('created_at', today.toISOString());
+      .gte('created_at', today.toISOString())
+      .eq('is_admin', false);
 
-    // Get users with login in last 7 days
+    // Get users with login in last 7 days (exclude admin users)
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const { count: activeWeekUsers } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .gte('last_login', weekAgo.toISOString());
+      .gte('last_login', weekAgo.toISOString())
+      .eq('is_admin', false);
 
-    // Get total coins in system
+    // Get total coins in system (exclude admin users)
     const { data: coinsData } = await supabase
       .from('users')
-      .select('coins');
+      .select('coins')
+      .eq('is_admin', false);
 
     const totalCoins = coinsData?.reduce((sum, user) => sum + (user.coins || 0), 0) || 0;
 
-    // Get recent users
+    // Get recent users (exclude admin users)
     const { data: recentUsers } = await supabase
       .from('users')
-      .select('id, email, username, created_at, coins, last_login')
+      .select('id, email, username, created_at, coins, last_login, is_active')
+      .eq('is_admin', false)
       .order('created_at', { ascending: false })
       .limit(5);
 

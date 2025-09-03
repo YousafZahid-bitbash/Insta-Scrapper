@@ -11,7 +11,7 @@ async function getAllUsers(req: NextRequest) {
     
     const offset = (page - 1) * limit;
 
-    // Build query
+    // Build query - exclude admin users
     let query = supabase
       .from('users')
       .select(`
@@ -25,6 +25,7 @@ async function getAllUsers(req: NextRequest) {
         updated_at,
         last_login
       `)
+      .eq('is_admin', false)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -43,10 +44,11 @@ async function getAllUsers(req: NextRequest) {
       );
     }
 
-    // Get total count for pagination
+    // Get total count for pagination - exclude admin users
     let countQuery = supabase
       .from('users')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('is_admin', false);
     
     if (search) {
       countQuery = countQuery.or(`email.ilike.%${search}%,username.ilike.%${search}%`);

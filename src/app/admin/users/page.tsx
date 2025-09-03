@@ -107,6 +107,38 @@ export default function AdminUsers() {
     });
   };
 
+  const handleUserStatusToggle = async (userId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch('/api/admin/toggle-user-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          isActive: !currentStatus
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update user status');
+      }
+
+      // Update the user in the users list
+      setUsers(prev => 
+        prev.map(user => 
+          user.id === userId 
+            ? { ...user, is_active: !currentStatus }
+            : user
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    }
+  };
+
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
@@ -343,19 +375,35 @@ export default function AdminUsers() {
                       {user.last_login ? formatDate(user.last_login) : 'Never'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleUpdateCoins(user.id, 100, 'add')}
-                          className="text-green-600 hover:text-green-900 text-xs"
-                        >
-                          +100 Coins
-                        </button>
-                        <button
-                          onClick={() => handleUpdateCoins(user.id, 500, 'add')}
-                          className="text-blue-600 hover:text-blue-900 text-xs"
-                        >
-                          +500 Coins
-                        </button>
+                      <div className="flex flex-col space-y-2">
+                        {/* Coin Actions */}
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleUpdateCoins(user.id, 100, 'add')}
+                            className="text-green-600 hover:text-green-900 text-xs"
+                          >
+                            +100 Coins
+                          </button>
+                          <button
+                            onClick={() => handleUpdateCoins(user.id, 500, 'add')}
+                            className="text-blue-600 hover:text-blue-900 text-xs"
+                          >
+                            +500 Coins
+                          </button>
+                        </div>
+                        {/* Ban/Unban Actions */}
+                        <div>
+                          <button
+                            onClick={() => handleUserStatusToggle(user.id, user.is_active)}
+                            className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
+                              user.is_active
+                                ? 'bg-red-500 hover:bg-red-600 text-white'
+                                : 'bg-green-500 hover:bg-green-600 text-white'
+                            }`}
+                          >
+                            {user.is_active ? 'Ban User' : 'Unban User'}
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
