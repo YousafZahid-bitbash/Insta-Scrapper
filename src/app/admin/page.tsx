@@ -328,10 +328,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          </div>
         </div>
 
         {/* Recent Users */}
-        <div className="mt-8 bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
+        <div className="mt-12 bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
           <div className="px-6 py-6 border-b border-gray-200">
             <h3 className="text-xl font-bold text-gray-900">Recent Users</h3>
             <p className="mt-1 text-sm text-gray-600">Latest user registrations</p>
@@ -376,7 +377,6 @@ export default function AdminDashboard() {
               </li>
             ))}
           </ul>
-        </div>
         </div>
       </div>
     </div>
