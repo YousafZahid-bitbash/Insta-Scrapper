@@ -245,7 +245,7 @@ export default function YourExtractionsPage() {
                           </div>
                           <div>
                             <h3 className="text-xl font-bold text-gray-900 capitalize">{extraction.extraction_type}</h3>
-                            <p className="text-sm text-gray-500">Extraction #{extraction.id.slice(0, 8)}</p>
+                            <p className="text-sm text-gray-500">Extraction #{String(extraction.id).slice(0, 8)}</p>
                           </div>
                         </div>
                         

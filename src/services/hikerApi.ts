@@ -678,29 +678,47 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
       } else {
         errorMessages.push(`No likers found for media ID: ${mediaObj.id}`);
       }
-      // Deduct coins dynamically using COIN_RULES.likers.perChunk and coin limit
+      // First deduction: Batch deduction for likers API (like followers pattern)
       let usersExtracted = 0;
-  // Get coin limit from filters (integer, no decimals)
-  const coinLimit = filters?.coinLimit ? Math.floor(filters.coinLimit) : undefined;
+      let usersProcessedInBatch = 0;
+      // Get coin limit from filters (integer, no decimals)
+      const coinLimit = filters?.coinLimit ? Math.floor(filters.coinLimit) : undefined;
+      // Calculate max users allowed within coin limit (considering both API calls and userByUsername calls)
+      const maxUsersWithinCoinLimit = coinLimit !== undefined 
+        ? Math.floor(coinLimit * COIN_RULES.likers.perChunk.users / (COIN_RULES.likers.perChunk.coins + (COIN_RULES.likers.perChunk.users * COIN_RULES.likers.perUser)))
+        : undefined;
+      
       if (newLikers.length > 0) {
-        const perUserCoin = COIN_RULES.likers.perChunk.coins / COIN_RULES.likers.perChunk.users;
         for (const liker of newLikers) {
-          // If coin limit is set, stop when usersExtracted equals integer coinLimit
-          if (coinLimit !== undefined && usersExtracted === Math.floor(coinLimit)) {
+          // If coin limit is set, stop when usersExtracted reaches maxUsersWithinCoinLimit
+          if (maxUsersWithinCoinLimit !== undefined && usersExtracted >= maxUsersWithinCoinLimit) {
             stopExtraction = true;
             break;
           }
-          if (coins < perUserCoin) {
+          
+          // Check if we have enough coins for the full batch
+          if (usersProcessedInBatch === 0 && coins < COIN_RULES.likers.perChunk.coins) {
             stopExtraction = true;
             break;
           }
-          coins = await deductCoins(userIdStr, perUserCoin, supabase);
-          if (filters && typeof filters.coinLimit === 'number') {
-            filters.coinLimit -= perUserCoin;
-          }
+          
           allLikers.push(liker);
           usersExtracted++;
+          usersProcessedInBatch++;
           if (onProgress) onProgress(allLikers.length);
+          
+          // Deduct coins when we complete a full batch (every 10 users)
+          if (usersProcessedInBatch >= COIN_RULES.likers.perChunk.users) {
+            console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for batch of ${COIN_RULES.likers.perChunk.users} users`);
+            coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabase);
+            usersProcessedInBatch = 0; // Reset batch counter
+          }
+        }
+        
+        // Deduct coins for any remaining partial batch
+        if (usersProcessedInBatch > 0 && !stopExtraction) {
+          console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
+          coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabase);
         }
       }
       if (stopExtraction) break;
@@ -726,12 +744,17 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
   }
   console.log('[mediaLikersBulkV1] Likers after pre-filtering:', preFilteredLikers.length, preFilteredLikers);
 
-  // Deduct coins for all likers before fetching details
+  // Second deduction: For userByUsername calls (like followers pattern)
   const perUserTotalCost = preFilteredLikers.length * COIN_RULES.likers.perUser;
+  console.log(`[mediaLikersBulkV1] Second deduction for userByUsername calls: ${preFilteredLikers.length} users × ${COIN_RULES.likers.perUser} = ${perUserTotalCost} coins`);
+  console.log(`[mediaLikersBulkV1] Current coins: ${coins}, Required: ${perUserTotalCost}`);
+  
   if (coins < perUserTotalCost) {
+    console.warn(`[mediaLikersBulkV1] Insufficient coins for userByUsername calls. Required: ${perUserTotalCost}, Available: ${coins}`);
     stopExtraction = true;
   } else {
     coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+    console.log(`[mediaLikersBulkV1] Coins deducted successfully for userByUsername calls. New balance: ${coins}`);
   }
   // 2. Fetch details for each remaining user
   const detailedLikers: UserDetails[] = [];
