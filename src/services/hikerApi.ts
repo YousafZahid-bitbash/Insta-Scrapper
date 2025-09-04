@@ -206,6 +206,16 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
   let usersExtracted = 0;
   // Get coin limit from filters (integer, no decimals)
   const coinLimit = filters?.followers?.coinLimit ? Math.floor(filters.followers.coinLimit) : undefined;
+  
+  // Calculate maximum users we can afford within coin limit (extraction + filtration costs)
+  let maxUsersWithinCoinLimit: number | undefined = undefined;
+  if (coinLimit !== undefined) {
+    const extractionCostPerUser = COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users; // 0.1
+    const filtrationCostPerUser = COIN_RULES.followers.perUser; // 1.0
+    const totalCostPerUser = extractionCostPerUser + filtrationCostPerUser; // 1.1
+    maxUsersWithinCoinLimit = Math.floor(coinLimit / totalCostPerUser);
+    console.log(`[hikerApi] [FollowersV2] Coin limit: ${coinLimit}, Max users within budget: ${maxUsersWithinCoinLimit} (${totalCostPerUser} coins per user)`);
+  }
     const userIds = Array.isArray(user_id) ? user_id : [user_id];
     const errorMessages: string[] = [];
     const validUserIds: string[] = [...userIds];
@@ -224,8 +234,8 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
           if (users.length > 0) {
             const perUserCoin = COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users;
             for (const user of users) {
-              // If coin limit is set, stop when usersExtracted equals integer coinLimit
-              if (coinLimit !== undefined && usersExtracted === Math.floor(coinLimit)) {
+              // If coin limit is set, stop when usersExtracted reaches maxUsersWithinCoinLimit
+              if (maxUsersWithinCoinLimit !== undefined && usersExtracted >= maxUsersWithinCoinLimit) {
                 stopExtraction = true;
                 break;
               }
@@ -241,7 +251,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
               usersExtracted++;
               if (onProgress) onProgress(allFollowers.length);
             }
-            console.log(`[hikerApi] [FollowersV2] Extracted ${usersExtracted} users so far. Coin limit: ${coinLimit}`);
+            console.log(`[hikerApi] [FollowersV2] Extracted ${usersExtracted} users so far. Max users allowed: ${maxUsersWithinCoinLimit ?? 'unlimited'}`);
             if (stopExtraction) break;
             pageCount++;
           }
@@ -429,9 +439,20 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
             let usersExtracted = 0;
             // Get coin limit from filters (integer, no decimals)
             const coinLimit = filters?.following?.coinLimit ? Math.floor(filters.following.coinLimit) : undefined;
+            
+            // Calculate maximum users we can afford within coin limit (extraction + filtration costs)
+            let maxUsersWithinCoinLimit: number | undefined = undefined;
+            if (coinLimit !== undefined) {
+              const extractionCostPerUser = COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users; // 0.1
+              const filtrationCostPerUser = COIN_RULES.followings.perUser; // 1.0
+              const totalCostPerUser = extractionCostPerUser + filtrationCostPerUser; // 1.1
+              maxUsersWithinCoinLimit = Math.floor(coinLimit / totalCostPerUser);
+              console.log(`[hikerApi] [FollowingV2] Coin limit: ${coinLimit}, Max users within budget: ${maxUsersWithinCoinLimit} (${totalCostPerUser} coins per user)`);
+            }
+            
             for (const user of users) {
-              // If coin limit is set, stop when usersExtracted equals integer coinLimit
-              if (coinLimit !== undefined && usersExtracted === Math.floor(coinLimit)) {
+              // If coin limit is set, stop when usersExtracted reaches maxUsersWithinCoinLimit
+              if (maxUsersWithinCoinLimit !== undefined && usersExtracted >= maxUsersWithinCoinLimit) {
                 stopExtraction = true;
                 break;
               }

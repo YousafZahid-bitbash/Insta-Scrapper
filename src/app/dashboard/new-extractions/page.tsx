@@ -154,7 +154,7 @@ export default function NewExtractionsPage() {
 									{extractOptions.map(opt => (
 										<button
 											key={opt.value}
-											className={`group relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
+											className={`group relative p-2 rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
 												selected === opt.value 
 													? "bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300 shadow-sm" 
 													: "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50"
@@ -162,7 +162,7 @@ export default function NewExtractionsPage() {
 											onClick={() => setSelected(opt.value)}
 											type="button"
 										>
-											<div className="flex flex-col items-center gap-3">
+											<div className="flex flex-row items-center gap-3">
 												<div className={`p-3 rounded-lg transition-colors ${
 													selected === opt.value 
 														? "bg-gradient-to-r from-amber-400 to-yellow-500 text-white" 
@@ -182,7 +182,7 @@ export default function NewExtractionsPage() {
 							</div>
 
 							{/* Controls Section */}
-							<div className="p-8 border-b border-gray-100 bg-gray-50/50">
+							<div className="p-4 border-b border-gray-100 bg-gray-50/50">
 								<div className="flex flex-wrap gap-3 justify-center mb-6">
 									<button
 										type="button"
@@ -251,8 +251,12 @@ export default function NewExtractionsPage() {
 									}
 									// Check coin limit filter
 									const coinLimitNum = Number(filters.coinLimit);
-									if (filters.coinLimit && (!Number.isFinite(coinLimitNum) || coinLimitNum < coins)) {
-										setError(`Coin limit must be equal to or greater than your current coin balance (${coins}).`);
+									if (filters.coinLimit && (!Number.isFinite(coinLimitNum) || coinLimitNum <= 0 || coinLimitNum > coins)) {
+										if (coinLimitNum <= 0) {
+											setError(`Coin limit must be greater than 0.`);
+										} else if (coinLimitNum > coins) {
+											setError(`Coin limit cannot exceed your current coin balance (${coins}).`);
+										}
 										return;
 									}
 									setLoading(true);
@@ -387,7 +391,7 @@ export default function NewExtractionsPage() {
 												Coin Limit (Optional)
 											</label>
 											<p className="text-xs text-gray-600">
-												Set a maximum number of coins to spend on this extraction
+												Maximum coins to spend (includes extraction + filtering costs)
 											</p>
 										</div>
 									</div>
