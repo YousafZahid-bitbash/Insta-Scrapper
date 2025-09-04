@@ -192,9 +192,8 @@ export default function NewExtractionsPage() {
 								)}
 							</div>
 
-							{/* {<FilterControls />} */}
 							<form
-								className="flex flex-col sm:flex-row items-center gap-4 mt-2 justify-center w-full"
+								className="flex flex-col items-center gap-4 mt-2 justify-center w-full"
 								onSubmit={async e => {
 									e.preventDefault();
 									setResult(null);
@@ -330,6 +329,25 @@ export default function NewExtractionsPage() {
 									  setTimeout(() => setShowSuccess(false), 5000);
 								}}
 							>
+								{/* Coin Limit Input */}
+								<div className="w-full max-w-md">
+									<label htmlFor="coinLimit" className="block text-sm font-semibold text-gray-700 mb-2">
+										Coin Limit (Optional)
+									</label>
+									<input
+										type="number"
+										id="coinLimit"
+										placeholder={`Enter coin limit (Current: ${coins})`}
+										className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37] focus:border-[#d4af37] font-serif text-lg shadow-sm"
+										value={filters.coinLimit}
+										onChange={e => setFilters({ ...filters, coinLimit: e.target.value })}
+										min={0}
+									/>
+									<p className="text-xs text-gray-500 mt-1">
+										Set a maximum number of coins to spend on this extraction
+									</p>
+								</div>
+
 								<div className="flex w-full gap-4 items-start">
 									<textarea
 										rows={6}
