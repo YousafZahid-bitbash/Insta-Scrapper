@@ -43,9 +43,10 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
       <Navbar />
-      <div className="flex flex-1 w-full">
+      <div className="hidden md:block">
         <Sidebar />
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16">
+      </div>
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16 md:ml-64">
           <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-12 border border-[#d4af37] mt-8 mb-8 relative">
             <h1 className="text-3xl font-serif font-bold text-center mb-8 text-gray-900 tracking-tight">Settings</h1>
             {loading ? (
@@ -66,7 +67,6 @@ export default function SettingsPage() {
             )}
           </div>
         </main>
-      </div>
     </div>
   );
 }

@@ -48,9 +48,10 @@ export default function BillingPage() {
   return (
     <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
       <Navbar coins={coins} />
-      <div className="flex flex-1 w-full">
+      <div className="hidden md:block">
         <Sidebar />
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16">
+      </div>
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-16 md:ml-64">
           <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-12 border border-[#d4af37] mt-8 mb-8 relative">
             <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-[#d4af37] flex items-center justify-center shadow-lg border-4 border-white">
               <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M12 12.713l11.985-7.713A1 1 0 0023 4H1a1 1 0 00-.985 1.001L12 12.713z"/><path fill="#fff" d="M12 14.713l-12-7.713V20a1 1 0 001 1h22a1 1 0 001-1V7l-12 7.713z"/></svg>
@@ -104,7 +105,6 @@ export default function BillingPage() {
             )}
           </div>
         </main>
-      </div>
     </div>
   );
 }

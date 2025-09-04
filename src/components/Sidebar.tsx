@@ -28,9 +28,9 @@ export default function Sidebar() {
 
       {/* Sidebar for desktop and mobile drawer */}
       <aside
-        className={`w-64 h-[calc(100vh-4rem)] bg-white border-r p-6 fixed left-0 z-30 transition-transform duration-300
-          md:top-0 md:translate-x-0 md:block
-          ${open ? 'translate-x-0' : '-translate-x-full'} md:relative flex flex-col`}
+        className={`w-64 h-screen bg-white border-r p-6 fixed left-0 top-0 z-30 transition-transform duration-300
+          md:translate-x-0 md:block
+          ${open ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}
         style={{ display: open ? 'block' : undefined }}
       >
         {/* Close button for mobile */}

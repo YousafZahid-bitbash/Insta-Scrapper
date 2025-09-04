@@ -165,9 +165,10 @@ export default function YourExtractionsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar coins={coins} />
-      <div className="flex flex-1">
+      <div className="hidden md:block">
         <Sidebar />
-        <main className="flex-1 max-w-4xl mx-auto py-12 px-4 md:px-0">
+      </div>
+      <main className="flex-1 max-w-4xl mx-auto py-12 px-4 md:px-0 md:ml-64">
           <h1 className="text-4xl font-serif font-extrabold mb-10 text-center tracking-tight text-gray-900">Your Extractions</h1>
           {loading && (
             <div className="space-y-4 mb-6">
@@ -334,7 +335,6 @@ export default function YourExtractionsPage() {
             </>
           )}
         </main>
-      </div>
     </div>
   );
 }
