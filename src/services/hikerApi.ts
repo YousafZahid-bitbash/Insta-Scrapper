@@ -230,40 +230,50 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
           const res = await hikerClient.get("/v2/user/followers", { params });
           const data = res.data;
           users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
-          // Deduct coins dynamically using COIN_RULES.followers.perChunk and coin limit
+          
+          // Process users and deduct coins in batches according to COIN_RULES
           if (users.length > 0) {
-            const perUserCoin = COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users;
+            console.log(`[hikerApi] [FollowersV2] Processing ${users.length} users from API response`);
+            let usersProcessedInBatch = 0;
+            
             for (const user of users) {
               // If coin limit is set, stop when usersExtracted reaches maxUsersWithinCoinLimit
               if (maxUsersWithinCoinLimit !== undefined && usersExtracted >= maxUsersWithinCoinLimit) {
                 stopExtraction = true;
                 break;
               }
-              if (coins < perUserCoin) {
+              
+              // Check if we have enough coins for the full batch
+              if (usersProcessedInBatch === 0 && coins < COIN_RULES.followers.perChunk.coins) {
                 stopExtraction = true;
                 break;
               }
-              coins = await deductCoins(userIdStr, perUserCoin, supabase);
-              if (filters && filters.followers && typeof filters.followers.coinLimit === 'number') {
-                filters.followers.coinLimit -= perUserCoin;
-              }
+              
               allFollowers.push(user);
               usersExtracted++;
+              usersProcessedInBatch++;
               if (onProgress) onProgress(allFollowers.length);
+              
+              // Deduct coins when we complete a full batch (every 10 users)
+              if (usersProcessedInBatch >= COIN_RULES.followers.perChunk.users) {
+                console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for batch of ${COIN_RULES.followers.perChunk.users} users`);
+                coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
+                usersProcessedInBatch = 0; // Reset batch counter
+              }
             }
+            
+            // Deduct coins for any remaining partial batch
+            if (usersProcessedInBatch > 0 && !stopExtraction) {
+              console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
+              coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
+            }
+            
             console.log(`[hikerApi] [FollowersV2] Extracted ${usersExtracted} users so far. Max users allowed: ${maxUsersWithinCoinLimit ?? 'unlimited'}`);
             if (stopExtraction) break;
             pageCount++;
           }
           if (users.length === 0) {
             console.warn(`[hikerApi] [FollowersV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
-          } else {
-            for (const user of users) {
-              allFollowers.push(user);
-              if (onProgress) onProgress(allFollowers.length);
-            }
-            if (stopExtraction) break;
-            pageCount++;
           }
           nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
           console.log(`[hikerApi] [FollowersV2] Next page id for user_id ${singleUserId}:`, nextPageId);
@@ -433,10 +443,13 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
           const res = await hikerClient.get("/v2/user/following", { params });
           const data = res.data;
           users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
-          // Deduct coins dynamically using COIN_RULES.followings.perChunk and coin limit
+          
+          // Process users and deduct coins in batches according to COIN_RULES
           if (users.length > 0) {
-            const perUserCoin = COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users;
+            console.log(`[hikerApi] [FollowingV2] Processing ${users.length} users from API response`);
+            let usersProcessedInBatch = 0;
             let usersExtracted = 0;
+            
             // Get coin limit from filters (integer, no decimals)
             const coinLimit = filters?.following?.coinLimit ? Math.floor(filters.following.coinLimit) : undefined;
             
@@ -456,30 +469,37 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
                 stopExtraction = true;
                 break;
               }
-              if (coins < perUserCoin) {
+              
+              // Check if we have enough coins for the full batch
+              if (usersProcessedInBatch === 0 && coins < COIN_RULES.followings.perChunk.coins) {
                 stopExtraction = true;
                 break;
               }
-              coins = await deductCoins(userIdStr, perUserCoin, supabase);
-              if (filters && filters.following && typeof filters.following.coinLimit === 'number') {
-                filters.following.coinLimit -= perUserCoin;
-              }
+              
               allFollowings.push(user);
               usersExtracted++;
+              usersProcessedInBatch++;
               if (onProgress) onProgress(allFollowings.length);
+              
+              // Deduct coins when we complete a full batch (every 10 users)
+              if (usersProcessedInBatch >= COIN_RULES.followings.perChunk.users) {
+                console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.followings.perChunk.coins} coins for batch of ${COIN_RULES.followings.perChunk.users} users`);
+                coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabase);
+                usersProcessedInBatch = 0; // Reset batch counter
+              }
             }
+            
+            // Deduct coins for any remaining partial batch
+            if (usersProcessedInBatch > 0 && !stopExtraction) {
+              console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.followings.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
+              coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabase);
+            }
+            
             if (stopExtraction) break;
             pageCount++;
           }
           if (users.length === 0) {
             console.warn(`[hikerApi] [FollowingV2] Empty or invalid response for user_id ${singleUserId}, skipping coin deduction and DB save for this page.`);
-          } else {
-            for (const user of users) {
-              allFollowings.push(user);
-              if (onProgress) onProgress(allFollowings.length);
-            }
-            if (stopExtraction) break;
-            pageCount++;
           }
           nextPageId = typeof data.next_page_id === 'string' && data.next_page_id ? data.next_page_id : undefined;
           console.log(`[hikerApi] [FollowingV2] Next page id for user_id ${singleUserId}:`, nextPageId);

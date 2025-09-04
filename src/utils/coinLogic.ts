@@ -29,6 +29,10 @@ export const COIN_RULES = {
 export async function deductCoins(userId: string, amount: number, supabase: SupabaseClient): Promise<number> {
   console.log(`[coinLogic] Attempting to deduct ${amount} coins from user ${userId}`);
   
+  // Ensure amount is integer to avoid decimal coin deductions
+  const roundedAmount = Math.ceil(amount); // Round up to ensure we don't undercharge
+  console.log(`[coinLogic] Rounded amount from ${amount} to ${roundedAmount}`);
+  
   const { data: userData, error: coinsError } = await supabase
     .from("users")
     .select("coins")
@@ -39,15 +43,15 @@ export async function deductCoins(userId: string, amount: number, supabase: Supa
     throw new Error("Could not fetch user coins");
   }
   
-  console.log(`[coinLogic] Current coins: ${userData.coins}, deducting: ${amount}`);
-  const newCoins = Math.max(0, userData.coins - amount);
+  console.log(`[coinLogic] Current coins: ${userData.coins}, deducting: ${roundedAmount}`);
+  const newCoins = Math.max(0, Math.floor(userData.coins - roundedAmount)); // Ensure integer
   console.log(`[coinLogic] New coins balance will be: ${newCoins}`);
   
   // Use RPC function to update coins (bypasses RLS issues)
   console.log(`[coinLogic] Using RPC method to update coins...`);
   const { data: updateResult, error: rpcError } = await supabase.rpc('update_user_coins', {
     user_id: userId,
-    new_coin_count: Number(newCoins)
+    new_coin_count: Math.floor(newCoins) // Ensure integer value
   });
   
   if (rpcError || !updateResult) {
