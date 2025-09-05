@@ -99,6 +99,11 @@ export async function POST(request: NextRequest) {
       is_active: data.is_active
     });
 
+    // If user is being banned (isActive = false), we should note that their sessions will be invalidated
+    if (!isActive) {
+      console.log('🚫 [ToggleUserStatus] User has been banned - all active sessions will be invalidated by middleware');
+    }
+
     // Send notification email for both ban and unban actions
     if (data.email && data.username) {
       try {

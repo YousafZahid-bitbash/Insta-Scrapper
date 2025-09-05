@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 // import { supabase } from "../../../supabaseClient";
 
 export default function LoginPage() {
@@ -11,20 +11,29 @@ export default function LoginPage() {
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 	const router = useRouter();
+	const searchParams = useSearchParams();
 
-	// Check if user is already logged in
+	// Check if user is already logged in and handle banned message
 	useEffect(() => {
+		// Check if user was redirected due to being banned
+		const banned = searchParams?.get('banned');
+		if (banned === 'true') {
+			setError("Your account has been suspended. Please contact support for assistance.");
+			// Clear any stored user data
+			localStorage.clear();
+		}
+
 		const checkAuthStatus = () => {
 			const userId = localStorage.getItem("user_id");
-			if (userId) {
-				// User is already logged in, redirect to dashboard
+			if (userId && !banned) {
+				// User is already logged in and not banned, redirect to dashboard
 				console.log("User already logged in, redirecting to dashboard");
 				router.push("/dashboard/new-extractions");
 			}
 		};
 
 		checkAuthStatus();
-	}, [router]);
+	}, [router, searchParams]);
 
 	async function handleLogin(e: React.FormEvent) {
 		e.preventDefault();

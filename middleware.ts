@@ -18,6 +18,32 @@ export async function middleware(request: NextRequest) {
       // Redirect to login if not authenticated
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
+    
+    // Check if user is active (not banned)
+    try {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id, email, is_active')
+        .eq('id', verified.user_id)
+        .single();
+        
+      if (error || !user) {
+        // User not found, redirect to login
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
+      
+      if (!user.is_active) {
+        // User is banned, clear token and redirect to login with message
+        const response = NextResponse.redirect(new URL("/auth/login?banned=true", request.url));
+        response.cookies.delete("token");
+        // Add header to signal frontend to clear localStorage
+        response.headers.set('X-User-Banned', 'true');
+        return response;
+      }
+    } catch (error) {
+      console.error('User verification error:', error);
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
   }
   
   // Protect all /admin routes - require admin role
@@ -26,16 +52,29 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
     
-    // Check if user exists and is admin
+    // Check if user exists, is active, and is admin
     try {
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, email, is_admin')
+        .select('id, email, is_admin, is_active')
         .eq('id', verified.user_id)
-        .eq('is_active', true)
         .single();
         
-      if (error || !user || !user.is_admin) {
+      if (error || !user) {
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
+      
+      if (!user.is_active) {
+        // User is banned, clear token and redirect to login with message
+        const response = NextResponse.redirect(new URL("/auth/login?banned=true", request.url));
+        response.cookies.delete("token");
+        // Add header to signal frontend to clear localStorage  
+        response.headers.set('X-User-Banned', 'true');
+        return response;
+      }
+      
+      if (!user.is_admin) {
+        // User is not admin, redirect to regular dashboard
         return NextResponse.redirect(new URL("/dashboard/new-extractions", request.url));
       }
     } catch (error) {
