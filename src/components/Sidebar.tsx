@@ -8,7 +8,11 @@ export default function Sidebar() {
   // Logout handler
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
+      // Clear localStorage
       localStorage.clear();
+      // Clear the authentication cookie
+      document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      // Redirect to login
       window.location.href = '/auth/login';
     }
   };
