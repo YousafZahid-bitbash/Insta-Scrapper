@@ -11,7 +11,7 @@ export function UnbanNotificationTemplate({
   username, 
   email, 
   unbanDate,
-  supportEmail = "yousaf.zahid@bitbash.dev" 
+  supportEmail = "support@resend.dev" 
 }: UnbanNotificationTemplateProps) {
   return (
     <div style={{ 

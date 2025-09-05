@@ -11,7 +11,7 @@ export function BanNotificationTemplate({
   username, 
   email, 
   banDate,
-  supportEmail = "yousaf.zahid@bitbash.dev" 
+  supportEmail = "support@resend.dev" 
 }: BanNotificationTemplateProps) {
   return (
     <div style={{ 

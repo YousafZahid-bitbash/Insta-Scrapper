@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         username,
         email,
         banDate: actionDate,
-        supportEmail: 'yousaf.zahid@bitbash.dev'
+        supportEmail: 'support@resend.dev'
       })
     } : {
       subject: 'Account Reactivated - InstaScrapper',
@@ -86,12 +86,12 @@ export async function POST(request: NextRequest) {
         username,
         email,
         unbanDate: actionDate,
-        supportEmail: 'yousaf.zahid@bitbash.dev'
+        supportEmail: 'support@resend.dev'
       })
     };
 
     const { data, error } = await resend.emails.send({
-      from: 'InstaScrapper <yousaf.zahid@bitbash.dev>',
+      from: 'InstaScrapper <onboarding@resend.dev>',
       to: [email],
       subject: emailConfig.subject,
       react: emailConfig.template,
