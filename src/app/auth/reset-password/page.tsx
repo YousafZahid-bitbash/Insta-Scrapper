@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function ResetPasswordContent() {
@@ -9,6 +9,20 @@ function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams ? searchParams.get("token") : "";
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const userId = localStorage.getItem("user_id");
+      if (userId) {
+        // User is already logged in, redirect to dashboard
+        console.log("User already logged in, redirecting to dashboard");
+        router.push("/dashboard/new-extractions");
+      }
+    };
+
+    checkAuthStatus();
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

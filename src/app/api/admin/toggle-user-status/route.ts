@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
-      .select()
+      .select('id, username, email, is_active')
       .single();
 
     if (error) {
@@ -62,6 +62,36 @@ export async function POST(request: NextRequest) {
 
     if (!data) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Send notification email for both ban and unban actions
+    if (data.email && data.username) {
+      try {
+        // Call the send-ban-email API endpoint
+        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/send-ban-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId: data.id,
+            username: data.username,
+            email: data.email,
+            isBanned: !isActive // isBanned is true when isActive is false
+          })
+        });
+
+        if (!emailResponse.ok) {
+          console.error(`Failed to send ${!isActive ? 'ban' : 'unban'} notification email:`, await emailResponse.text());
+          // Don't fail the operation if email fails
+        } else {
+          console.log(`${!isActive ? 'Ban' : 'Unban'} notification email sent successfully`);
+        }
+      } catch (emailError) {
+        console.error(`Error sending ${!isActive ? 'ban' : 'unban'} notification email:`, emailError);
+        // Don't fail the operation if email fails
+      }
     }
 
     return NextResponse.json({ 
