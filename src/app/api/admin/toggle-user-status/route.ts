@@ -2,23 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../../../supabaseClient';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key';
 
 async function verifyAdminToken(token: string): Promise<{ userId: string; isAdmin: boolean }> {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { user_id: string };
     
     const { data: user, error } = await supabase
       .from('users')
       .select('is_admin')
-      .eq('id', decoded.userId)
+      .eq('id', decoded.user_id)
       .single();
 
     if (error || !user || !user.is_admin) {
       throw new Error('Unauthorized');
     }
 
-    return { userId: decoded.userId, isAdmin: true };
+    return { userId: decoded.user_id, isAdmin: true };
   } catch (error) {
     throw new Error('Unauthorized');
   }

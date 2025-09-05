@@ -391,7 +391,7 @@ export default function NewExtractionsPage() {
 												Coin Limit (Optional)
 											</label>
 											<p className="text-xs text-gray-600">
-												Maximum coins to spend (includes extraction + filtering costs)
+												Set a maximum number of coins to spend on this extraction
 											</p>
 										</div>
 									</div>

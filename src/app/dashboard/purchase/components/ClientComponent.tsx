@@ -1,146 +1,104 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import StripeProvider from "@/components/StripeProvider";
 import StripePaymentForm from "@/components/StripePaymentForm";
+import { FaLock, FaShieldAlt, FaCheckCircle, FaCoins, FaCreditCard, FaBolt } from "react-icons/fa";
+
 const paymentMethods = [
-  { label: "Zerocryptopay", value: "zerocryptopay", logo: "/zerocryptopay.svg" },
-  { label: "PayPal", value: "paypal", logo: "/paypal.svg" },
-  { label: "Visa", value: "visa", logo: "/visa.svg" },
-  { label: "Mastercard", value: "mastercard", logo: "/mastercard.svg" },
+  { 
+    label: "Zerocryptopay", 
+    value: "zerocryptopay", 
+    logo: "/zerocryptopay.svg", 
+    description: "Secure cryptocurrency payments",
+    badge: "CRYPTO"
+  },
+  { 
+    label: "Stripe (Card)", 
+    value: "stripe", 
+    logo: "/stripe.svg", 
+    description: "Visa, Mastercard, American Express",
+    badge: "POPULAR"
+  },
 ];
 
-function PaymentDetails({ deal }: { deal: { name: string; price: string; coins: string } }) {
-  const breakdown = [
-    { label: "Item Price", value: `$${deal.price}` },
-    { label: "Shipping", value: "$0.00" },
-    { label: "Taxes", value: "$0.00" },
-  ];
+function PaymentSummary({ deal }: { deal: { name: string; price: string; coins: string } }) {
   return (
-    <div>
-      <div className="w-full max-w-md mx-auto mb-8">
-        <div className="text-3xl font-bold text-center mb-2 text-black">Total: ${deal.price}</div>
-        <ul className="bg-white rounded-xl shadow p-4 mb-4">
-          {breakdown.map((item) => (
-            <li key={item.label} className="flex justify-between py-1 text-lg text-black">
-              <span className="text-black">{item.label}</span>
-              <span className="text-black">{item.value}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-2 h-2 rounded-full bg-blue-600" />
-          <span className="text-sm font-semibold text-black">Step 1: Payment Details</span>
-          <div className="w-2 h-2 rounded-full bg-gray-300" />
-          <span className="text-sm text-black">Step 2: Confirm</span>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-blue-100 rounded-lg">
+          <FaCoins className="text-blue-600 text-xl" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">{deal.name}</h3>
+          <p className="text-sm text-gray-600">Digital Credits Package</p>
         </div>
       </div>
-      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
-        <div className="h-full bg-blue-600 rounded-full" style={{ width: "50%" }} />
+      
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Credits Amount</span>
+          <span className="font-semibold text-gray-900">{deal.coins} coins</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Platform Fee</span>
+          <span className="font-semibold text-gray-900">$0.00</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Processing Fee</span>
+          <span className="font-semibold text-gray-900">$0.00</span>
+        </div>
+        <hr className="border-gray-200 my-3" />
+        <div className="flex justify-between items-center">
+          <span className="text-lg font-bold text-gray-900">Total Amount</span>
+          <span className="text-2xl font-bold text-blue-600">${deal.price}</span>
+        </div>
+      </div>
+
+      <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+        <div className="flex items-center gap-2 mb-2">
+          <FaCheckCircle className="text-green-600" />
+          <span className="font-semibold text-green-800">What you get:</span>
+        </div>
+        <ul className="text-sm text-green-700 space-y-1">
+          <li>• {deal.coins} InstaScrapper credits</li>
+          <li>• Instant account activation</li>
+          <li>• 24/7 customer support</li>
+          <li>• No expiration date</li>
+        </ul>
       </div>
     </div>
   );
 }
 
-function CardInputs({ onChange, errors }: { onChange: (field: string, value: string) => void; errors: Record<string, string> }) {
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-
-  const formatCardNumber = (value: string) => value.replace(/[^\d]/g, "").replace(/(.{4})/g, "$1 ").trim();
-
+function SecurityBadges() {
   return (
-    <div className="space-y-4">
-      <div>
-  <label className="block text-sm font-semibold mb-1 text-black">Card Number</label>
-        <input
-          type="text"
-          maxLength={19}
-          value={cardNumber}
-          onChange={e => {
-            const val = formatCardNumber(e.target.value);
-            setCardNumber(val);
-            onChange("cardNumber", val.replace(/\s/g, ""));
-          }}
-          className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg ${errors.cardNumber ? "border-red-500" : "border-gray-300"}`}
-          placeholder="1234 5678 9012 3456"
-        />
-  {errors.cardNumber && <span className="text-red-500 text-xs">{errors.cardNumber}</span>}
+    <div className="grid grid-cols-3 gap-4 mt-6">
+      <div className="flex flex-col items-center text-center p-3">
+        <FaLock className="text-gray-400 text-lg mb-2" />
+        <span className="text-xs text-gray-600 font-medium">SSL Protected</span>
       </div>
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <label className="block text-sm font-semibold mb-1 text-black">Expiry Date</label>
-          <input
-            type="text"
-            maxLength={5}
-            value={expiry}
-            onChange={e => {
-              let val = e.target.value.replace(/[^\d]/g, "");
-              if (val.length > 2) val = val.slice(0,2) + "/" + val.slice(2,4);
-              setExpiry(val);
-              onChange("expiry", val);
-            }}
-            className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg ${errors.expiry ? "border-red-500" : "border-gray-300"}`}
-            placeholder="MM/YY"
-          />
-          {errors.expiry && <span className="text-red-500 text-xs">{errors.expiry}</span>}
-        </div>
-        <div className="flex-1">
-          <label className="block text-sm font-semibold mb-1 text-black">CVV</label>
-          <input
-            type="password"
-            maxLength={3}
-            value={cvv}
-            onChange={e => {
-              const val = e.target.value.replace(/[^\d]/g, "").slice(0,3);
-              setCvv(val);
-              onChange("cvv", val);
-            }}
-            className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg ${errors.cvv ? "border-red-500" : "border-gray-300"}`}
-            placeholder="123"
-          />
-          {errors.cvv && <span className="text-red-500 text-xs">{errors.cvv}</span>}
-        </div>
+      <div className="flex flex-col items-center text-center p-3">
+        <FaShieldAlt className="text-gray-400 text-lg mb-2" />
+        <span className="text-xs text-gray-600 font-medium">Secure Payment</span>
+      </div>
+      <div className="flex flex-col items-center text-center p-3">
+        <FaBolt className="text-gray-400 text-lg mb-2" />
+        <span className="text-xs text-gray-600 font-medium">Instant Delivery</span>
       </div>
     </div>
   );
 }
 
 export default function ClientComponent({ deal }: { deal: { name: string; price: string; coins: string } }) {
-  const [selectedMethod, setSelectedMethod] = useState("paypal");
-  const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
-  const [cardFields, setCardFields] = useState<Record<string, string>>({});
+  const [selectedMethod, setSelectedMethod] = useState("stripe");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [termsChecked, setTermsChecked] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  const validateCard = (fields: Record<string, string>) => {
-    const errors: Record<string, string> = {};
-    if (selectedMethod === "visa" || selectedMethod === "mastercard") {
-      if (!/^\d{16}$/.test(fields.cardNumber || "")) errors.cardNumber = "Invalid card number";
-      if (!/^\d{2}\/\d{2}$/.test(fields.expiry || "")) errors.expiry = "Invalid expiry";
-      if (fields.expiry) {
-        const [mm, yy] = fields.expiry.split("/");
-        const now = new Date();
-        const expYear = Number(yy) + 2000;
-        const expMonth = Number(mm);
-        if (expYear < now.getFullYear() || (expYear === now.getFullYear() && expMonth < now.getMonth() + 1)) {
-          errors.expiry = "Expired card";
-        }
-      }
-      if (!/^\d{3}$/.test(fields.cvv || "")) errors.cvv = "Invalid CVV";
-    }
-    return errors;
-  };
-
-  const handleCardChange = (field: string, value: string) => {
-    setCardFields(prev => ({ ...prev, [field]: value }));
-    setCardErrors(validateCard({ ...cardFields, [field]: value }));
-  };
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Stripe payment handler
   const handleStripePayment = async () => {
@@ -156,7 +114,6 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
           metadata: {
             coins: deal.coins,
             dealName: deal.name,
-            // You can add userId here when you have user authentication
           },
         }),
       });
@@ -165,6 +122,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
       
       if (data.clientSecret) {
         setClientSecret(data.clientSecret);
+        setCurrentStep(2);
       } else {
         setError('Failed to initialize payment');
       }
@@ -176,14 +134,13 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   };
 
   const handlePaymentSuccess = () => {
-    setPaymentSuccess(true);
-    // Redirect to success page or update UI
     window.location.href = '/dashboard/purchase/success';
   };
 
   const handlePaymentError = (errorMessage: string) => {
     setError(errorMessage);
     setClientSecret(null);
+    setCurrentStep(1);
   };
 
   // Zerocryptopay payment handler
@@ -191,7 +148,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
     setLoading(true);
     setError(null);
     try {
-  const response = await fetch("/api/zerocryptopay", {
+      const response = await fetch("/api/zerocryptopay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -212,153 +169,195 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
     }
   };
 
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 px-0 py-0">
-        {/* Navbar fixed at the very top */}
-        <div className="w-full sticky top-0 z-50 bg-white shadow">
-          <Navbar />
+  const handleProceedToPayment = () => {
+    if (selectedMethod === "stripe") {
+      handleStripePayment();
+    } else if (selectedMethod === "zerocryptopay") {
+      handleZerocryptopayPayment();
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Navbar */}
+      <div className="w-full sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
+        <Navbar />
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Complete Your Purchase</h1>
+          <p className="text-gray-600 text-lg">Secure payment powered by industry-leading encryption</p>
         </div>
-        <div className="px-4 py-8">
-          {/* Progress bar at the top with 3 points */}
-          <div className="w-full flex flex-col items-center mb-8">
-          <div className="relative w-1/2 h-2 bg-gray-200 rounded-full">
-            <div className="absolute top-0 left-0 h-2 bg-blue-600 rounded-full" style={{ width: "33%" }} />
-            {/* Step points */}
-            <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-blue-600 rounded-full border-2 border-white" />
-            <div className="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-gray-400 rounded-full border-2 border-white" />
-            <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-gray-400 rounded-full border-2 border-white" />
-          </div>
-          <div className="flex justify-between w-1/2 mt-2">
-            <span className="text-sm text-black font-semibold">Step 1</span>
-            <span className="text-sm text-black font-semibold">Step 2</span>
-            <span className="text-sm text-black font-semibold">Step 3</span>
-          </div>
-        </div>
-        <div className="flex flex-row w-full max-w-4xl mx-auto gap-8">
-          {/* Payment Method Box */}
-          <div className="w-1/2 bg-white rounded-xl shadow p-6 flex flex-col items-center">
-            <div className="mb-4 text-2xl font-bold text-black">Select Payment Method</div>
-            <div className="flex flex-col gap-6 w-full">
-              {paymentMethods.map(method => (
-                <label key={method.value} className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={method.value}
-                    checked={selectedMethod === method.value}
-                    onChange={() => setSelectedMethod(method.value)}
-                    className="accent-blue-600 w-5 h-5"
-                  />
-                  <Image src={method.logo} alt={method.label} width={32} height={32} />
-                  <span className="text-lg text-black">{method.label}</span>
-                </label>
-              ))}
-            </div>
-            {selectedMethod === "paypal" && (
-              <button className="w-full py-3 mt-6 rounded-lg bg-blue-600 text-white font-bold text-lg shadow hover:bg-blue-700 transition">Login / Authorize with PayPal</button>
-            )}
-            {selectedMethod === "zerocryptopay" && (
-              <>
-                <div className="flex items-center gap-2 mt-4">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    checked={termsChecked}
-                    onChange={e => setTermsChecked(e.target.checked)}
-                  />
-                  <label htmlFor="terms" className="text-sm text-black">
-                    I agree to the <a href="/terms" target="_blank" className="underline hover:text-blue-600">Terms of Service</a> and <a href="/privacy" target="_blank" className="underline hover:text-blue-600">Privacy Policy</a> and <a href="https://zerocryptopay.com/page/agreement" target="_blank" className="underline hover:text-blue-600">Zerocryptopay User Agreement</a>
-                  </label>
+
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-12">
+          <div className="flex items-center space-x-8">
+            {[
+              { step: 1, label: "Payment Method", icon: FaCreditCard },
+              { step: 2, label: "Payment Details", icon: FaLock },
+              { step: 3, label: "Confirmation", icon: FaCheckCircle }
+            ].map(({ step, label, icon: Icon }) => (
+              <div key={step} className="flex items-center">
+                <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
+                  currentStep >= step 
+                    ? 'bg-blue-600 border-blue-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-400'
+                }`}>
+                  <Icon className="text-lg" />
                 </div>
-                <button
-                  className="w-full py-3 mt-6 rounded-lg bg-blue-600 text-white font-bold text-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
-                  onClick={handleZerocryptopayPayment}
-                  disabled={loading || !termsChecked}
-                >
-                  {loading ? "Redirecting..." : "Pay with Zerocryptopay"}
-                </button>
-              </>
-            )}
-            {(selectedMethod === "visa" || selectedMethod === "mastercard") && !clientSecret && (
-              <>
-                <div className="flex items-center gap-2 mt-4">
-                  <input
-                    type="checkbox"
-                    id="stripe-terms"
-                    checked={termsChecked}
-                    onChange={e => setTermsChecked(e.target.checked)}
-                  />
-                  <label htmlFor="stripe-terms" className="text-sm text-black">
-                    I agree to the <a href="/terms" target="_blank" className="underline hover:text-blue-600">Terms of Service</a> and <a href="/privacy" target="_blank" className="underline hover:text-blue-600">Privacy Policy</a>
-                  </label>
-                </div>
-                <button
-                  className="w-full py-3 mt-6 rounded-lg bg-blue-600 text-white font-bold text-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
-                  onClick={handleStripePayment}
-                  disabled={loading || !termsChecked}
-                >
-                  {loading ? "Initializing..." : "Initialize Payment"}
-                </button>
-              </>
-            )}
-            {(selectedMethod === "visa" || selectedMethod === "mastercard") && clientSecret && (
-              <div className="w-full mt-6">
-                <StripeProvider clientSecret={clientSecret}>
-                  <StripePaymentForm 
-                    amount={deal.price}
-                    coins={deal.coins}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                </StripeProvider>
+                <span className={`ml-3 font-medium ${
+                  currentStep >= step ? 'text-blue-600' : 'text-gray-400'
+                }`}>
+                  {label}
+                </span>
+                {step < 3 && (
+                  <div className={`w-16 h-0.5 ml-8 ${
+                    currentStep > step ? 'bg-blue-600' : 'bg-gray-300'
+                  }`} />
+                )}
               </div>
-            )}
+            ))}
           </div>
-          {/* Payment Details Box */}
-          <div className="w-1/2 flex flex-col items-center">
-            <h1 className="text-3xl font-extrabold mb-4 text-black tracking-tight">Secure Payment</h1>
-            <PaymentDetails deal={deal} />
-            <div className="w-full flex gap-4 mt-8">
-              {(selectedMethod === "visa" || selectedMethod === "mastercard") && clientSecret ? (
-                // Stripe payment form is already rendered above
-                null
-              ) : (
-                <button
-                  className="flex-1 py-4 rounded-xl bg-green-600 text-white font-bold text-lg shadow hover:bg-green-700 transition disabled:opacity-50"
-                  disabled={
-                    loading || 
-                    (selectedMethod === "zerocryptopay" && !termsChecked) ||
-                    ((selectedMethod === "visa" || selectedMethod === "mastercard") && !termsChecked)
-                  }
-                  onClick={
-                    selectedMethod === "zerocryptopay" 
-                      ? handleZerocryptopayPayment 
-                      : (selectedMethod === "visa" || selectedMethod === "mastercard") 
-                        ? handleStripePayment
-                        : undefined
-                  }
-                >
-                  {loading ? "Processing..." : 
-                   selectedMethod === "paypal" ? "Login with PayPal" :
-                   selectedMethod === "zerocryptopay" ? "Pay with Zerocryptopay" :
-                   (selectedMethod === "visa" || selectedMethod === "mastercard") ? "Initialize Payment" :
-                   "Make Payment"}
-                </button>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Payment Methods */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Payment Method</h2>
+              
+              <div className="space-y-4">
+                {paymentMethods.map((method) => (
+                  <div
+                    key={method.value}
+                    className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                      selectedMethod === method.value
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedMethod(method.value)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={method.value}
+                          checked={selectedMethod === method.value}
+                          onChange={() => setSelectedMethod(method.value)}
+                          className="w-5 h-5 text-blue-600"
+                        />
+                        <Image src={method.logo} alt={method.label} width={40} height={40} className="rounded" />
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{method.label}</h3>
+                          <p className="text-sm text-gray-600">{method.description}</p>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        method.badge === 'POPULAR' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {method.badge}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Terms and Conditions */}
+              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={termsChecked}
+                    onChange={(e) => setTermsChecked(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 mt-0.5"
+                  />
+                  <span className="text-sm text-gray-700">
+                    I agree to the{' '}
+                    <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>,{' '}
+                    <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
+                    {selectedMethod === "zerocryptopay" && (
+                      <>
+                        {' '}and{' '}
+                        <a href="https://zerocryptopay.com/page/agreement" target="_blank" className="text-blue-600 hover:underline">
+                          Zerocryptopay User Agreement
+                        </a>
+                      </>
+                    )}
+                  </span>
+                </label>
+              </div>
+
+              {/* Stripe Payment Form */}
+              {selectedMethod === "stripe" && clientSecret && (
+                <div className="mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Payment</h3>
+                  <StripeProvider clientSecret={clientSecret}>
+                    <StripePaymentForm 
+                      amount={deal.price}
+                      coins={deal.coins}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
+                  </StripeProvider>
+                </div>
               )}
-              <button
-                className="flex-1 py-4 rounded-xl bg-gray-300 text-black font-bold text-lg shadow hover:bg-gray-400 transition"
-              >
-                Cancel Payment
-              </button>
+
+              {/* Action Buttons */}
+              {!(selectedMethod === "stripe" && clientSecret) && (
+                <div className="mt-8 flex gap-4">
+                  <button
+                    onClick={handleProceedToPayment}
+                    disabled={!termsChecked || loading}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-8 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Processing...
+                      </div>
+                    ) : (
+                      `Proceed to Payment • $${deal.price}`
+                    )}
+                  </button>
+                  <Link
+                    href="/dashboard/new-extractions"
+                    className="px-8 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </Link>
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              <PaymentSummary deal={deal} />
+              <SecurityBadges />
+              
+              {/* Support */}
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600 mb-2">Need help?</p>
+                <Link href="/support" className="text-blue-600 hover:underline text-sm font-medium">
+                  Contact Support
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-        {error && <div className="text-red-600 text-center mt-4">{error}</div>}
-        <footer className="w-full max-w-4xl mx-auto text-center text-sm text-black mt-8">
-          <Link href="/terms" className="underline hover:text-blue-600">Terms of Service</Link> &nbsp;|&nbsp;
-          <Link href="/privacy" className="underline hover:text-blue-600">Privacy Policy</Link>
-        </footer>
       </div>
-      </div>
-    );
+    </div>
+  );
 }
