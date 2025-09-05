@@ -109,23 +109,38 @@ export default function AdminUsers() {
 
   const handleUserStatusToggle = async (userId: string, currentStatus: boolean) => {
     try {
+      console.log('🔍 [Frontend] Starting user status toggle...');
+      console.log('  - User ID:', userId);
+      console.log('  - Current Status (is_active):', currentStatus);
+      console.log('  - Will set is_active to:', !currentStatus);
+      console.log('  - Action:', currentStatus ? 'BAN' : 'UNBAN');
+
+      const requestBody = {
+        userId,
+        isActive: !currentStatus
+      };
+      console.log('🔍 [Frontend] Request body:', requestBody);
+
       const response = await fetch('/api/admin/toggle-user-status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId,
-          isActive: !currentStatus
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('🔍 [Frontend] Response status:', response.status);
+      console.log('🔍 [Frontend] Response ok:', response.ok);
+
       const data = await response.json();
+      console.log('🔍 [Frontend] Response data:', data);
 
       if (!response.ok) {
+        console.error('❌ [Frontend] API request failed:', data.error);
         throw new Error(data.error || 'Failed to update user status');
       }
 
+      console.log('✅ [Frontend] User status updated successfully');
       // Update the user in the users list
       setUsers(prev => 
         prev.map(user => 
@@ -135,6 +150,7 @@ export default function AdminUsers() {
         )
       );
     } catch (err) {
+      console.error('❌ [Frontend] Error in handleUserStatusToggle:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     }
   };
