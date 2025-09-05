@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 // import { supabase } from "../../../supabaseClient";
 
-export default function LoginPage() {
+function LoginForm() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -156,5 +156,17 @@ export default function LoginPage() {
 				}
 			`}</style>
 		</main>
+	);
+}
+
+export default function LoginPage() {
+	return (
+		<Suspense fallback={
+			<main className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black">
+				<div className="text-white">Loading...</div>
+			</main>
+		}>
+			<LoginForm />
+		</Suspense>
 	);
 }
