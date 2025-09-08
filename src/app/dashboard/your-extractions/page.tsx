@@ -99,47 +99,38 @@ export default function YourExtractionsPage() {
   };
 
   useEffect(() => {
-    const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-    if (!userId) return;
-    setLoading(true);
-    supabase
-      .from("extractions")
-      .select("*")
-      .eq("user_id", userId)
-      .order("requested_at", { ascending: false })
-      .then(({ data, error }) => {
-        setLoading(false);
-        if (!error && data) setExtractions(data);
-      });
+    async function fetchExtractions() {
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) throw new Error("Not authenticated");
+        const user = await res.json();
+        if (!user?.id) return;
+        setLoading(true);
+        // Replace with your own API or fetch logic for extractions
+        const extractionsRes = await fetch(`/api/extractions?user_id=${user.id}`);
+        if (extractionsRes.ok) {
+          const data = await extractionsRes.json();
+          setExtractions(data);
+        }
+      } catch {}
+      setLoading(false);
+    }
+    fetchExtractions();
   }, []);
 
   useEffect(() => {
-	async function fetchCoins() {
-		const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-		console.log("[NewExtractions] userId from localStorage:", userId);
-		if (userId) {
-			try {
-				const { data, error } = await supabase
-					.from("users")
-					.select("coins")
-					.eq("id", userId)
-					.single();
-				console.log("[NewExtractions] Supabase coins query result:", { data, error });
-				if (data && data.coins !== undefined) {
-					setCoins(data.coins);
-					console.log(`[NewExtractions] Coins set in state:`, data.coins);
-				} else {
-					console.log("[NewExtractions] No coins found for user");
-				}
-			} catch (err) {
-				console.error("[NewExtractions] Error fetching coins:", err);
-			}
-		} else {
-			console.log("[NewExtractions] No user_id in localStorage");
-		}
-	}
-	fetchCoins();
-}, []);
+    async function fetchCoins() {
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) throw new Error("Not authenticated");
+        const user = await res.json();
+        if (user && typeof user.coins === "number") setCoins(user.coins);
+      } catch {
+        setCoins(0);
+      }
+    }
+    fetchCoins();
+  }, []);
 
 
   const handleShowDetails = async (extraction: Extraction) => {

@@ -13,13 +13,14 @@ export async function POST(request: NextRequest) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(parseFloat(amount) * 100), // Convert to cents
       currency,
+      payment_method_types: ['card'], // Only allow card payments
       metadata: {
         ...metadata,
         source: 'instagram-scraper',
       },
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      // automatic_payment_methods: {
+      //   enabled: true,
+      // },
     });
 
     return NextResponse.json({

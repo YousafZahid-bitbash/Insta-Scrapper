@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/supabaseClient';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -15,71 +14,38 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
           setIsAuthenticated(true);
-          
-          // Always check user status from database
-          const { data: profile } = await supabase
-            .from('users')
-            .select('is_admin, is_active')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            setIsAdmin(profile.is_admin || false);
-            setIsBanned(!profile.is_active); // is_active = false means banned
-            
-            // If user is banned, sign them out immediately and clear localStorage
-            if (!profile.is_active) {
-              await supabase.auth.signOut();
-              if (typeof window !== 'undefined') {
-                localStorage.clear();
-                sessionStorage.clear();
-              }
-              setIsAuthenticated(false);
-              setIsAdmin(false);
-              setIsBanned(true);
-              return;
-            }
-          }
+          setIsAdmin(!!userData.is_admin);
+          setIsBanned(false);
         } else {
+          const err = await res.json();
+          if (err.error === 'Account suspended') {
+            setIsBanned(true);
+          }
           setIsAuthenticated(false);
+          setIsAdmin(false);
+          setUser(null);
         }
       } catch (error) {
-        console.error('Auth check error:', error);
         setIsAuthenticated(false);
         setIsAdmin(false);
         setIsBanned(false);
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
-
     checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
-      if (event === 'SIGNED_IN' && session) {
-        setIsAuthenticated(true);
-      } else if (event === 'SIGNED_OUT') {
-        if (typeof window !== 'undefined') {
-          localStorage.clear();
-          sessionStorage.clear();
-        }
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-        setIsBanned(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, [adminOnly]);
 
   useEffect(() => {

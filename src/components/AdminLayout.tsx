@@ -20,12 +20,11 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
 
   const handleLogout = async () => {
     try {
-      // Clear the auth cookie
-      document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      router.push('/auth/login');
+      await fetch('/api/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);
     }
+    router.push('/auth/login');
   };
 
   return (

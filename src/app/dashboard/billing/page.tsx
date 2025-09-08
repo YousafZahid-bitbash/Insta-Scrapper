@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Shimmer from "@/components/Shimmer";
 import Sidebar from "@/components/Sidebar";
-
 import { supabase } from "../../../supabaseClient";
+
+
 
 type Deal = {
   id: number;
@@ -21,28 +22,28 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchCoins() {
-      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-      if (userId) {
-        const { data } = await supabase
-          .from("users")
-          .select("coins")
-          .eq("id", userId)
-          .single();
-        if (data && data.coins !== undefined) setCoins(data.coins);
+    async function fetchCoinsAndDeals() {
+      try {
+        // Fetch user info (including coins) from /api/me
+        const res = await fetch("/api/me");
+        if (!res.ok) throw new Error("Not authenticated");
+        const user = await res.json();
+        if (user && typeof user.coins === "number") setCoins(user.coins);
+      } catch {
+        setCoins(0);
       }
-    }
-    async function fetchDeals() {
-      const { data, error } = await supabase
-        .from("deals")
-        .select("id, coins, price, sale_price, description, active")
-        .eq("active", true)
-        .order("price", { ascending: true });
-      if (!error && data) setDeals(data);
+      try {
+        // Fetch deals directly from Supabase
+        const { data, error } = await supabase
+          .from("deals")
+          .select("id, coins, price, sale_price, description, active")
+          .eq("active", true)
+          .order("price", { ascending: true });
+        if (!error && data) setDeals(data);
+      } catch {}
       setLoading(false);
     }
-    fetchCoins();
-    fetchDeals();
+    fetchCoinsAndDeals();
   }, []);
 
   return (

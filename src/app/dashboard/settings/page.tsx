@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-import { supabase } from "../../../supabaseClient";
+
 
 export default function SettingsPage() {
   type User = { id: string; email: string; username: string };
@@ -14,26 +14,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function fetchUser() {
-      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-      console.log("[Settings] userId from localStorage:", userId);
-      if (userId) {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, email, username")
-          .eq("id", userId)
-          .single();
-        console.log("[Settings] Supabase user query result:", { data, error });
-        if (data) {
-          setUser(data);
-        //   setStripeConnected(!!data.stripe_account_id);
-        } else {
-          console.log("[Settings] No user found for id:", userId);
-        }
-        if (error) {
-         console.error("[Settings] Supabase error:", JSON.stringify(error, null, 2));
-        }
-      } else {
-        console.log("[Settings] No user_id in localStorage");
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) throw new Error("Not authenticated");
+        const user = await res.json();
+        setUser(user);
+      } catch {
+        setUser(null);
       }
       setLoading(false);
     }

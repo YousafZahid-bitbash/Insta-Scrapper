@@ -65,6 +65,25 @@ export default function AdminDashboard() {
     fetchStats();
   }, [fetchStats]);
 
+  useEffect(() => {
+    // Auth check: only allow admin
+    (async () => {
+      try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) {
+          router.replace('/auth/login');
+          return;
+        }
+        const user = await res.json();
+        if (!user?.is_admin) {
+          router.replace('/auth/login');
+        }
+      } catch {
+        router.replace('/auth/login');
+      }
+    })();
+  }, [router]);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',

@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
 import Navbar from "@/components/Navbar";
-import { supabase } from "../../../supabaseClient";
+import { useRouter } from "next/navigation";
+
 import Sidebar from "@/components/Sidebar";
 import "../../globals.css";
 import { FilterPanel, FiltersState } from "@/components/FilterPanel";
@@ -19,6 +20,7 @@ const extractOptions = [
 ];
 
 export default function NewExtractionsPage() {
+	const router = useRouter();
 	const [showCoinError, setShowCoinError] = useState(false);
 	const [showSuccess, setShowSuccess] = useState(false);
 	// const [stopRequested, setStopRequested] = useState(false);
@@ -57,25 +59,19 @@ export default function NewExtractionsPage() {
 	});
 
 	useEffect(() => {
-		async function fetchCoins() {
-			const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-			if (userId) {
-				try {
-					const { data } = await supabase
-						.from("users")
-						.select("coins")
-						.eq("id", userId)
-						.single();
-					if (data && data.coins !== undefined) {
-						setCoins(data.coins);
-					}
-				} catch {
-					// ignore
-				}
+		async function checkAuthAndFetchCoins() {
+			try {
+				const res = await fetch("/api/me");
+				if (!res.ok) throw new Error("Not authenticated");
+				const user = await res.json();
+				if (user && typeof user.coins === "number") setCoins(user.coins);
+			} catch {
+				// Not authenticated, redirect to login
+				router.replace("/auth/login");
 			}
 		}
-		fetchCoins();
-	}, []);
+		checkAuthAndFetchCoins();
+	}, [router]);
 
 	// Helper: parse targets from textarea
 	const parsedTargets = targetsInput.split(/\r?\n/).map(t => t.trim()).filter(Boolean);

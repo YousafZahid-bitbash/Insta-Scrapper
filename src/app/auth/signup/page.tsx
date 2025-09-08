@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../supabaseClient";
@@ -30,20 +30,6 @@ export default function SignupPage() {
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 	const router = useRouter();
-
-	// Check if user is already logged in
-	useEffect(() => {
-		const checkAuthStatus = () => {
-			const userId = localStorage.getItem("user_id");
-			if (userId) {
-				// User is already logged in, redirect to dashboard
-				console.log("User already logged in, redirecting to dashboard");
-				router.push("/dashboard/new-extractions");
-			}
-		};
-
-		checkAuthStatus();
-	}, [router]);
 
 	async function handleSignup(e: React.FormEvent) {
 		e.preventDefault();

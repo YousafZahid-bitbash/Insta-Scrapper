@@ -24,15 +24,11 @@ export default function Navbar({ coins = 0 }: NavbarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      // Clear localStorage
-      localStorage.clear();
-      // Clear the authentication cookie
-      document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      // Redirect to login
-      window.location.href = '/auth/login';
-    }
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch {}
+    window.location.href = '/auth/login';
   };
 
   return (

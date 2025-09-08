@@ -2,46 +2,60 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-// import { supabase } from "../../../supabaseClient";
+// No supabase auth used for session
 
 function LoginForm() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState(true); // true by default
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	// Check if user is already logged in and handle banned message
-		useEffect(() => {
-			// Check if user was redirected due to being banned
-			const banned = searchParams?.get('banned');
-			if (banned === 'true') {
-				setError("Your account has been suspended. Please contact support for assistance.");
-				// Clear any stored user data
-				localStorage.clear();
-				sessionStorage.clear();
-				return; // Don't check auth status if banned
-			}
+	// LOG: Component mounted
+	console.log('[Login] Component mounted');
+	// Use sessionStorage to persist redirect guard across remounts
 
-			// Only redirect if user is truly authenticated (not just localStorage)
-			const userId = localStorage.getItem("user_id");
-			if (userId) {
-				// Prevent repeated redirects
-				if (window.location.pathname !== '/dashboard/new-extractions') {
-					console.log("User already logged in, redirecting to dashboard");
-					router.push("/dashboard/new-extractions");
-				}
-			}
-		}, [router, searchParams]);
 
-	async function handleLogin(e: React.FormEvent) {
-		e.preventDefault();
+		// Why useEffect? We useEffect to run redirect logic after the component mounts and after router/searchParams update.
+		// This ensures we don't run redirect logic during SSR or before the router is ready.
+		// If you run redirect logic directly in the render, it will cause errors or loops.
+
+			useEffect(() => {
+				(async () => {
+					console.log('[Login] useEffect triggered');
+					const banned = searchParams?.get('banned');
+					console.log('[Login] searchParams banned:', banned);
+					if (banned === 'true') {
+						setError("Your account has been suspended. Please contact support for assistance.");
+						setLoading(false);
+						return;
+					}
+
+					try {
+						const res = await fetch('/api/me', { credentials: 'include' });
+						if (res.ok) {
+							const user = await res.json();
+							if (user?.is_admin) {
+								router.replace('/admin');
+							} else {
+								router.replace('/dashboard/new-extractions');
+							}
+							return; // Don't show login form
+						}
+					} catch {}
+					setLoading(false); // Not authenticated, show login form
+				})();
+			}, [router, searchParams]);
+
+		async function handleLogin(e: React.FormEvent) {
+			e.preventDefault();
 			setError("");
 			setSuccess("");
 			setLoading(true);
 			try {
+				console.log('[Login] Attempting login for', email);
 				const res = await fetch("/api/login", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -49,26 +63,38 @@ function LoginForm() {
 				});
 				setLoading(false);
 				const result = await res.json();
+				console.log('[Login] API result:', result);
 				if (!res.ok) {
-					setError(result.error || "Invalid credentials");
+					if (res.status === 403) {
+						setError(result.error || "Your account has been suspended. Please contact support.");
+					} else {
+						setError(result.error || "Invalid credentials");
+					}
+					console.log('[Login] Login failed:', result.error);
 					return;
 				}
 				setEmail("");
 				setPassword("");
 				if (result.user_id) {
 					localStorage.setItem("user_id", result.user_id);
-					// Redirect based on admin status
+					localStorage.setItem("is_admin", result.is_admin ? 'true' : 'false');
+					console.log('[Login] Login success, is_admin:', result.is_admin);
 					if (result.is_admin) {
-						router.push("/admin");
+						console.log('[Login] Redirecting to /admin after login');
+						router.replace("/admin");
 					} else {
-						router.push("/dashboard/new-extractions");
+						console.log('[Login] Redirecting to /dashboard/new-extractions after login');
+						router.replace("/dashboard/new-extractions");
 					}
 				}
-			} catch {
+			} catch (err) {
 				setLoading(false);
 				setError("Server error");
+				console.log('[Login] Server error:', err);
 			}
-	}
+		}
+
+	if (loading) return null; // Or a spinner if you prefer
 
 	return (
 		<main className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
