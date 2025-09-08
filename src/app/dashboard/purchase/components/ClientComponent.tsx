@@ -15,6 +15,13 @@ const paymentMethods = [
     description: "Visa, Mastercard, American Express",
     badge: "POPULAR"
   },
+  { 
+    label: "NOWPayments (Crypto)", 
+    value: "nowpayments", 
+    logo: "/cryptocom.svg", 
+    description: "Bitcoin, Ethereum, USDT, and 300+ cryptocurrencies",
+    badge: "CRYPTO"
+  },
 ];
 
 function PaymentSummary({ deal }: { deal: { name: string; price: string; coins: string } }) {
@@ -92,6 +99,13 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   const [termsChecked, setTermsChecked] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [cryptoPayment, setCryptoPayment] = useState<{
+    payment_id?: string;
+    pay_address?: string;
+    pay_amount?: number;
+    pay_currency?: string;
+    payment_url?: string;
+  } | null>(null);
 
   // Stripe payment handler
   const handleStripePayment = async () => {
@@ -126,6 +140,23 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
     }
   };
 
+  const handleNOWPaymentsPayment = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // For now, just show a placeholder until backend is implemented
+      setTimeout(() => {
+        setError('NOWPayments integration coming soon! Backend implementation pending.');
+        setLoading(false);
+      }, 1000);
+      
+    } catch (err) {
+      setError('Failed to initialize crypto payment');
+      setLoading(false);
+    }
+  };
+
   const handlePaymentSuccess = () => {
     window.location.href = '/dashboard/purchase/success';
   };
@@ -133,12 +164,15 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   const handlePaymentError = (errorMessage: string) => {
     setError(errorMessage);
     setClientSecret(null);
+    setCryptoPayment(null);
     setCurrentStep(1);
   };
 
   const handleProceedToPayment = () => {
     if (selectedMethod === "stripe") {
       handleStripePayment();
+    } else if (selectedMethod === "nowpayments") {
+      handleNOWPaymentsPayment();
     }
   };
 
@@ -261,6 +295,63 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
                       onError={handlePaymentError}
                     />
                   </StripeProvider>
+                </div>
+              )}
+
+              {/* NOWPayments Crypto Payment */}
+              {selectedMethod === "nowpayments" && cryptoPayment && cryptoPayment.pay_address && cryptoPayment.pay_currency && (
+                <div className="mt-8 p-6 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl border border-orange-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Crypto Payment</h3>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-white rounded-lg border">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-600">Payment Amount:</span>
+                        <span className="text-lg font-bold text-gray-900">
+                          {cryptoPayment.pay_amount} {cryptoPayment.pay_currency.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-sm font-medium text-gray-600">Payment Address:</span>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg font-mono text-sm break-all border">
+                        {cryptoPayment.pay_address}
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(cryptoPayment.pay_address!)}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        📋 Copy Address
+                      </button>
+                    </div>
+                    
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800 mb-2">
+                        <strong>Instructions:</strong>
+                      </p>
+                      <ol className="text-sm text-blue-700 space-y-1">
+                        <li>1. Send exactly <strong>{cryptoPayment.pay_amount} {cryptoPayment.pay_currency.toUpperCase()}</strong> to the address above</li>
+                        <li>2. Wait for blockchain confirmation (usually 10-30 minutes)</li>
+                        <li>3. Your coins will be automatically added to your account</li>
+                      </ol>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <a
+                        href={cryptoPayment.payment_url || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold py-3 px-6 rounded-lg hover:from-orange-600 hover:to-yellow-600 transition-all text-center"
+                      >
+                        Open in Wallet
+                      </a>
+                      <button
+                        onClick={() => window.open(`https://blockchair.com/${cryptoPayment.pay_currency}/address/${cryptoPayment.pay_address}`, '_blank')}
+                        className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        View on Explorer
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 

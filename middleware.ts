@@ -10,100 +10,42 @@ const AUTH_PATHS = ["/auth/login", "/auth/signup", "/auth/forgot-password", "/au
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("token")?.value;
-  const verified = token ? await verifyJWT(token) : null;
   
-  // Protect all /dashboard routes
-  if (pathname.startsWith(DASHBOARD_PATH)) {
-    if (!token || !verified) {
-      // Redirect to login if not authenticated
-      return NextResponse.redirect(new URL("/auth/login", request.url));
-    }
+  try {
+    // Quick token verification only
+    const verified = token ? await verifyJWT(token) : null;
     
-    // Check if user is active (not banned)
-    try {
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('id, email, is_active')
-        .eq('id', verified.user_id)
-        .single();
-        
-      if (error || !user) {
-        // User not found, redirect to login
+    // Protect all /dashboard routes - basic auth only
+    if (pathname.startsWith(DASHBOARD_PATH)) {
+      if (!token || !verified) {
         return NextResponse.redirect(new URL("/auth/login", request.url));
       }
-      
-      if (!user.is_active) {
-        // User is banned, clear token and redirect to login with message
-        const response = NextResponse.redirect(new URL("/auth/login?banned=true", request.url));
-        response.cookies.delete("token");
-        // Add header to signal frontend to clear localStorage
-        response.headers.set('X-User-Banned', 'true');
-        return response;
-      }
-    } catch (error) {
-      console.error('User verification error:', error);
-      return NextResponse.redirect(new URL("/auth/login", request.url));
-    }
-  }
-  
-  // Protect all /admin routes - require admin role
-  if (pathname.startsWith(ADMIN_PATH)) {
-    if (!token || !verified) {
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+      // Let the page handle detailed user checks
     }
     
-    // Check if user exists, is active, and is admin
-    try {
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('id, email, is_admin, is_active')
-        .eq('id', verified.user_id)
-        .single();
-        
-      if (error || !user) {
+    // Protect all /admin routes - basic auth only
+    if (pathname.startsWith(ADMIN_PATH)) {
+      if (!token || !verified) {
         return NextResponse.redirect(new URL("/auth/login", request.url));
       }
-      
-      if (!user.is_active) {
-        // User is banned, clear token and redirect to login with message
-        const response = NextResponse.redirect(new URL("/auth/login?banned=true", request.url));
-        response.cookies.delete("token");
-        // Add header to signal frontend to clear localStorage  
-        response.headers.set('X-User-Banned', 'true');
-        return response;
-      }
-      
-      if (!user.is_admin) {
-        // User is not admin, redirect to regular dashboard
-        return NextResponse.redirect(new URL("/dashboard/new-extractions", request.url));
-      }
-    } catch (error) {
-      console.error('Admin verification error:', error);
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+      // Let the admin page handle admin permission checks
     }
-  }
 
-  // Prevent authenticated users from accessing auth pages
-  if (AUTH_PATHS.includes(pathname) && verified) {
-    // If user is already logged in, redirect to appropriate dashboard
-    try {
-      const { data: user } = await supabase
-        .from('users')
-        .select('is_admin')
-        .eq('id', verified.user_id)
-        .single();
-      
-      if (user?.is_admin) {
-        return NextResponse.redirect(new URL("/admin", request.url));
-      } else {
-        return NextResponse.redirect(new URL("/dashboard/new-extractions", request.url));
-      }
-    } catch {
+    // Prevent authenticated users from accessing auth pages
+    if (AUTH_PATHS.includes(pathname) && verified) {
       return NextResponse.redirect(new URL("/dashboard/new-extractions", request.url));
     }
+    
+    return NextResponse.next();
+    
+  } catch (error) {
+    console.error('Middleware error:', error);
+    // On any error, let auth pages handle it
+    if (pathname.startsWith(DASHBOARD_PATH) || pathname.startsWith(ADMIN_PATH)) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+    return NextResponse.next();
   }
-  
-  return NextResponse.next();
 }
 
 export const config = {
