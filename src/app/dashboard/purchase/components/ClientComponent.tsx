@@ -9,13 +9,6 @@ import { FaLock, FaShieldAlt, FaCheckCircle, FaCoins, FaCreditCard, FaBolt } fro
 
 const paymentMethods = [
   { 
-    label: "Zerocryptopay", 
-    value: "zerocryptopay", 
-    logo: "/zerocryptopay.svg", 
-    description: "Secure cryptocurrency payments",
-    badge: "CRYPTO"
-  },
-  { 
     label: "Stripe (Card)", 
     value: "stripe", 
     logo: "/stripe.svg", 
@@ -143,37 +136,9 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
     setCurrentStep(1);
   };
 
-  // Zerocryptopay payment handler
-  const handleZerocryptopayPayment = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/zerocryptopay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: deal.price,
-          order_id: `${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-        }),
-      });
-      const data = await response.json();
-      if (data.status && data.url_to_pay) {
-        window.location.href = data.url_to_pay;
-      } else {
-        setError(data.message || "Payment initiation failed.");
-      }
-    } catch (err) {
-      setError("Payment initiation failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleProceedToPayment = () => {
     if (selectedMethod === "stripe") {
       handleStripePayment();
-    } else if (selectedMethod === "zerocryptopay") {
-      handleZerocryptopayPayment();
     }
   };
 
@@ -278,16 +243,8 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
                   />
                   <span className="text-sm text-gray-700">
                     I agree to the{' '}
-                    <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>,{' '}
+                    <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link> and{' '}
                     <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
-                    {selectedMethod === "zerocryptopay" && (
-                      <>
-                        {' '}and{' '}
-                        <a href="https://zerocryptopay.com/page/agreement" target="_blank" className="text-blue-600 hover:underline">
-                          Zerocryptopay User Agreement
-                        </a>
-                      </>
-                    )}
                   </span>
                 </label>
               </div>

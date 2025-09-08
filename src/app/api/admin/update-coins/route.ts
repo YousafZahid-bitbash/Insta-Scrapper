@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/supabaseClient';
-import { requireAdmin } from '@/utils/adminAuth';
+import { supabase } from '../../../../supabaseClient';
+import { requireAdmin } from '../../../../utils/adminAuth';
 
 async function updateUserCoins(req: NextRequest) {
   try {
