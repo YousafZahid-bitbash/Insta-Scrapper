@@ -278,10 +278,8 @@ export default function NewExtractionsPage() {
 											setProgressTotal(0);
 											const apiResult = await mod.getUserPosts(
 												{ target: parsedTargets, filters: filterOptions },
-												(count: number) => {
-													setProgressCount(count);
-													setProgressTotal(prev => prev || count);
-												}
+												(count: number) => setProgressCount(count),
+												(total: number) => setProgressTotal(total)
 											);
 											const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
 											setExtractedCount(extractedPosts.length);
@@ -296,10 +294,8 @@ export default function NewExtractionsPage() {
 											setProgressTotal(0);
 											const apiResult = await mod.extractCommentersBulkV2(
 												{ urls: parsedTargets, filters: filterOptions },
-												(count: number) => {
-													setProgressCount(count);
-													setProgressTotal(prev => prev || count);
-												}
+												(count: number) => setProgressCount(count),
+												(total: number) => setProgressTotal(total)
 											);
 											const extractedUsers = Array.isArray(apiResult?.comments) ? apiResult.comments : [];
 											setExtractedCount(extractedUsers.length);
@@ -314,10 +310,8 @@ export default function NewExtractionsPage() {
 											setProgressTotal(0);
 											const apiResult = await mod.extractHashtagClipsBulkV2(
 												{ hashtags: parsedTargets, filters: filterOptions },
-												(count: number) => {
-													setProgressCount(count);
-													setProgressTotal(prev => prev || count);
-												}
+												(count: number) => setProgressCount(count),
+												(total: number) => setProgressTotal(total)
 											);
 											const extractedClips = Array.isArray(apiResult?.clips) ? apiResult.clips : [];
 											setExtractedCount(extractedClips.length);
@@ -345,11 +339,8 @@ export default function NewExtractionsPage() {
 											setProgressTotal(0);
 											const apiResult = (await apiFn(
 												{ target: parsedTargets, filters: filterOptions },
-												(count: number) => {
-													setProgressCount(count);
-													// If you know the total, set it here. Otherwise, fallback to previous logic:
-													setProgressTotal(prev => prev || count); // This will set total to first count, update if you have a better estimate
-												}
+												(count: number) => setProgressCount(count),
+												(total: number) => setProgressTotal(total)
 											)) as { filteredFollowers?: unknown[] };
 											const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
 											setExtractedCount(extractedUsers.length);
@@ -362,10 +353,8 @@ export default function NewExtractionsPage() {
 											setProgressTotal(0);
 											const apiResult = await mod.mediaLikersBulkV1(
 												{ urls: parsedTargets, filters: filterOptions },
-												(count: number) => {
-													setProgressCount(count);
-													setProgressTotal(prev => prev || count);
-												}
+												(count: number) => setProgressCount(count),
+												(total: number) => setProgressTotal(total)
 											);
 											const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
 											setExtractedCount(extractedUsers.length);
@@ -515,30 +504,61 @@ export default function NewExtractionsPage() {
 										<div className="space-y-2">
 											<div className="flex justify-between text-sm">
 												<span className="text-gray-600">
-													Extracted: {progressCount} {
-														selected === "followers" || selected === "followings" || selected === "likers"
-															? "users"
-															: selected === "commenters"
-																? "comments"
-																: selected === "hashtags"
-																	? "hashtags"
-																	: selected === "posts"
+													{progressTotal > 0 ? (
+														<>Extracted: {progressCount.toLocaleString()} / {progressTotal.toLocaleString()} {
+															selected === "followers" || selected === "followings" || selected === "likers"
+																? "users"
+																: selected === "commenters"
+																	? "comments"
+																	: selected === "hashtags"
 																		? "posts"
-																		: "items"
+																		: selected === "posts"
+																			? "posts"
+																			: "items"
+														}</>
+													) : (
+														<>Extracted: {progressCount.toLocaleString()} {
+															selected === "followers" || selected === "followings" || selected === "likers"
+																? "users"
+																: selected === "commenters"
+																	? "comments"
+																	: selected === "hashtags"
+																		? "posts"
+																		: selected === "posts"
+																			? "posts"
+																			: "items"
+														}</>
+													)}
+												</span>
+												<span className="text-gray-600 font-medium">
+													{progressTotal > 0 
+														? `${Math.min(100, Math.round((progressCount / progressTotal) * 100))}%`
+														: 'Processing...'
 													}
 												</span>
-												<span className="text-gray-600">
-													{progressTotal ? `${Math.min(100, Math.round((progressCount / progressTotal) * 100))}%` : '0%'}
-												</span>
 											</div>
-											<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-												<div
-													className="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
-													style={{ width: `${progressTotal ? Math.min(100, (progressCount / progressTotal) * 100) : 0}%` }}
-												></div>
-											</div>
+											{progressTotal > 0 ? (
+												<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+													<div
+														className="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
+														style={{ width: `${Math.min(100, (progressCount / progressTotal) * 100)}%` }}
+													></div>
+												</div>
+											) : (
+												<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+													<div className="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full animate-pulse w-full"></div>
+												</div>
+											)}
 										</div>
-										<p className="text-sm text-gray-600">Please wait while we collect your data...</p>
+										{progressTotal > 0 ? (
+											<p className="text-sm text-gray-600">
+												Estimated {progressTotal.toLocaleString()} total items. Please wait while we collect your data...
+											</p>
+										) : (
+											<p className="text-sm text-gray-600">
+												Calculating total... Please wait while we collect your data...
+											</p>
+										)}
 									</div>
 								</div>
 							)}

@@ -156,13 +156,14 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
  * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
  * Resolves user_id(s), fetches followers, filters, and saves to DB.
  */
-export async function userFollowersChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void) {
+export async function userFollowersChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
   const { target, filters, force, end_cursor } = payload;
   console.log(`[hikerApi] userFollowersChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
   console.log('[hikerApi] [userFollowersChunkGqlByUsername] Filters received:', filters);
   // Support both single username and array of usernames
   const usernames = Array.isArray(target) ? target : [target];
   const userIds: string[] = [];
+  let totalEstimated = 0;
 
   
   for (const uname of usernames) {
@@ -174,12 +175,20 @@ export async function userFollowersChunkGqlByUsername(payload: { target: string 
       continue; // Skip missing users, don't throw
     }
     userIds.push(user.pk);
+    totalEstimated += user.follower_count || 0;
   }
   // If no userIds found, assign a test user_id for debugging
   
   if (userIds.length === 0) {
     throw new Error("No valid user IDs found for provided usernames");
   }
+
+  // Call total estimation callback
+  if (onTotalEstimated) {
+    console.log(`[hikerApi] Total followers estimated: ${totalEstimated}`);
+    onTotalEstimated(totalEstimated);
+  }
+  
   // Pass array of user IDs to main function for DB save
   // Wrap filters in a Record<string, FilterOptions> for compatibility
   const filtersRecord: Record<string, FilterOptions> = { followers: filters };
@@ -390,13 +399,15 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
  * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
  * Resolves user_id(s), fetches followings, filters, and saves to DB.
  */
-export async function userFollowingChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void) {
+export async function userFollowingChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
   const { target, filters, force, end_cursor } = payload;
   console.log(`[hikerApi] userFollowingChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
   console.log('[hikerApi] [userFollowingChunkGqlByUsername] Filters received:', filters);
   // Support both single username and array of usernames
   const usernames = Array.isArray(target) ? target : [target];
   const userIds: string[] = [];
+  let totalEstimated = 0;
+  
   for (const uname of usernames) {
     const cleanUsername = uname.replace(/^@/, "");
     const user = await userByUsernameV1(cleanUsername);
@@ -406,10 +417,18 @@ export async function userFollowingChunkGqlByUsername(payload: { target: string 
       continue; // Skip missing users, don't throw
     }
     userIds.push(user.pk);
+    totalEstimated += user.following_count || 0;
   }
   if (userIds.length === 0) {
     throw new Error("No valid user IDs found for provided usernames");
   }
+
+  // Call total estimation callback
+  if (onTotalEstimated) {
+    console.log(`[hikerApi] Total following estimated: ${totalEstimated}`);
+    onTotalEstimated(totalEstimated);
+  }
+  
   // Wrap filters in a Record<string, FilterOptions> for compatibility
   const filtersRecord: Record<string, FilterOptions> = { following: filters };
   return userFollowingChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress);
@@ -647,7 +666,7 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
 /***********************************************************/
 
 // Bulk likers extraction for multiple post URLs
-export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
+export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr: string = userId ?? "";
@@ -659,8 +678,12 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
     ? urls.flatMap(u => String(u).split(/\r?\n/))
     : String(urls).split(/\r?\n/);
   const cleanUrls = urlList.map(u => u.trim()).filter(Boolean);
+  
   const allLikers: UserLike[] = [];
   const errorMessages: string[] = [];
+  let totalEstimated = 0;
+  let urlsProcessed = 0;
+  
   for (const url of cleanUrls) {
     try {
       const mediaObj = await mediaByUrlV1(url);
@@ -668,6 +691,16 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
         errorMessages.push(`Could not get media ID for URL: ${url}`);
         continue;
       }
+      
+      // Calculate total estimation from the first URL's like_count and call onTotalEstimated
+      if (urlsProcessed === 0 && onTotalEstimated && mediaObj.like_count) {
+        // For multiple URLs, we'll estimate based on the first URL's like count
+        // This is approximate but avoids extra API calls
+        totalEstimated = mediaObj.like_count * cleanUrls.length;
+        console.log(`[hikerApi] Total likes estimated: ${totalEstimated} (${mediaObj.like_count} × ${cleanUrls.length} URLs)`);
+        onTotalEstimated(totalEstimated);
+      }
+      urlsProcessed++;
       const params: Record<string, unknown> = { id: mediaObj.id };
       const res = await hikerClient.get("/v1/media/likers", { params });
       let newLikers = [];
@@ -863,7 +896,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 /******************************************************/
 
 // Bulk commenters extraction for multiple post URLs
-export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void) {
+export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr: string = userId ?? "";
@@ -879,9 +912,13 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
     : String(payload.urls).split(/\r?\n/);
   const cleanUrlsTrimmed = cleanUrls.map(u => u.trim()).filter(Boolean);
   console.log('[extractCommentersBulkV2] URLs received:', cleanUrlsTrimmed);
+  
   const allComments = [];
   const errorMessages: string[] = [];
   let stopExtraction = false;
+  let totalEstimated = 0;
+  let urlsProcessed = 0;
+  
   for (const url of cleanUrlsTrimmed) {
     if (stopExtraction) break;
     try {
@@ -892,6 +929,16 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
         errorMessages.push(`Could not get media ID for URL: ${url}`);
         continue;
       }
+      
+      // Calculate total estimation from the first URL's comment_count and call onTotalEstimated
+      if (urlsProcessed === 0 && onTotalEstimated && mediaObj.comment_count) {
+        // For multiple URLs, we'll estimate based on the first URL's comment count
+        // This is approximate but avoids extra API calls
+        totalEstimated = mediaObj.comment_count * cleanUrlsTrimmed.length;
+        console.log(`[hikerApi] Total comments estimated: ${totalEstimated} (${mediaObj.comment_count} × ${cleanUrlsTrimmed.length} URLs)`);
+        onTotalEstimated(totalEstimated);
+      }
+      urlsProcessed++;
       let nextPageId: string | undefined = undefined;
       let pageCount = 0;
       do {
@@ -1072,7 +1119,7 @@ export interface ExtractedPost {
   extraction_id?: number;
 }
 
-export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }, onProgress?: (count: number) => void) {
+export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
   // Coin deduction logic
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
   const userIdStr: string = userId ?? "";
@@ -1091,7 +1138,11 @@ export async function getUserPosts(payload: { target: string | string[], filters
     console.log('[getUserPosts] Filters keys:', Object.keys(filters));
   }
   const usernames = Array.isArray(target) ? target : [target];
+  
   const extractedPosts: ExtractedPost[] = [];
+  let totalEstimated = 0;
+  let usersProcessed = 0;
+  
   for (const uname of usernames) {
     if (onProgress) onProgress(extractedPosts.length);
     const cleanUsername = uname.replace(/^@/, "");
@@ -1102,6 +1153,16 @@ export async function getUserPosts(payload: { target: string | string[], filters
       console.error(`[getUserPosts] User not found for username:`, cleanUsername);
       continue;
     }
+    
+    // Calculate total estimation from the first user's media_count and call onTotalEstimated
+    if (usersProcessed === 0 && onTotalEstimated && user.media_count) {
+      // For multiple users, we'll estimate based on the first user's media count
+      // This is approximate but avoids extra API calls
+      totalEstimated = user.media_count * usernames.length;
+      console.log(`[hikerApi] Total posts estimated: ${totalEstimated} (${user.media_count} × ${usernames.length} users)`);
+      onTotalEstimated(totalEstimated);
+    }
+    usersProcessed++;
     const user_id = user.pk;
     let nextPageId: string | undefined = undefined;
     let pageCount = 0;
@@ -1331,15 +1392,21 @@ function handleHikerError(error: unknown) {
  * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
  * @param payload { hashtags: string[], filters: any }
  */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number }, onProgress?: (count: number) => void) {
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
   // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
  
-  // console.log('[extractHashtagClipsBulkV2] hashtagLimit extracted:', hashtagLimit, 'from filters:', filters);
   // 1. Create extraction record
   const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
+
+  // Calculate total estimated posts based on hashtag limit
+  if (onTotalEstimated && hashtagLimit) {
+    const totalEstimated = hashtagLimit * hashtags.length; // hashtag limit per hashtag * number of hashtags
+    console.log(`[hikerApi] Total hashtag posts estimated: ${totalEstimated} (${hashtagLimit} per hashtag × ${hashtags.length} hashtags)`);
+    onTotalEstimated(totalEstimated);
+  }
 
   console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
   const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
