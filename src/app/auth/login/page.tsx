@@ -14,26 +14,27 @@ function LoginForm() {
 	const searchParams = useSearchParams();
 
 	// Check if user is already logged in and handle banned message
-	useEffect(() => {
-		// Check if user was redirected due to being banned
-		const banned = searchParams?.get('banned');
-		if (banned === 'true') {
-			setError("Your account has been suspended. Please contact support for assistance.");
-			// Clear any stored user data
-			localStorage.clear();
-		}
-
-		const checkAuthStatus = () => {
-			const userId = localStorage.getItem("user_id");
-			if (userId && !banned) {
-				// User is already logged in and not banned, redirect to dashboard
-				console.log("User already logged in, redirecting to dashboard");
-				router.push("/dashboard/new-extractions");
+		useEffect(() => {
+			// Check if user was redirected due to being banned
+			const banned = searchParams?.get('banned');
+			if (banned === 'true') {
+				setError("Your account has been suspended. Please contact support for assistance.");
+				// Clear any stored user data
+				localStorage.clear();
+				sessionStorage.clear();
+				return; // Don't check auth status if banned
 			}
-		};
 
-		checkAuthStatus();
-	}, [router, searchParams]);
+			// Only redirect if user is truly authenticated (not just localStorage)
+			const userId = localStorage.getItem("user_id");
+			if (userId) {
+				// Prevent repeated redirects
+				if (window.location.pathname !== '/dashboard/new-extractions') {
+					console.log("User already logged in, redirecting to dashboard");
+					router.push("/dashboard/new-extractions");
+				}
+			}
+		}, [router, searchParams]);
 
 	async function handleLogin(e: React.FormEvent) {
 		e.preventDefault();

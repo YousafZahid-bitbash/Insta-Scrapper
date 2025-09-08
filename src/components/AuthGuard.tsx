@@ -36,9 +36,13 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
             setIsAdmin(profile.is_admin || false);
             setIsBanned(!profile.is_active); // is_active = false means banned
             
-            // If user is banned, sign them out immediately
+            // If user is banned, sign them out immediately and clear localStorage
             if (!profile.is_active) {
               await supabase.auth.signOut();
+              if (typeof window !== 'undefined') {
+                localStorage.clear();
+                sessionStorage.clear();
+              }
               setIsAuthenticated(false);
               setIsAdmin(false);
               setIsBanned(true);
@@ -65,6 +69,10 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
       if (event === 'SIGNED_IN' && session) {
         setIsAuthenticated(true);
       } else if (event === 'SIGNED_OUT') {
+        if (typeof window !== 'undefined') {
+          localStorage.clear();
+          sessionStorage.clear();
+        }
         setIsAuthenticated(false);
         setIsAdmin(false);
         setIsBanned(false);
