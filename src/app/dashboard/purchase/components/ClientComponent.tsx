@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -9,22 +9,29 @@ import { FaLock, FaShieldAlt, FaCheckCircle, FaCoins, FaCreditCard, FaBolt } fro
 
 const paymentMethods = [
   { 
-    label: "Stripe (Card)", 
+    label: "Visa / Mastercard", 
     value: "stripe", 
     logo: "/stripe.svg", 
-    description: "Visa, Mastercard, American Express",
+    description: "Visa, Mastercard",
     badge: "POPULAR"
   },
   { 
     label: "NOWPayments (Crypto)", 
     value: "nowpayments", 
-    logo: "/cryptocom.svg", 
+    logo: "https://nowpayments.io/images/logo/logo.svg", 
     description: "Bitcoin, Ethereum, USDT, and 300+ cryptocurrencies",
     badge: "CRYPTO"
   },
 ];
 
-function PaymentSummary({ deal }: { deal: { name: string; price: string; coins: string } }) {
+const supportedCryptos = [
+  { label: "Bitcoin (BTC)", value: "btc" },
+  { label: "Ethereum (ETH)", value: "eth" },
+  { label: "Tether (USDT)", value: "usdt" },
+  // Add more as needed
+];
+
+function PaymentSummary({ deal }: { deal: { name: string; description: string; price: string; coins: string } }) {
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
       <div className="flex items-center gap-3 mb-6">
@@ -106,6 +113,38 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
     pay_currency?: string;
     payment_url?: string;
   } | null>(null);
+  const [payCurrency, setPayCurrency] = useState("eth");
+  const [currencies, setCurrencies] = useState<{ ticker: string; name: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchCurrencies() {
+      try {
+        // Use the actual deal price for filtering
+        const priceAmount = typeof deal.price === 'number' ? deal.price : parseFloat(deal.price);
+        const res = await fetch(`/api/nowpayments/currencies?price_amount=${priceAmount}`);
+        const data = await res.json();
+        console.log('[NOWPayments][Client] Fetched currencies:', data.currencies);
+        // Log min/max amounts if available
+        if (Array.isArray(data.currencies) && data.currencies.length > 0 && data.currencies[0].min_amount !== undefined) {
+          data.currencies.forEach((c: any) => {
+            console.log(`[NOWPayments][Client] ${c.ticker || c.currency}: min=${c.min_amount}, max=${c.max_amount}`);
+          });
+        }
+        if (data.currencies && Array.isArray(data.currencies)) {
+          setCurrencies(data.currencies);
+          // Always set payCurrency to the first valid option
+          if (data.currencies.length > 0) {
+            setPayCurrency(data.currencies[0].ticker);
+          }
+        } else {
+          console.warn('[NOWPayments][Client] No currencies found or invalid format:', data);
+        }
+      } catch {}
+    }
+    if (selectedMethod === "nowpayments") {
+      fetchCurrencies();
+    }
+  }, [selectedMethod]);
 
   // Stripe payment handler
   const handleStripePayment = async () => {
@@ -143,16 +182,28 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   const handleNOWPaymentsPayment = async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      // For now, just show a placeholder until backend is implemented
-      setTimeout(() => {
-        setError('NOWPayments integration coming soon! Backend implementation pending.');
-        setLoading(false);
-      }, 1000);
-      
+      const response = await fetch("/api/nowpayments/create-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          price_amount: deal.price,
+          price_currency: "usd",
+          pay_currency: payCurrency,
+          order_id: `${deal.name}-${Date.now()}`,
+          order_description: `${deal.name} for ${deal.coins} coins`,
+        }),
+      });
+      const data = await response.json();
+      if (data.invoice_url) {
+        window.location.href = data.invoice_url;
+        return;
+      } else {
+        setError(data.error || "Failed to create crypto invoice");
+      }
     } catch (err) {
-      setError('Failed to initialize crypto payment');
+      setError("Failed to initialize crypto payment");
+    } finally {
       setLoading(false);
     }
   };
@@ -186,8 +237,8 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header Section */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Complete Your Purchase</h1>
-          <p className="text-gray-600 text-lg">Secure payment powered by industry-leading encryption</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Complete Purchase</h1>
+          {/* <p className="text-gray-600 text-lg">Secure payment powered by industry-leading encryption</p> */}
         </div>
 
         {/* Progress Steps */}
@@ -227,37 +278,40 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Payment Method</h2>
               
-              <div className="space-y-4">
+
+              <div className="space-y-6">
                 {paymentMethods.map((method) => (
                   <div
                     key={method.value}
-                    className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                    className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all shadow-sm hover:shadow-lg bg-white/90 backdrop-blur-md ${
                       selectedMethod === method.value
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-blue-600 ring-2 ring-blue-100'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => setSelectedMethod(method.value)}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-5">
                         <input
                           type="radio"
                           name="paymentMethod"
                           value={method.value}
                           checked={selectedMethod === method.value}
                           onChange={() => setSelectedMethod(method.value)}
-                          className="w-5 h-5 text-blue-600"
+                          className="w-5 h-5 text-blue-600 accent-blue-600 focus:ring-2 focus:ring-blue-400"
                         />
-                        <Image src={method.logo} alt={method.label} width={40} height={40} className="rounded" />
+                        <div className="w-12 h-12 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100">
+                          <Image src={method.logo} alt={method.label} width={36} height={36} className="object-contain" />
+                        </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900">{method.label}</h3>
-                          <p className="text-sm text-gray-600">{method.description}</p>
+                          <h3 className="font-semibold text-gray-900 text-lg">{method.label}</h3>
+                          <p className="text-sm text-gray-500">{method.description}</p>
                         </div>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      <div className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm ${
                         method.badge === 'POPULAR' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                          : 'bg-blue-100 text-blue-800 border border-blue-200'
                       }`}>
                         {method.badge}
                       </div>
@@ -299,58 +353,47 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
               )}
 
               {/* NOWPayments Crypto Payment */}
-              {selectedMethod === "nowpayments" && cryptoPayment && cryptoPayment.pay_address && cryptoPayment.pay_currency && (
-                <div className="mt-8 p-6 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl border border-orange-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Crypto Payment</h3>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-white rounded-lg border">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-600">Payment Amount:</span>
-                        <span className="text-lg font-bold text-gray-900">
-                          {cryptoPayment.pay_amount} {cryptoPayment.pay_currency.toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-sm font-medium text-gray-600">Payment Address:</span>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg font-mono text-sm break-all border">
-                        {cryptoPayment.pay_address}
-                      </div>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(cryptoPayment.pay_address!)}
-                        className="mt-2 text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        📋 Copy Address
-                      </button>
-                    </div>
-                    
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800 mb-2">
-                        <strong>Instructions:</strong>
-                      </p>
-                      <ol className="text-sm text-blue-700 space-y-1">
-                        <li>1. Send exactly <strong>{cryptoPayment.pay_amount} {cryptoPayment.pay_currency.toUpperCase()}</strong> to the address above</li>
-                        <li>2. Wait for blockchain confirmation (usually 10-30 minutes)</li>
-                        <li>3. Your coins will be automatically added to your account</li>
-                      </ol>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <a
-                        href={cryptoPayment.payment_url || '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold py-3 px-6 rounded-lg hover:from-orange-600 hover:to-yellow-600 transition-all text-center"
-                      >
-                        Open in Wallet
-                      </a>
-                      <button
-                        onClick={() => window.open(`https://blockchair.com/${cryptoPayment.pay_currency}/address/${cryptoPayment.pay_address}`, '_blank')}
-                        className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        View on Explorer
-                      </button>
-                    </div>
+              {selectedMethod === "nowpayments" && (
+                <div className="mt-10">
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#2563eb" opacity=".1"/><path d="M12 7v5l3 3" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span className="text-blue-800 text-sm font-medium">
+                      You’ll be redirected to a secure payment page. If you’re on a device with a crypto wallet (like MetaMask, Trust Wallet, or Coinbase Wallet), you can copy the payment address and pay directly—no need to scan the QR code. If you’re on a different device, simply scan the QR code with your wallet app.
+                    </span>
+                  </div>
+                  <label className="block mb-2 text-sm font-semibold text-gray-700">Select Crypto to Pay With</label>
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={currencies.some(c => c.ticker === payCurrency) ? payCurrency : ''}
+                      onChange={e => setPayCurrency(e.target.value)}
+                      className="flex-1 p-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white text-gray-900 font-medium shadow-sm"
+                    >
+                      {currencies.length === 0 ? (
+                        <>
+                          <option value="eth">No currencies found (default: Ethereum)</option>
+                          <option disabled>Check console for debugging info.</option>
+                        </>
+                      ) : (
+                        currencies
+                          .filter(c => c && c.ticker && c.name)
+                          .map(c => (
+                            <option key={c.ticker} value={c.ticker}>
+                              {c.name} ({c.ticker.toUpperCase()})
+                            </option>
+                          ))
+                      )}
+                      <option value="__custom__">Other (enter manually)</option>
+                    </select>
+                    {payCurrency === '__custom__' && (
+                      <input
+                        type="text"
+                        placeholder="Enter currency ticker (e.g. usdt)"
+                        className="flex-1 p-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white text-gray-900 font-medium shadow-sm"
+                        onChange={e => setPayCurrency(e.target.value.toLowerCase())}
+                        value={payCurrency !== '__custom__' ? payCurrency : ''}
+                        style={{ minWidth: 120 }}
+                      />
+                    )}
                   </div>
                 </div>
               )}

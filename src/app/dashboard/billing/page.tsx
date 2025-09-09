@@ -14,6 +14,7 @@ type Deal = {
   sale_price?: number | null;
   description?: string | null;
   active: boolean;
+  Name: string | null;
 };
 
 export default function BillingPage() {
@@ -36,7 +37,7 @@ export default function BillingPage() {
         // Fetch deals directly from Supabase
         const { data, error } = await supabase
           .from("deals")
-          .select("id, coins, price, sale_price, description, active")
+          .select("id, coins, price, sale_price, description, active, Name")
           .eq("active", true)
           .order("price", { ascending: true });
         if (!error && data) setDeals(data);
@@ -76,6 +77,7 @@ export default function BillingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-4xl mx-auto">
                 {deals.map(deal => (
                   <div key={deal.id} className="bg-[#fffbe6] rounded-2xl shadow-lg p-8 flex flex-col items-center border-2 border-[#d4af37] hover:border-[#bfa233] transition-all hover:scale-105">
+                    <span className="text-2xl font-bold text-gray-900 mb-1 font-serif">{deal.Name}</span>
                     <span className="text-3xl font-extrabold text-[#d4af37] mb-2 font-serif">{deal.coins.toLocaleString()} Coins</span>
                     <span className="text-lg text-gray-700 mb-4 font-light">{deal.description || `Enough for ${deal.coins / 1000}k+ extractions`}</span>
                     <span className="text-2xl font-bold text-gray-900 mb-2 font-serif">
@@ -93,7 +95,8 @@ export default function BillingPage() {
                       className="w-full px-6 py-3 rounded bg-[#d4af37] text-white font-semibold text-lg shadow hover:bg-[#bfa233] transition font-serif"
                       onClick={() => {
                         const params = new URLSearchParams({
-                          name: deal.description || deal.coins + ' Coins',
+                          name: deal.Name || (deal.coins + ' Coins'),
+                          description: deal.description || deal.coins + ' Coins',
                           price: String(deal.sale_price || deal.price),
                           coins: String(deal.coins)
                         }).toString();
