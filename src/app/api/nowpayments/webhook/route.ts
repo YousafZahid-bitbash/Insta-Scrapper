@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '../../../../supabaseClient';
 
 const NOWPAYMENTS_IPN_KEY = process.env.NOWPAYMENTS_IPN_KEY;
 
@@ -26,12 +27,77 @@ export async function POST(req: NextRequest) {
     const payCurrency = body.pay_currency;
     const invoiceId = body.invoice_id;
 
-    // Example: Only process successful payments
+
+    // Only process successful payments
     if (status === 'finished') {
-      // TODO: Update your database to mark the order as paid/credit user
+      const userId = body.user_id || body.userId;
+      const coins = parseInt(body.coins || '0');
+      const dealId = body.deal_id || null;
+      const providerPaymentId = body.invoice_id || orderId;
+      const amount = parseFloat(payAmount || '0');
+      const currency = payCurrency || 'USD';
+
+      // Log payment in payments table
+      try {
+        await supabase.from('payments').insert({
+          user_id: userId,
+          deal_id: dealId,
+          provider: 'nowpayments',
+          provider_payment_id: providerPaymentId,
+          amount,
+          currency,
+          coins,
+          status: 'paid',
+          raw_payload: body,
+        });
+      } catch (err) {
+        console.error('[NOWPayments Webhook] Error inserting payment record:', err);
+      }
+
+      if (userId && coins > 0) {
+        // Get current balance
+        const { data: userData, error: getUserError } = await supabase
+          .from('users')
+          .select('coins')
+          .eq('id', userId)
+          .single();
+
+        if (!getUserError && userData) {
+          const newBalance = (userData.coins || 0) + coins;
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ coins: newBalance })
+            .eq('id', userId);
+          if (updateError) {
+            console.error('[NOWPayments Webhook] Error updating user coins:', updateError);
+          } else {
+            console.log(`[NOWPayments Webhook] Updated user ${userId} balance to ${newBalance} coins`);
+          }
+        } else {
+          console.error('[NOWPayments Webhook] User not found or error:', getUserError);
+        }
+      } else {
+        console.warn('[NOWPayments Webhook] Missing userId or coins in webhook body:', body);
+      }
+
       console.log(`[NOWPayments Webhook] Payment complete for order ${orderId}. Amount: ${payAmount} ${payCurrency}, Invoice: ${invoiceId}`);
-      // ...update DB logic here...
     } else {
+      // Log failed or pending payment
+      try {
+        await supabase.from('payments').insert({
+          user_id: body.user_id || body.userId || null,
+          deal_id: body.deal_id || null,
+          provider: 'nowpayments',
+          provider_payment_id: body.invoice_id || orderId,
+          amount: parseFloat(payAmount || '0'),
+          currency: payCurrency || 'USD',
+          coins: parseInt(body.coins || '0'),
+          status: status === 'failed' ? 'failed' : 'pending',
+          raw_payload: body,
+        });
+      } catch (err) {
+        console.error('[NOWPayments Webhook] Error inserting failed/pending payment record:', err);
+      }
       console.log(`[NOWPayments Webhook] Payment status for order ${orderId}: ${status}`);
     }
 

@@ -33,44 +33,44 @@ const supportedCryptos = [
 
 function PaymentSummary({ deal }: { deal: { name: string; description: string; price: string; coins: string } }) {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <FaCoins className="text-blue-600 text-xl" />
+    <div className="bg-white rounded-2xl p-8 border border-blue-100 shadow-xl transition-shadow hover:shadow-2xl">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="p-3 bg-blue-50 rounded-xl shadow-sm flex items-center justify-center">
+          <FaCoins className="text-blue-600 text-2xl" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-gray-900">{deal.name}</h3>
-          <p className="text-sm text-gray-600">Digital Credits Package</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-1">{deal.name}</h3>
+          <p className="text-sm text-gray-500 font-medium">{deal.description || 'Digital Credits Package'}</p>
         </div>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">Credits Amount</span>
-          <span className="font-semibold text-gray-900">{deal.coins} coins</span>
+          <span className="text-gray-500 font-medium">Credits Amount</span>
+          <span className="font-semibold text-blue-700">{deal.coins} coins</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">Platform Fee</span>
-          <span className="font-semibold text-gray-900">$0.00</span>
+          <span className="text-gray-500 font-medium">Platform Fee</span>
+          <span className="font-semibold text-green-600">$0.00</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">Processing Fee</span>
-          <span className="font-semibold text-gray-900">$0.00</span>
+          <span className="text-gray-500 font-medium">Processing Fee</span>
+          <span className="font-semibold text-green-600">$0.00</span>
         </div>
-        <hr className="border-gray-200 my-3" />
+        <hr className="border-gray-200 my-4" />
         <div className="flex justify-between items-center">
-          <span className="text-lg font-bold text-gray-900">Total Amount</span>
-          <span className="text-2xl font-bold text-blue-600">${deal.price}</span>
+          <span className="text-lg font-bold text-gray-900">Total</span>
+          <span className="text-2xl font-extrabold text-blue-600">${deal.price}</span>
         </div>
       </div>
 
-      <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+      <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-200 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
-          <FaCheckCircle className="text-green-600" />
+          <FaCheckCircle className="text-green-600 text-lg" />
           <span className="font-semibold text-green-800">What you get:</span>
         </div>
-        <ul className="text-sm text-green-700 space-y-1">
-          <li>• {deal.coins} InstaScrapper credits</li>
+        <ul className="text-sm text-green-700 space-y-1 pl-1">
+          <li>• <span className="font-semibold">{deal.coins} InstaScrapper credits</span></li>
           <li>• Instant account activation</li>
           <li>• 24/7 customer support</li>
           <li>• No expiration date</li>
@@ -99,7 +99,7 @@ function SecurityBadges() {
   );
 }
 
-export default function ClientComponent({ deal }: { deal: { name: string; price: string; coins: string } }) {
+export default function ClientComponent({ deal }: { deal: { name: string; description: string; price: string; coins: string } }) {
   const [selectedMethod, setSelectedMethod] = useState("stripe");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -228,7 +228,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overscroll-none">
       {/* Navbar */}
       <div className="w-full sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
         <Navbar />
@@ -436,15 +436,10 @@ export default function ClientComponent({ deal }: { deal: { name: string; price:
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <PaymentSummary deal={deal} />
-              <SecurityBadges />
+              {/* <SecurityBadges /> */}
               
               {/* Support */}
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600 mb-2">Need help?</p>
-                <Link href="/support" className="text-blue-600 hover:underline text-sm font-medium">
-                  Contact Support
-                </Link>
-              </div>
+             
             </div>
           </div>
         </div>

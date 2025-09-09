@@ -30,12 +30,15 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   // Logout handler
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.clear();
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      window.location.href = '/auth/login';
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    } catch (e) {
+      // Ignore errors, proceed to clear client state
     }
+    localStorage.clear();
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    window.location.href = '/auth/login';
   };
 
   const fetchStats = useCallback(async () => {

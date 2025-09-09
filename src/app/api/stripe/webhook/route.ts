@@ -31,53 +31,44 @@ export async function POST(request: NextRequest) {
 
   // Handle the event
   switch (event.type) {
-    case 'payment_intent.succeeded':
+
+    case 'payment_intent.succeeded': {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log('PaymentIntent succeeded:', paymentIntent.id);
-      
       try {
-        const amount = paymentIntent.amount / 100; // Convert from cents
+        const amount = paymentIntent.amount / 100;
         const coins = parseInt(paymentIntent.metadata.coins || '0');
         const userId = paymentIntent.metadata.userId;
-        const dealName = paymentIntent.metadata.dealName;
-        
-        console.log(`Payment of $${amount} for ${coins} coins by user ${userId}`);
-        
-        // 1. Log the transaction
-        const { error: transactionError } = await supabase
-          .from('transactions')
-          .insert({
-            payment_intent_id: paymentIntent.id,
-            user_id: userId,
-            amount: amount,
-            coins: coins,
-            deal_name: dealName,
-            payment_method: 'stripe',
-            status: 'completed',
-            created_at: new Date().toISOString(),
-          });
-        
-        if (transactionError) {
-          console.error('Error logging transaction:', transactionError);
-        }
-        
-        // 2. Update user's coin balance (if userId is provided)
+        const dealId = paymentIntent.metadata.dealId || null;
+        const providerPaymentId = paymentIntent.id;
+        const currency = paymentIntent.currency ? paymentIntent.currency.toUpperCase() : 'USD';
+
+        // Log payment in payments table
+        await supabase.from('payments').insert({
+          user_id: userId,
+          deal_id: dealId,
+          provider: 'stripe',
+          provider_payment_id: providerPaymentId,
+          amount,
+          currency,
+          coins,
+          status: 'paid',
+          raw_payload: paymentIntent,
+        });
+
+        // Update user's coin balance
         if (userId && coins > 0) {
-          // First get current balance
           const { data: userData, error: getUserError } = await supabase
             .from('users')
             .select('coins')
             .eq('id', userId)
             .single();
-          
           if (!getUserError && userData) {
             const newBalance = (userData.coins || 0) + coins;
-            
             const { error: updateError } = await supabase
               .from('users')
               .update({ coins: newBalance })
               .eq('id', userId);
-              
             if (updateError) {
               console.error('Error updating user coins:', updateError);
             } else {
@@ -85,43 +76,40 @@ export async function POST(request: NextRequest) {
             }
           }
         }
-        
-        // 3. You could also send confirmation email here
-        // await sendConfirmationEmail(userEmail, amount, coins);
-        
       } catch (error) {
         console.error('Error processing successful payment:', error);
       }
-      
       break;
-      
-    case 'payment_intent.payment_failed':
+    }
+
+    case 'payment_intent.payment_failed': {
       const failedPayment = event.data.object as Stripe.PaymentIntent;
       console.log('PaymentIntent failed:', failedPayment.id);
-      
-      // Log failed payment
       try {
-        const { error } = await supabase
-          .from('transactions')
-          .insert({
-            payment_intent_id: failedPayment.id,
-            user_id: failedPayment.metadata.userId,
-            amount: failedPayment.amount / 100,
-            coins: parseInt(failedPayment.metadata.coins || '0'),
-            deal_name: failedPayment.metadata.dealName,
-            payment_method: 'stripe',
-            status: 'failed',
-            created_at: new Date().toISOString(),
-          });
-          
-        if (error) {
-          console.error('Error logging failed transaction:', error);
-        }
+        const amount = failedPayment.amount / 100;
+        const coins = parseInt(failedPayment.metadata.coins || '0');
+        const userId = failedPayment.metadata.userId;
+        const dealId = failedPayment.metadata.dealId || null;
+        const providerPaymentId = failedPayment.id;
+        const currency = failedPayment.currency ? failedPayment.currency.toUpperCase() : 'USD';
+
+        // Log failed payment in payments table
+        await supabase.from('payments').insert({
+          user_id: userId,
+          deal_id: dealId,
+          provider: 'stripe',
+          provider_payment_id: providerPaymentId,
+          amount,
+          currency,
+          coins,
+          status: 'failed',
+          raw_payload: failedPayment,
+        });
       } catch (error) {
         console.error('Error processing failed payment:', error);
       }
-      
       break;
+    }
       
     default:
       console.log(`Unhandled event type ${event.type}`);

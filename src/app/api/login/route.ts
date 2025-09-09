@@ -13,7 +13,16 @@ export async function POST(req: Request) {
 		});
 		
 		if (error || !data || !data[0]?.success) {
-			return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+			// Check if user exists and is banned
+			const { data: userRow } = await supabase
+				.from('users')
+				.select('is_active')
+				.eq('email', email)
+				.single();
+			if (userRow && userRow.is_active === false) {
+				return NextResponse.json({ error: "banned" }, { status: 403 });
+			}
+			return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
 		}
 		
 		// Generate JWT
@@ -32,9 +41,7 @@ export async function POST(req: Request) {
 
 		// Check if user is active (not banned)
 		if (!userDetails.is_active) {
-			return NextResponse.json({ 
-				error: "Your account has been suspended. Please contact support." 
-			}, { status: 403 });
+			return NextResponse.json({ error: "banned" }, { status: 403 });
 		}
 		
 		// Update last_login timestamp after successful authentication

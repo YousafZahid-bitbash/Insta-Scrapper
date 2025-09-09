@@ -96,7 +96,7 @@ export default function BillingPage() {
                       onClick={() => {
                         const params = new URLSearchParams({
                           name: deal.Name || (deal.coins + ' Coins'),
-                          description: deal.description || deal.coins + ' Coins',
+                          description: typeof deal.description === 'string' ? deal.description : (deal.coins + ' Coins'),
                           price: String(deal.sale_price || deal.price),
                           coins: String(deal.coins)
                         }).toString();
