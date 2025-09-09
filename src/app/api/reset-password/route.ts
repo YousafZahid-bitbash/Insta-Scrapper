@@ -1,46 +1,43 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '../../../supabaseClient';
+import bcrypt from 'bcryptjs';
 
-import { NextResponse } from "next/server";
-import { supabase } from "../../../supabaseClient";
-import { verifyJWT } from "../../../services/hikerApi";
-type ResetPayload = { type: string; user_id: string };
-export async function POST(req: Request) {
-  const { token, password } = await req.json();
-  if (!token || !password) {
-    return NextResponse.json({ error: "Missing token or password" }, { status: 400 });
+export async function POST(req: NextRequest) {
+  const { token, newPassword } = await req.json();
+  if (!token || !newPassword || newPassword.length < 8) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
   }
-  // Verify token
-  
-  const payload = await verifyJWT(token);
-  if (!payload || typeof payload !== "object" || (payload as unknown as ResetPayload).type !== "reset") {
-    return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
-  }
-  // Find user by id and token
-  const { user_id } = payload as unknown as ResetPayload;
-  const { data: user, error } = await supabase
-    .from("users")
-    .select("id, reset_token, reset_token_expires")
-    .eq("id", user_id)
-    .eq("reset_token", token)
+
+  // Find valid, unused, unexpired token
+  const { data: reset, error } = await supabase
+    .from('password_resets')
+    .select('id, user_id, expires_at, used')
+    .eq('token', token)
     .single();
-  if (error || !user) {
-    return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
+
+  if (error || !reset || reset.used || new Date(reset.expires_at) < new Date()) {
+    return NextResponse.json({ error: 'Invalid or expired token.' }, { status: 400 });
   }
-  // Check token expiry
-  if (new Date(user.reset_token_expires) < new Date()) {
-    return NextResponse.json({ error: "Token expired" }, { status: 400 });
+
+  // Hash new password
+  const salt = bcrypt.genSaltSync(10);
+  const password_hash = bcrypt.hashSync(newPassword, salt);
+
+  // Update user's password
+  const { error: userError } = await supabase
+    .from('users')
+    .update({ password_hash })
+    .eq('id', reset.user_id);
+
+  if (userError) {
+    return NextResponse.json({ error: 'Failed to update password.' }, { status: 500 });
   }
-  // Update password using Supabase RPC (bcrypt hash)
-  const { error: updateError } = await supabase.rpc("update_user_password_with_hash", {
-    user_id,
-    password,
-  });
-  if (updateError) {
-    return NextResponse.json({ error: "Error updating password" }, { status: 500 });
-  }
-  // Invalidate token
+
+  // Mark token as used
   await supabase
-    .from("users")
-    .update({ reset_token: null, reset_token_expires: null })
-    .eq("id", user_id);
+    .from('password_resets')
+    .update({ used: true })
+    .eq('id', reset.id);
+
   return NextResponse.json({ success: true });
 }

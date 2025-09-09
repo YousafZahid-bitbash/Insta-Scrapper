@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { BanNotificationTemplate } from '../../../../components/email-templates/BanNotificationTemplate';
-import { UnbanNotificationTemplate } from '../../../../components/email-templates/UnbanNotificationTemplate';
+import { BanUnbanEmailTemplate } from '../../../../components/BanUnbanEmailTemplate';
 import { supabase } from '../../../../supabaseClient';
 import jwt from 'jsonwebtoken';
 
@@ -76,47 +75,24 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Send notification email based on ban status
-    const actionDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+
+    // Send notification email using new template
+    const actionDate = new Date().toLocaleString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-
-    console.log('📧 [SendBanEmail] Preparing email configuration...');
-    console.log('  - Action date:', actionDate);
-    console.log('  - Is banned:', isBanned);
-
-    const emailConfig = isBanned ? {
-      subject: 'Account Suspension Notification - InstaScrapper',
-      template: BanNotificationTemplate({
-        username,
-        email,
-        banDate: actionDate,
-        supportEmail: 'support@resend.dev'
-      })
-    } : {
-      subject: 'Account Reactivated - InstaScrapper',
-      template: UnbanNotificationTemplate({
-        username,
-        email,
-        unbanDate: actionDate,
-        supportEmail: 'support@resend.dev'
-      })
-    };
-
-    console.log('📧 [SendBanEmail] Email config prepared:');
-    console.log('  - Subject:', emailConfig.subject);
-    console.log('  - From: InstaScrapper <onboarding@resend.dev>');
+    const subject = isBanned
+      ? 'Account Suspension Notification - InstaScrapper'
+      : 'Account Reactivated - InstaScrapper';
+    const supportEmail = 'support@bitbash.dev';
+    console.log('📧 [SendBanEmail] Preparing email:');
+    console.log('  - Subject:', subject);
     console.log('  - To:', email);
-
+    console.log('  - Is banned:', isBanned);
     const { data, error } = await resend.emails.send({
-      from: 'InstaScrapper <onboarding@resend.dev>',
+      from: 'InstaScrapper <onboarding@bitbash.dev>',
       to: [email],
-      subject: emailConfig.subject,
-      react: emailConfig.template,
+      subject,
+      react: BanUnbanEmailTemplate({ username, isBanned, actionDate, supportEmail }),
     });
 
     console.log('📧 [SendBanEmail] Resend API response:');

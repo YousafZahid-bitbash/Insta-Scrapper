@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../../../supabaseClient';
 import jwt from 'jsonwebtoken';
+import { Resend } from 'resend';
+import { BanUnbanEmailTemplate } from '../../../../components/BanUnbanEmailTemplate';
 
 const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key';
 
@@ -111,37 +113,33 @@ export async function POST(request: NextRequest) {
         console.log('  - Email:', data.email);
         console.log('  - Username:', data.username);
         console.log('  - Is banned (will be sent):', !isActive);
-        console.log('  - Email API URL:', `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/send-ban-email`);
-        
-        // Call the send-ban-email API endpoint
-        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/send-ban-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            userId: data.id,
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const actionDate = new Date().toLocaleString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        const subject = !isActive
+          ? 'Account Suspension Notification - InstaScrapper'
+          : 'Account Reactivated - InstaScrapper';
+        const supportEmail = 'support@bitbash.dev';
+        const { data: emailData, error: emailError } = await resend.emails.send({
+          from: 'InstaScrapper <onboarding@resend.dev>',
+          to: [data.email],
+          subject,
+          react: BanUnbanEmailTemplate({
             username: data.username,
-            email: data.email,
-            isBanned: !isActive // isBanned is true when isActive is false
+            isBanned: !isActive,
+            actionDate,
+            supportEmail
           })
         });
-
-        console.log('📧 [ToggleUserStatus] Email API response status:', emailResponse.status);
-        
-        if (!emailResponse.ok) {
-          const errorText = await emailResponse.text();
-          console.error(`❌ [ToggleUserStatus] Failed to send ${!isActive ? 'ban' : 'unban'} notification email:`, errorText);
-          // Don't fail the operation if email fails
+        if (emailError) {
+          console.error(`❌ [ToggleUserStatus] Failed to send ${!isActive ? 'ban' : 'unban'} notification email:`, emailError);
         } else {
-          const emailResult = await emailResponse.json();
           console.log(`✅ [ToggleUserStatus] ${!isActive ? 'Ban' : 'Unban'} notification email sent successfully`);
-          console.log('  - Email result:', emailResult);
+          console.log('  - Email result:', emailData);
         }
       } catch (emailError) {
         console.error(`❌ [ToggleUserStatus] Error sending ${!isActive ? 'ban' : 'unban'} notification email:`, emailError);
-        // Don't fail the operation if email fails
       }
     } else {
       console.log('⚠️ [ToggleUserStatus] Skipping email notification - missing email or username');
