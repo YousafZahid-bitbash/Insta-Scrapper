@@ -24,12 +24,7 @@ const paymentMethods = [
   },
 ];
 
-const supportedCryptos = [
-  { label: "Bitcoin (BTC)", value: "btc" },
-  { label: "Ethereum (ETH)", value: "eth" },
-  { label: "Tether (USDT)", value: "usdt" },
-  // Add more as needed
-];
+
 
 function PaymentSummary({ deal }: { deal: { name: string; description: string; price: string; coins: string } }) {
   return (
@@ -80,24 +75,7 @@ function PaymentSummary({ deal }: { deal: { name: string; description: string; p
   );
 }
 
-function SecurityBadges() {
-  return (
-    <div className="grid grid-cols-3 gap-4 mt-6">
-      <div className="flex flex-col items-center text-center p-3">
-        <FaLock className="text-gray-400 text-lg mb-2" />
-        <span className="text-xs text-gray-600 font-medium">SSL Protected</span>
-      </div>
-      <div className="flex flex-col items-center text-center p-3">
-        <FaShieldAlt className="text-gray-400 text-lg mb-2" />
-        <span className="text-xs text-gray-600 font-medium">Secure Payment</span>
-      </div>
-      <div className="flex flex-col items-center text-center p-3">
-        <FaBolt className="text-gray-400 text-lg mb-2" />
-        <span className="text-xs text-gray-600 font-medium">Instant Delivery</span>
-      </div>
-    </div>
-  );
-}
+
 
 export default function ClientComponent({ deal }: { deal: { name: string; description: string; price: string; coins: string } }) {
   const [selectedMethod, setSelectedMethod] = useState("stripe");
@@ -106,13 +84,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
   const [termsChecked, setTermsChecked] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [cryptoPayment, setCryptoPayment] = useState<{
-    payment_id?: string;
-    pay_address?: string;
-    pay_amount?: number;
-    pay_currency?: string;
-    payment_url?: string;
-  } | null>(null);
+  // Removed unused cryptoPayment state
   const [payCurrency, setPayCurrency] = useState("eth");
   const [currencies, setCurrencies] = useState<{ ticker: string; name: string }[]>([]);
 
@@ -126,7 +98,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
         console.log('[NOWPayments][Client] Fetched currencies:', data.currencies);
         // Log min/max amounts if available
         if (Array.isArray(data.currencies) && data.currencies.length > 0 && data.currencies[0].min_amount !== undefined) {
-          data.currencies.forEach((c: any) => {
+          data.currencies.forEach((c: { ticker?: string; currency?: string; min_amount?: number; max_amount?: number }) => {
             console.log(`[NOWPayments][Client] ${c.ticker || c.currency}: min=${c.min_amount}, max=${c.max_amount}`);
           });
         }
@@ -144,7 +116,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
     if (selectedMethod === "nowpayments") {
       fetchCurrencies();
     }
-  }, [selectedMethod]);
+  }, [selectedMethod, deal.price]);
 
   // Stripe payment handler
   const handleStripePayment = async () => {
@@ -172,7 +144,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
       } else {
         setError('Failed to initialize payment');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to initialize payment');
     } finally {
       setLoading(false);
@@ -201,7 +173,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
       } else {
         setError(data.error || "Failed to create crypto invoice");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to initialize crypto payment");
     } finally {
       setLoading(false);
@@ -213,10 +185,9 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
   };
 
   const handlePaymentError = (errorMessage: string) => {
-    setError(errorMessage);
-    setClientSecret(null);
-    setCryptoPayment(null);
-    setCurrentStep(1);
+  setError(errorMessage);
+  setClientSecret(null);
+  setCurrentStep(1);
   };
 
   const handleProceedToPayment = () => {
