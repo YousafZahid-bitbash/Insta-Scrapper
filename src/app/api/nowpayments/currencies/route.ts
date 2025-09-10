@@ -1,3 +1,9 @@
+type NowPaymentsCurrency = {
+  currency: string;
+  min_amount?: number;
+  max_amount?: number;
+  // add other fields if needed
+};
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -99,7 +105,7 @@ export async function GET(req: NextRequest) {
     }
     // Debug: Log min/max for each currency if available
     if (Array.isArray(data.currencies) && typeof data.currencies[0] === 'object' && data.currencies[0].currency) {
-      data.currencies.forEach((c: any) => {
+      data.currencies.forEach((c: NowPaymentsCurrency) => {
         console.log(`[NOWPayments][API] ${c.currency}: min=${c.min_amount}, max=${c.max_amount}`);
       });
     }
@@ -113,14 +119,14 @@ export async function GET(req: NextRequest) {
         }));
       } else if (typeof currencies[0] === 'object' && currencies[0].currency) {
         currencies = currencies
-          .filter((c: any) => {
+          .filter((c: NowPaymentsCurrency) => {
             // Only include if priceAmount is within min/max
             if (typeof c.min_amount === 'number' && typeof c.max_amount === 'number') {
               return priceAmount >= c.min_amount && priceAmount <= c.max_amount;
             }
             return true;
           })
-          .map((c: any) => ({
+          .map((c: NowPaymentsCurrency) => ({
             ticker: c.currency,
             name: CURRENCY_NAMES[c.currency.toLowerCase()] || c.currency.toUpperCase(),
           }));

@@ -14,7 +14,7 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  // user state is not used, so remove it
   const router = useRouter();
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
         const res = await fetch('/api/me');
         if (res.ok) {
           const userData = await res.json();
-          setUser(userData);
+          // setUser(userData); // user is not used
           setIsAuthenticated(true);
           setIsAdmin(!!userData.is_admin);
           setIsBanned(false);
@@ -34,13 +34,13 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
           }
           setIsAuthenticated(false);
           setIsAdmin(false);
-          setUser(null);
+          // setUser(null); // user is not used
         }
       } catch (error) {
         setIsAuthenticated(false);
         setIsAdmin(false);
         setIsBanned(false);
-        setUser(null);
+  // setUser(null); // user is not used
       } finally {
         setLoading(false);
       }

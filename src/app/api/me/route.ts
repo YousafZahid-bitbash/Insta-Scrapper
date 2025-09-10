@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../../supabaseClient';
 import { verifyJWT } from '../../../services/hikerApi';
 
-type JWTUserPayload = { user_id: string; email: string; [key: string]: any };
+import type { JWTUserPayload } from '../../../services/hikerApi';
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     let payload: JWTUserPayload | null = null;
     try {
       payload = await verifyJWT(token);
-    } catch (err) {
+    } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
