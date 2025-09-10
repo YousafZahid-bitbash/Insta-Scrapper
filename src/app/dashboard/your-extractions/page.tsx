@@ -349,7 +349,7 @@ export default function YourExtractionsPage() {
                   </button>
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Extraction Details Container */}
-                    <div className="flex-0.6 bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <div className="basis-[320px] min-w-[260px] max-w-[380px] bg-blue-50 rounded-xl p-4 border border-blue-100 flex-shrink-0 break-words overflow-auto">
                       <h2 className="text-xl font-serif font-bold mb-4 text-blue-900">Extraction Details</h2>
                       
                       <div className="mb-2 grid grid-cols-1 gap-2">
@@ -383,6 +383,7 @@ export default function YourExtractionsPage() {
                     </div>
                     {/* Data Table Container */}
                     <div className="flex-1 bg-white rounded-xl p-4 border border-gray-200 overflow-x-auto overflow-y-auto h-[60vh]">
+                    <div className="flex-1 min-w-0 bg-white rounded-xl p-4 border border-gray-200 overflow-x-auto overflow-y-auto h-[60vh]">
                       
                       {loading ? (
                         <div className="space-y-2 mb-4">

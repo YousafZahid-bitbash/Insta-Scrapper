@@ -13,11 +13,19 @@ export default function HomeNavbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-sm">IS</span>
+            <div className="w-14 h-14 flex items-center justify-center">
+              <img src="/editedLogo.png" alt="ScraperGlass Logo" className="w-14 h-14 object-contain rounded-xl shadow-lg border border-yellow-300 bg-white" />
             </div>
-            <span className="text-xl font-bold text-black" style={{ fontFamily: "Montserrat, sans-serif" }}>
-              InstaScraper
+            <span
+              className="text-3xl font-extrabold bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent tracking-tight animate-gradient-move"
+              style={{
+                fontFamily: 'Montserrat, sans-serif',
+                letterSpacing: '-0.03em',
+                // textShadow: '0 2px 8px rgba(0,0,0,0.18), 0 1px 0 #fff',
+                WebkitTextStroke: '1px rgba(0,0,0,0.08)'
+              }}
+            >
+              ScraperGlass
             </span>
           </div>
 
@@ -51,7 +59,7 @@ export default function HomeNavbar() {
             <Link href="/auth/login" className="text-gray-700 hover:text-yellow-600 transition-colors font-medium px-4 py-2">
               Login
             </Link>
-            <Link href="/auth/signup" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold px-6 py-2 rounded-full hover:scale-105 transition-transform shadow-lg">
+            <Link href="/auth/signup" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold px-6 py-2 rounded-full hover:scale-105 transition-transform shadow-lg w-max min-w-[120px] mx-auto">
               Sign Up
             </Link>
             
@@ -87,7 +95,7 @@ export default function HomeNavbar() {
                 <Link href="/auth/login" className="text-gray-700 hover:text-yellow-600 transition-colors font-medium text-left">
                   Login
                 </Link>
-                <Link href="/auth/signup" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold px-6 py-2 rounded-full hover:scale-105 transition-transform shadow-lg">
+                <Link href="/auth/signup" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold px-2 py-2 rounded-full hover:scale-105 transition-transform shadow-lg w-max min-w-[80px] text-left">
                   Sign Up
                 </Link>
               </div>
