@@ -1,8 +1,14 @@
 {
-  "cron": [
-    {
-      "path": "/api/extractions/process",
-      "schedule": "*/1 * * * *"
+  "functions": {
+    "api/extractions/process/route.ts": {
+      "runtime": "nodejs18.x",
+      "memory": 512,
+      "maxDuration": 60,
+      "scheduled": [
+        {
+          "cron": "* * * * *"
+        }
+      ]
     }
-  ]
+  }
 }

@@ -296,12 +296,12 @@ export default function NewExtractionsPage() {
 															const response = await fetch('/api/extractions/create', {
 																method: 'POST',
 																headers: { 'Content-Type': 'application/json' },
-																						body: JSON.stringify({
-																							user_id: userId,
-																							type: selected,
-																							targets: parsedTargets,
-																							filters,
-																						}),
+																body: JSON.stringify({
+																	user_id: userId,
+																	type: selected,
+																	targets: parsedTargets,
+																	filters,
+																}),
 															});
 															if (!response.ok) throw new Error('Failed to start extraction job');
 															const data = await response.json();
