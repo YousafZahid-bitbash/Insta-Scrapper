@@ -81,14 +81,13 @@ export interface ExtractedUser {
 
 import { HikerUser, FilterOptions } from "../utils/types";
 import axios, { AxiosInstance } from "axios";
-// Conditional import to avoid environment issues in worker context
-let supabase: any = null;
+import * as SupabaseClient from "../supabaseClient";
+let supabase: typeof SupabaseClient.supabase | null = null;
 try {
   if (typeof window !== 'undefined' || process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    const { supabase: sb } = require("../supabaseClient");
-    supabase = sb;
+    supabase = SupabaseClient.supabase;
   }
-} catch (e) {
+} catch {
   console.log('[hikerApi] Supabase client not available, will use passed clients');
 }
 import { COIN_RULES, deductCoins, getUserCoins } from "../utils/coinLogic";
@@ -203,7 +202,7 @@ export async function userFollowersChunkGqlByUsername(
   },
   onProgress?: (count: number) => void,
   onTotalEstimated?: (total: number) => void,
-  supabase?: any
+  supabase?: unknown
 ): Promise<{ filteredFollowers: ExtractedUser[], actualCoinCost?: number }> {
   const { target, filters, force, end_cursor, user_id, skipCoinCheck } = payload;
   console.log('[Followers Extraction] Raw target:', target);
@@ -493,7 +492,7 @@ export async function userFollowersChunkGql(
  * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
  * Resolves user_id(s), fetches followings, filters, and saves to DB.
  */
-export async function userFollowingChunkGqlByUsername(extraction_id: number | null, payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string, user_id?: string, skipCoinCheck?: boolean }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
+export async function userFollowingChunkGqlByUsername(extraction_id: number | null, payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string, user_id?: string, skipCoinCheck?: boolean }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: unknown): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
   const { target, filters, force, end_cursor, user_id, skipCoinCheck = false } = payload;
   console.log(`[hikerApi] userFollowingChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
   console.log('[hikerApi] [userFollowingChunkGqlByUsername] Filters received:', filters);
@@ -533,7 +532,7 @@ export async function userFollowingChunkGqlByUsername(extraction_id: number | nu
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowingChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void, extraction_id?: number | null, worker_user_id?: string, skipCoinCheck?: boolean, supabaseClient?: any): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
+export async function userFollowingChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void, extraction_id?: number | null, worker_user_id?: string, skipCoinCheck?: boolean, supabaseClient?: unknown): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
   try {
     type Following = {
       pk: string;
@@ -815,7 +814,7 @@ export async function mediaLikersBulkV1(
   onProgress?: (count: number) => void,
   onTotalEstimated?: (total: number) => void,
   extraction_id?: number | null,
-  supabaseClient?: any
+  supabaseClient?: unknown
 ) {
   // Coin deduction logic
   const supabaseToUse = supabaseClient || supabase;
@@ -1060,7 +1059,7 @@ export async function mediaLikersBulkV1(
 /******************************************************/
 
 // Bulk commenters extraction for multiple post URLs
-export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any) {
+export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: unknown) {
   // Coin deduction logic
   const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
   const userIdStr: string = userId ?? "";
@@ -1289,7 +1288,7 @@ export async function getUserPosts(
   payload: { target: string | string[], filters?: FilterOptions, user_id?: string },
   onProgress?: (count: number) => void,
   onTotalEstimated?: (total: number) => void,
-  supabaseClient?: any
+  supabaseClient?: unknown
 ) {
   // Accept user_id and supabase from payload or arguments (for worker compatibility)
   const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
@@ -1565,14 +1564,14 @@ function handleHikerError(error: unknown) {
  * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
  * @param payload { hashtags: string[], filters: any }
  */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any) {
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: unknown) {
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
   // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
  
   // 1. Create extraction record
-  const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
+  // hashtagLimit removed: variable was assigned but never used
 
   // Calculate total estimated posts based on hashtag limit
   // Defensive: ensure hashtags is always an array
