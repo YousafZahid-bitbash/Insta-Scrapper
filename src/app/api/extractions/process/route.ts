@@ -10,6 +10,9 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   // 1. Find a job to process (pending or in_progress)
   const { data: jobs, error: fetchError } = await supabase
     .from('extractions')

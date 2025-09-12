@@ -1,14 +1,8 @@
 {
-  "functions": {
-    "api/extractions/process/route.ts": {
-      "runtime": "nodejs18.x",
-      "memory": 512,
-      "maxDuration": 60,
-      "scheduled": [
-        {
-          "cron": "* * * * *"
-        }
-      ]
+  "crons": [
+    {
+      "path": "/api/extractions/process",
+      "schedule": "* * * * *"
     }
-  }
+  ]
 }
