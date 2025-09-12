@@ -42,7 +42,7 @@ export default function YourExtractionsPage() {
   type Extraction = {
     id: string;
     extraction_type: string;
-    target_username: string | null;
+    target_usernames: string | null;
     target_user_id: string;
     requested_at: string;
     completed_at: string;
@@ -50,6 +50,9 @@ export default function YourExtractionsPage() {
     page_count: number;
     next_page_id: string | null;
     error_message: string | null;
+    progress: number | null;
+    current_step: string | null;
+    filters: any | null;
   };
   type ExtractedUser = {
     id: string;
@@ -244,7 +247,7 @@ export default function YourExtractionsPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-gray-500">Target:</span>
                             <span className="font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded-lg">
-                              {extraction.target_username || extraction.target_user_id}
+                              {extraction.target_usernames || extraction.target_user_id}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -355,7 +358,7 @@ export default function YourExtractionsPage() {
                       <div className="mb-2 grid grid-cols-1 gap-2">
                         <h3 className="font-serif font-semibold text-gray-700">Extracted Data ({extractedUsers.length})</h3>
                         <div><span className="font-semibold text-gray-700">Type:</span> <span className="font-serif text-blue-800">{selectedExtraction.extraction_type}</span></div>
-                        <div><span className="font-semibold text-gray-700">Target:</span> <span className="font-mono text-blue-700">{selectedExtraction.target_username || selectedExtraction.target_user_id}</span></div>
+                        <div><span className="font-semibold text-gray-700">Target:</span> <span className="font-mono text-blue-700">{selectedExtraction.target_usernames || selectedExtraction.target_user_id}</span></div>
                         <div className="text-gray-700"><span className="font-semibold">Requested At:</span> {new Date(selectedExtraction.requested_at).toLocaleString()}</div>
                         <div><span className="font-semibold text-gray-700">Status:</span> <span className={selectedExtraction.status === 'completed' ? 'text-green-600' : 'text-red-600'}>{selectedExtraction.status}</span></div>
                         <div className="text-gray-700"><span className="font-semibold">Page Count:</span> {selectedExtraction.page_count}</div>
@@ -382,7 +385,6 @@ export default function YourExtractionsPage() {
                       </div>
                     </div>
                     {/* Data Table Container */}
-                    <div className="flex-1 bg-white rounded-xl p-4 border border-gray-200 overflow-x-auto overflow-y-auto h-[60vh]">
                     <div className="flex-1 min-w-0 bg-white rounded-xl p-4 border border-gray-200 overflow-x-auto overflow-y-auto h-[60vh]">
                       
                       {loading ? (
