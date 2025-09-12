@@ -53,8 +53,8 @@ export default function Sidebar() {
             <nav className="mt-3 flex flex-col gap-1 px-2">
               <Link href="/dashboard/new-extractions" className="flex items-center gap-3 px-5 py-3 rounded-lg hover:bg-blue-100 text-blue-900 font-medium transition-all" onClick={() => setOpen(false)}><FaPlusCircle className="text-blue-500" /> New Extractions</Link>
               <Link href="/dashboard/your-extractions" className="flex items-center gap-3 px-5 py-3 rounded-lg hover:bg-blue-100 text-blue-900 font-medium transition-all" onClick={() => setOpen(false)}><FaListAlt className="text-indigo-500" /> Your Extractions</Link>
-              <Link href="#" className="flex items-center gap-3 px-5 py-3 rounded-lg hover:bg-blue-100 text-blue-900 font-medium transition-all" onClick={() => setOpen(false)}><FaHeadset className="text-green-500" /> Support</Link>
-              <Link href="#" className="flex items-center gap-3 px-5 py-3 rounded-lg hover:bg-blue-100 text-blue-900 font-medium transition-all" onClick={() => setOpen(false)}><FaUserTie className="text-yellow-500" /> Affiliates</Link>
+              {/* <Link href="#" className="flex items-center gap-3 px-5 py-3 rounded-lg hover:bg-blue-100 text-blue-900 font-medium transition-all" onClick={() => setOpen(false)}><FaHeadset className="text-green-500" /> Support</Link>
+              <Link href="#" className="flex items-center gap-3 px-5 py-3 rounded-lg hover:bg-blue-100 text-blue-900 font-medium transition-all" onClick={() => setOpen(false)}><FaUserTie className="text-yellow-500" /> Affiliates</Link> */}
             </nav>
           </div>
           <div className="mb-6">

@@ -12,7 +12,7 @@ import { FilterPanel, FiltersState } from "@/components/FilterPanel";
 
 const extractOptions = [
 	{ label: "Followers", icon: <FaUserFriends />, value: "followers" },
-	{ label: "Followings", icon: <FaUserPlus />, value: "followings" },
+	{ label: "Followings", icon: <FaUserPlus />, value: "following" },
 	{ label: "Likers", icon: <FaThumbsUp />, value: "likers" },
 	{ label: "Hashtags", icon: <FaHashtag />, value: "hashtags" },
 	{ label: "Posts", icon: <FaIdBadge />, value: "posts" },
@@ -22,14 +22,17 @@ const extractOptions = [
 export default function NewExtractionsPage() {
 	const router = useRouter();
 	const [showCoinError, setShowCoinError] = useState(false);
-	const [showSuccess, setShowSuccess] = useState(false);
+		const [showSuccess, setShowSuccess] = useState(false);
+		const [extractionId, setExtractionId] = useState<string | null>(null);
+		const [polling, setPolling] = useState(false);
 	// const [stopRequested, setStopRequested] = useState(false);
 	// Multi-404 modal state
 	// const [multi404Modal, setMulti404Modal] = useState<{ show: boolean; message: string; failedUser: string; remaining: string[]; retryFn: (() => void) | null }>({ show: false, message: '', failedUser: '', remaining: [], retryFn: null });
 	const [selected, setSelected] = useState("followers");
 	const [targetsInput, setTargetsInput] = useState("");
 	// const [coinLimit, setCoinLimit] = useState<number>(0);
-	const [coins, setCoins] = useState<number>(0);
+		const [coins, setCoins] = useState<number>(0);
+		const [userId, setUserId] = useState<string | null>(null);
 	const [result, setResult] = useState<unknown>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -58,20 +61,52 @@ export default function NewExtractionsPage() {
 	coinLimit: '',
 	});
 
-	useEffect(() => {
-		async function checkAuthAndFetchCoins() {
-			try {
-				const res = await fetch("/api/me");
-				if (!res.ok) throw new Error("Not authenticated");
-				const user = await res.json();
-				if (user && typeof user.coins === "number") setCoins(user.coins);
-			} catch {
-				// Not authenticated, redirect to login
-				router.replace("/auth/login");
+		useEffect(() => {
+			async function checkAuthAndFetchCoins() {
+				try {
+					const res = await fetch("/api/me");
+					if (!res.ok) throw new Error("Not authenticated");
+					const user = await res.json();
+					if (user && typeof user.coins === "number") setCoins(user.coins);
+					if (user && user.id) setUserId(user.id);
+				} catch {
+					// Not authenticated, redirect to login
+					router.replace("/auth/login");
+				}
 			}
-		}
-		checkAuthAndFetchCoins();
-	}, [router]);
+			checkAuthAndFetchCoins();
+		}, [router]);
+
+	useEffect(() => {
+		if (!polling || !extractionId) return;
+		let interval: NodeJS.Timeout;
+		const poll = async () => {
+			try {
+				const res = await fetch(`/api/extractions/status?id=${extractionId}`);
+				if (!res.ok) throw new Error('Failed to fetch extraction status');
+				const data = await res.json();
+				
+				// Update progress if available
+				if (data.progress !== undefined) {
+					setProgressCount(data.progress);
+				}
+				
+				if (data.status === 'completed') {
+					setShowSuccess(true);
+					setPolling(false);
+					setProgressCount(data.progress || progressCount); // Final progress count
+				} else if (data.status === 'failed') {
+					setError('Extraction failed.');
+					setPolling(false);
+				}
+			} catch (err) {
+				setError(String(err));
+				setPolling(false);
+			}
+		};
+		interval = setInterval(poll, 2000); // Poll every 2 seconds for better UX
+		return () => clearInterval(interval);
+	}, [polling, extractionId, progressCount]);
 
 	// Helper: parse targets from textarea
 	const parsedTargets = targetsInput.split(/\r?\n/).map(t => t.trim()).filter(Boolean);
@@ -235,133 +270,51 @@ export default function NewExtractionsPage() {
 							<div className="p-8">
 								<form
 									className="space-y-6"
-									onSubmit={async e => {
-									e.preventDefault();
-									setResult(null);
-									setError(null);
-									// Check coin balance
-									if (coins <= 0) {
-										setShowCoinError(true);
-										setTimeout(() => setShowCoinError(false), 5000);
-										return;
-									}
-									// Check coin limit filter
-									const coinLimitNum = Number(filters.coinLimit);
-									if (filters.coinLimit && (!Number.isFinite(coinLimitNum) || coinLimitNum <= 0 || coinLimitNum > coins)) {
-										if (coinLimitNum <= 0) {
-											setError(`Coin limit must be greater than 0.`);
-										} else if (coinLimitNum > coins) {
-											setError(`Coin limit cannot exceed your current coin balance (${coins}).`);
-										}
-										return;
-									}
-									setLoading(true);
-									try {
-										const mod = await import("@/services/hikerApi");
-										let filterOptions: Record<string, unknown> = {};
-										if (selected === "posts") {
-											filterOptions = {
-												likesMin: filters.postLikesMin,
-												likesMax: filters.postLikesMax,
-												commentsMin: filters.postCommentsMin,
-												commentsMax: filters.postCommentsMax,
-												captionContains: filters.postCaptionContains,
-												captionStopWords: filters.postCaptionStopWords,
-												coinLimit: filters.coinLimit,
-											};
-											console.log("[Extraction API Call] method: posts, Usernames:", parsedTargets, "Filters:", filterOptions);
-											setProgressCount(0);
-											setProgressTotal(0);
-											const apiResult = await mod.getUserPosts(
-												{ target: parsedTargets, filters: filterOptions },
-												(count: number) => setProgressCount(count),
-												(total: number) => setProgressTotal(total)
-											);
-											const extractedPosts = Array.isArray(apiResult?.extractedPosts) ? apiResult.extractedPosts : [];
-											setExtractedCount(extractedPosts.length);
-										} else if (selected === "commenters") {
-											filterOptions = {
-												commentExcludeWords: filters.commentExcludeWords,
-												commentStopWords: filters.commentStopWords,
-												coinLimit: filters.coinLimit,
-											};
-											console.log("[Extraction API Call] method: commenters, URLs:", parsedTargets, "Filters:", filterOptions);
-											setProgressCount(0);
-											setProgressTotal(0);
-											const apiResult = await mod.extractCommentersBulkV2(
-												{ urls: parsedTargets, filters: filterOptions },
-												(count: number) => setProgressCount(count),
-												(total: number) => setProgressTotal(total)
-											);
-											const extractedUsers = Array.isArray(apiResult?.comments) ? apiResult.comments : [];
-											setExtractedCount(extractedUsers.length);
-										} else if (selected === "hashtags") {
-											filterOptions = {
-												coinLimit: filters.coinLimit,
-												hashtagLimit: filters.hashtagLimit,
-											};
-											// parsedTargets is array of hashtags
-											console.log("[Extraction API Call] method: hashtags, Hashtags:", parsedTargets, "Filters:", filterOptions);
-											setProgressCount(0);
-											setProgressTotal(0);
-											const apiResult = await mod.extractHashtagClipsBulkV2(
-												{ hashtags: parsedTargets, filters: filterOptions },
-												(count: number) => setProgressCount(count),
-												(total: number) => setProgressTotal(total)
-											);
-											const extractedClips = Array.isArray(apiResult?.clips) ? apiResult.clips : [];
-											setExtractedCount(extractedClips.length);
-										} else if (selected === "followers" || selected === "followings") {
-											filterOptions = {
-												extractPhone: filters.extractPhone,
-												extractEmail: filters.extractEmail,
-												extractLinkInBio: filters.extractLinkInBio,
-												privacy: filters.privacy,
-												profilePicture: filters.profilePicture,
-												verifiedAccount: filters.verifiedAccount,
-												businessAccount: filters.businessAccount,
-												followersMin: filters.followersMin,
-												followersMax: filters.followersMax,
-												followingsMin: filters.followingsMin,
-												followingsMax: filters.followingsMax,
-												filterByName: filters.filterByName,
-												filterByNameInBioContains: filters.filterByNameInBioContains,
-												filterByNameInBioStop: filters.filterByNameInBioStop,
-												coinLimit: filters.coinLimit,
-											};
-											console.log("[Extraction API Call] method:", selected, "Usernames:", parsedTargets, "Filters:", filterOptions);
-											const apiFn = selected === "followers" ? mod.userFollowersChunkGqlByUsername : mod.userFollowingChunkGqlByUsername;
-											setProgressCount(0);
-											setProgressTotal(0);
-											const apiResult = (await apiFn(
-												{ target: parsedTargets, filters: filterOptions },
-												(count: number) => setProgressCount(count),
-												(total: number) => setProgressTotal(total)
-											)) as { filteredFollowers?: unknown[] };
-											const extractedUsers = Array.isArray(apiResult?.filteredFollowers) ? apiResult.filteredFollowers : [];
-											setExtractedCount(extractedUsers.length);
-										} else if (selected === "likers") {
-											filterOptions = {
-												coinLimit: filters.coinLimit,
-											};
-											console.log("[Extraction API Call] method: likers, URLs:", parsedTargets, "Filters:", filterOptions);
-											setProgressCount(0);
-											setProgressTotal(0);
-											const apiResult = await mod.mediaLikersBulkV1(
-												{ urls: parsedTargets, filters: filterOptions },
-												(count: number) => setProgressCount(count),
-												(total: number) => setProgressTotal(total)
-											);
-											const extractedUsers = Array.isArray(apiResult?.filteredLikers) ? apiResult.filteredLikers : [];
-											setExtractedCount(extractedUsers.length);
-										}
-									} catch (err) {
-										setError(String(err));
-									}
-									  setLoading(false);
-									  setShowSuccess(true);
-									  setTimeout(() => setShowSuccess(false), 5000);
-								}}
+													onSubmit={async e => {
+														e.preventDefault();
+														setResult(null);
+														setError(null);
+														// Check coin balance
+														if (coins <= 0) {
+															setShowCoinError(true);
+															setTimeout(() => setShowCoinError(false), 5000);
+															return;
+														}
+														// Check coin limit filter
+														const coinLimitNum = Number(filters.coinLimit);
+														if (filters.coinLimit && (!Number.isFinite(coinLimitNum) || coinLimitNum <= 0 || coinLimitNum > coins)) {
+															if (coinLimitNum <= 0) {
+																setError(`Coin limit must be greater than 0.`);
+															} else if (coinLimitNum > coins) {
+																setError(`Coin limit cannot exceed your current coin balance (${coins}).`);
+															}
+															return;
+														}
+														setLoading(true);
+														try {
+															// Call your backend API to create a new extraction job
+															const response = await fetch('/api/extractions/create', {
+																method: 'POST',
+																headers: { 'Content-Type': 'application/json' },
+																						body: JSON.stringify({
+																							user_id: userId,
+																							type: selected,
+																							targets: parsedTargets,
+																							filters,
+																						}),
+															});
+															if (!response.ok) throw new Error('Failed to start extraction job');
+															const data = await response.json();
+															if (!data.id) throw new Error('No extraction job ID returned');
+															setExtractionId(data.id);
+															setPolling(true);
+														} catch (err) {
+															setError(String(err));
+														}
+														setLoading(false);
+													}}
+	// Poll extraction job status
+	
 							>
 								{/* Coin Limit Input */}
 								<div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
@@ -408,7 +361,7 @@ export default function NewExtractionsPage() {
 										<div>
 											<h3 className="text-lg font-semibold text-gray-800">Target Input</h3>
 											<p className="text-sm text-gray-600">
-												{selected === "followers" || selected === "followings" || selected === "posts"
+												{selected === "followers" || selected === "following" || selected === "posts"
 													? "Enter Instagram usernames (one per line)"
 													: selected === "likers"
 														? "Enter Instagram post URLs"
@@ -423,7 +376,7 @@ export default function NewExtractionsPage() {
 										rows={8}
 										className="w-full px-4 py-4 rounded-lg border-2 border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition-all duration-200 resize-none"
 										placeholder={
-											selected === "followers" || selected === "followings" || selected === "posts"
+											selected === "followers" || selected === "following" || selected === "posts"
 												? "Enter each username on a unique line:\n@johndoe\n@janedoe\n@instagram"
 												: selected === "likers"
 													? "Add Instagram post URLs:\nhttps://instagram.com/p/CA2aJYrg6cZ/\nhttps://instagram.com/p/CB3bKZsh7dA/"
@@ -502,7 +455,7 @@ export default function NewExtractionsPage() {
 												<span className="text-gray-600">
 													{progressTotal > 0 ? (
 														<>Extracted: {progressCount.toLocaleString()} / {progressTotal.toLocaleString()} {
-															selected === "followers" || selected === "followings" || selected === "likers"
+															selected === "followers" || selected === "following" || selected === "likers"
 																? "users"
 																: selected === "commenters"
 																	? "comments"
@@ -514,7 +467,7 @@ export default function NewExtractionsPage() {
 														}</>
 													) : (
 														<>Extracted: {progressCount.toLocaleString()} {
-															selected === "followers" || selected === "followings" || selected === "likers"
+															selected === "followers" || selected === "following" || selected === "likers"
 																? "users"
 																: selected === "commenters"
 																	? "comments"

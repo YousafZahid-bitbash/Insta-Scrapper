@@ -80,8 +80,17 @@ export interface ExtractedUser {
 }
 
 import { HikerUser, FilterOptions } from "../utils/types";
-import axios from "axios";
-import { supabase } from "../supabaseClient";
+import axios, { AxiosInstance } from "axios";
+// Conditional import to avoid environment issues in worker context
+let supabase: any = null;
+try {
+  if (typeof window !== 'undefined' || process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const { supabase: sb } = require("../supabaseClient");
+    supabase = sb;
+  }
+} catch (e) {
+  console.log('[hikerApi] Supabase client not available, will use passed clients');
+}
 import { COIN_RULES, deductCoins, getUserCoins } from "../utils/coinLogic";
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
 
@@ -117,20 +126,29 @@ const HIKER_API_URL = process.env.NEXT_PUBLIC_HIKER_API_URL || "https://api.hike
 console.log("[hikerApi] process.env.NEXT_PUBLIC_HIKER_API_KEY:", process.env.NEXT_PUBLIC_HIKER_API_KEY);
 console.log("[hikerApi] process.env.HIKER_API_KEY:", process.env.HIKER_API_KEY);
 console.log("[hikerApi] process.env.NODE_ENV:", process.env.NODE_ENV);
-const HIKER_API_KEY = process.env.NEXT_PUBLIC_HIKER_API_KEY;
-console.log("[hikerApi] HIKER_API_KEY (assigned):", HIKER_API_KEY);
 
-if (!HIKER_API_KEY) {
-  throw new Error("NEXT_PUBLIC_HIKER_API_KEY is not set in environment variables");
+// Lazy initialization of Hiker client
+let hikerClient: AxiosInstance | null = null;
+
+function getHikerClient(): AxiosInstance {
+  if (!hikerClient) {
+    const HIKER_API_KEY = process.env.NEXT_PUBLIC_HIKER_API_KEY;
+    console.log("[hikerApi] HIKER_API_KEY (assigned):", HIKER_API_KEY);
+
+    if (!HIKER_API_KEY) {
+      throw new Error("NEXT_PUBLIC_HIKER_API_KEY is not set in environment variables");
+    }
+
+    hikerClient = axios.create({
+      baseURL: HIKER_API_URL,
+      headers: {
+        "x-access-key": HIKER_API_KEY,
+        "Content-Type": "application/json",
+      },
+    });
+  }
+  return hikerClient;
 }
-
-const hikerClient = axios.create({
-  baseURL: HIKER_API_URL,
-  headers: {
-    "x-access-key": HIKER_API_KEY,
-    "Content-Type": "application/json",
-  },
-});
 
 
 
@@ -138,7 +156,7 @@ const hikerClient = axios.create({
 export async function userByUsernameV1(username: string): Promise<HikerUser | undefined> {
   try {
     const params = { username };
-    const res = await hikerClient.get("/v1/user/by/username", { params });
+    const res = await getHikerClient().get("/v1/user/by/username", { params });
     return res.data;
   } catch (error: unknown) {
     console.error('[hikerApi] userFollowersChunkGql actual error:', error);
@@ -151,52 +169,116 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 /***********************************************************/
 
 // Get a user's followers (one page) with cursor
-// Get a user's followers by username (fetches user_id first)
+
+// Helper: Save extracted users to DB, linking to extraction_id
+async function saveExtractedUsersToDB(users: ExtractedUser[], extraction_id: string, supabase: any) {
+  if (!users.length) return;
+  for (const user of users) {
+    user.extraction_id = extraction_id;
+  }
+  const { error } = await supabase
+    .from('extracted_users')
+    .insert(users);
+  if (error) {
+    console.error('[hikerApi] Error saving extracted users:', error);
+  }
+}
+
 /**
- * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
- * Resolves user_id(s), fetches followers, filters, and saves to DB.
+ * Clean followers extraction: fetch, filter, and save users, linking to existing extraction_id.
+ * - extraction_id: The job's extraction row ID (created by API route/worker)
+ * - payload: { target, filters, ... }
+ * - onProgress: callback for progress updates
+ * - supabase: Supabase client instance
  */
-export async function userFollowersChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
-  const { target, filters, force, end_cursor } = payload;
-  console.log(`[hikerApi] userFollowersChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
-  console.log('[hikerApi] [userFollowersChunkGqlByUsername] Filters received:', filters);
-  // Support both single username and array of usernames
-  const usernames = Array.isArray(target) ? target : [target];
+export async function userFollowersChunkGqlByUsername(
+  extraction_id: string,
+  payload: { 
+    target: string | string[], 
+    filters: FilterOptions, 
+    force?: boolean, 
+    end_cursor?: string,
+    user_id?: string,
+    skipCoinCheck?: boolean
+  },
+  onProgress?: (count: number) => void,
+  onTotalEstimated?: (total: number) => void,
+  supabase?: any
+): Promise<{ filteredFollowers: ExtractedUser[], actualCoinCost?: number }> {
+  const { target, filters, force, end_cursor, user_id, skipCoinCheck } = payload;
+  console.log('[Followers Extraction] Raw target:', target);
+  let usernames = Array.isArray(target) ? target : [target];
+  // Clean up usernames: remove empty/undefined, trim, split by newlines if needed
+  usernames = usernames
+    .flatMap(u => typeof u === 'string' ? u.split(/\r?\n/) : [])
+    .map(u => u.trim())
+    .filter(u => !!u);
+  console.log('[Followers Extraction] Cleaned usernames:', usernames);
   const userIds: string[] = [];
   let totalEstimated = 0;
-
-  
+  // Resolve usernames to user IDs
   for (const uname of usernames) {
+    if (!uname) {
+      console.warn('[Followers Extraction] Skipping undefined or empty username');
+      continue;
+    }
+    console.log('[Followers Extraction] Processing username:', uname);
     const cleanUsername = uname.replace(/^@/, "");
     const user = await userByUsernameV1(cleanUsername);
-    console.log(`[hikerApi] userByUsernameV1 result for ", cleanUsername, ":`, user);
     if (!user || !user.pk) {
       console.error(`[hikerApi] User not found for username:`, cleanUsername);
-      continue; // Skip missing users, don't throw
+      continue;
     }
     userIds.push(user.pk);
     totalEstimated += user.follower_count || 0;
+    console.log('[Followers Extraction] Got user_id:', user.pk, 'for username:', cleanUsername);
   }
-  // If no userIds found, assign a test user_id for debugging
-  
+
   if (userIds.length === 0) {
     throw new Error("No valid user IDs found for provided usernames");
   }
 
   // Call total estimation callback
-  if (onTotalEstimated) {
-    console.log(`[hikerApi] Total followers estimated: ${totalEstimated}`);
-    onTotalEstimated(totalEstimated);
-  }
-  
-  // Pass array of user IDs to main function for DB save
-  // Wrap filters in a Record<string, FilterOptions> for compatibility
+  if (onTotalEstimated) onTotalEstimated(totalEstimated);
+
+  // Fetch followers (no DB save inside this function)
   const filtersRecord: Record<string, FilterOptions> = { followers: filters };
-  return userFollowersChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress);
+  const gqlResult = await userFollowersChunkGql(
+    userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress, user_id, skipCoinCheck
+  );
+  const filteredFollowers: ExtractedUser[] = Array.isArray(gqlResult?.filteredFollowers)
+    ? gqlResult.filteredFollowers.map(f => ({
+        ...f,
+        is_business: f.is_business === null ? undefined : f.is_business
+      }))
+    : [];
+  
+  // Calculate actual coin cost based on extracted data
+  const extractedCount = filteredFollowers.length;
+  const extractionCost = Math.ceil(extractedCount / COIN_RULES.followers.perChunk.users) * COIN_RULES.followers.perChunk.coins;
+  const filteringCost = extractedCount * COIN_RULES.followers.perUser;
+  const actualCoinCost = extractionCost + filteringCost;
+  
+  console.log(`[Followers Extraction] Actual coin cost calculation: extracted=${extractedCount}, extraction=${extractionCost}, filtering=${filteringCost}, total=${actualCoinCost}`);
+  
+  // Save to DB, linking to the provided extraction_id
+  if (supabase && filteredFollowers.length > 0) {
+    await saveExtractedUsersToDB(filteredFollowers, extraction_id, supabase);
+  }
+  return { filteredFollowers, actualCoinCost };
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowersChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string | string[], filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void) {
+export async function userFollowersChunkGql(
+  user_id: string | string[], 
+  force?: boolean, 
+  end_cursor?: string, 
+  target_username?: string | string[], 
+  filters?: Record<string, FilterOptions>, 
+  onProgress?: (count: number) => void,
+  override_user_id?: string,
+  skipCoinCheck?: boolean
+) {
   try {
     type Follower = {
       pk: string;
@@ -208,11 +290,11 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
     };
     const allFollowers: Follower[] = [];
     let pageCount = 0;
-    const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null; // Get user ID from local storage
+    const userId = override_user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null); // Get user ID from local storage or use override
     const userIdStr = userId ?? "";
-    let coins = await getUserCoins(userIdStr, supabase);
+    let coins = skipCoinCheck ? Infinity : await getUserCoins(userIdStr, supabase);
     let stopExtraction = false;
-  let usersExtracted = 0;
+    let usersExtracted = 0;
   // Get coin limit from filters (integer, no decimals)
   const coinLimit = filters?.followers?.coinLimit ? Math.floor(filters.followers.coinLimit) : undefined;
   
@@ -236,7 +318,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;
-          const res = await hikerClient.get("/v2/user/followers", { params });
+          const res = await getHikerClient().get("/v2/user/followers", { params });
           const data = res.data;
           users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
           
@@ -265,16 +347,24 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
               
               // Deduct coins when we complete a full batch (every 10 users)
               if (usersProcessedInBatch >= COIN_RULES.followers.perChunk.users) {
-                console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for batch of ${COIN_RULES.followers.perChunk.users} users`);
-                coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
+                if (!skipCoinCheck) {
+                  console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for batch of ${COIN_RULES.followers.perChunk.users} users`);
+                  coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
+                } else {
+                  console.log(`[hikerApi] [FollowersV2] Skipping coin deduction for batch (worker mode)`);
+                }
                 usersProcessedInBatch = 0; // Reset batch counter
               }
             }
             
             // Deduct coins for any remaining partial batch
             if (usersProcessedInBatch > 0 && !stopExtraction) {
-              console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
-              coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
+              if (!skipCoinCheck) {
+                console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
+                coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
+              } else {
+                console.log(`[hikerApi] [FollowersV2] Skipping coin deduction for partial batch (worker mode)`);
+              }
             }
             
             console.log(`[hikerApi] [FollowersV2] Extracted ${usersExtracted} users so far. Max users allowed: ${maxUsersWithinCoinLimit ?? 'unlimited'}`);
@@ -310,15 +400,19 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
   console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowers.length);
   // Deduct coins for allFollowers before calling extractFilteredUsers
   const perUserTotalCost = allFollowers.length * COIN_RULES.followers.perUser; // Calculate total cost based on followers
-  if (coins < perUserTotalCost) {
-    stopExtraction = true;
+  if (!skipCoinCheck) {
+    if (coins < perUserTotalCost) {
+      stopExtraction = true;
+    } else {
+      coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+    }
   } else {
-    coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+    console.log(`[hikerApi] [FollowersV2] Skipping per-user coin deduction (worker mode) - would deduct ${perUserTotalCost} coins for ${allFollowers.length} users`);
   }
   const result = await extractFilteredUsers(
     allFollowers,
     filterOptions,
-    async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
+    async (username: string): Promise<UserDetails> => (await getHikerClient().get("/v1/user/by/username", { params: { username } })).data as UserDetails
   );
     // Ensure all required columns are present for each user
     const filteredFollowers = result.map((user: ExtractedUser) => ({
@@ -346,7 +440,7 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
             {
               user_id: userId,
               extraction_type: "followers",
-              target_username: target_username || null,
+              target_usernames: target_username || null,
               target_user_id: Array.isArray(user_id) ? user_id.join(",") : user_id,
               requested_at: new Date().toISOString(),
               completed_at: new Date().toISOString(),
@@ -399,10 +493,14 @@ export async function userFollowersChunkGql(user_id: string | string[], force?: 
  * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
  * Resolves user_id(s), fetches followings, filters, and saves to DB.
  */
-export async function userFollowingChunkGqlByUsername(payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
-  const { target, filters, force, end_cursor } = payload;
+export async function userFollowingChunkGqlByUsername(extraction_id: number | null, payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string, user_id?: string, skipCoinCheck?: boolean }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
+  const { target, filters, force, end_cursor, user_id, skipCoinCheck = false } = payload;
   console.log(`[hikerApi] userFollowingChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
   console.log('[hikerApi] [userFollowingChunkGqlByUsername] Filters received:', filters);
+  console.log('[hikerApi] [userFollowingChunkGqlByUsername] extraction_id:', extraction_id, 'skipCoinCheck:', skipCoinCheck);
+  
+  // Use the provided supabase client or default to global
+  const supabaseToUse = supabaseClient || supabase;
   // Support both single username and array of usernames
   const usernames = Array.isArray(target) ? target : [target];
   const userIds: string[] = [];
@@ -431,11 +529,11 @@ export async function userFollowingChunkGqlByUsername(payload: { target: string 
   
   // Wrap filters in a Record<string, FilterOptions> for compatibility
   const filtersRecord: Record<string, FilterOptions> = { following: filters };
-  return userFollowingChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress);
+  return userFollowingChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress, extraction_id, user_id, skipCoinCheck, supabaseToUse);
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowingChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void) {
+export async function userFollowingChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void, extraction_id?: number | null, worker_user_id?: string, skipCoinCheck?: boolean, supabaseClient?: any): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
   try {
     type Following = {
       pk: string;
@@ -447,10 +545,25 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
     };
   const allFollowings: Following[] = [];
   let pageCount = 0;
-  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr: string = userId ?? "";
-  let coins: number = await getUserCoins(userIdStr, supabase);
+  
+  // Use the provided supabase client or default to global
+  const supabaseToUse = supabaseClient || supabase;
+  
+  // Coin checking setup - skip if in worker context
+  let coins: number = 0;
   let stopExtraction: boolean = false;
+  let userIdStr: string = "";
+  
+  if (!skipCoinCheck) {
+    const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : (worker_user_id || null);
+    userIdStr = userId ?? "";
+    coins = await getUserCoins(userIdStr, supabaseToUse);
+    console.log('[hikerApi] [userFollowingChunkGql] Coin checking enabled, current coins:', coins);
+  } else {
+    console.log('[hikerApi] [userFollowingChunkGql] Coin checking disabled (worker context)');
+    // In worker context, use the provided user_id for database operations
+    userIdStr = worker_user_id || "";
+  }
   const userIds = Array.isArray(user_id) ? user_id : [user_id];
     for (const singleUserId of userIds) {
       let nextPageId: string | undefined = undefined;
@@ -459,9 +572,11 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
         do {
           const params: Record<string, unknown> = { user_id: singleUserId };
           if (nextPageId) params.page_id = nextPageId;
-          const res = await hikerClient.get("/v2/user/following", { params });
+          const res = await getHikerClient().get("/v2/user/following", { params });
           const data = res.data;
           users = data && data.response && Array.isArray(data.response.users) ? data.response.users : [];
+          // Log users array immediately after assignment
+          console.log('[hikerApi] [userFollowingChunkGql] After assignment, users array length:', users.length, 'Usernames:', users.map(u => u.username));
           
           // Process users and deduct coins in batches according to COIN_RULES
           if (users.length > 0) {
@@ -482,36 +597,46 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
               console.log(`[hikerApi] [FollowingV2] Coin limit: ${coinLimit}, Max users within budget: ${maxUsersWithinCoinLimit} (${totalCostPerUser} coins per user)`);
             }
             
+            console.log(`[hikerApi] [FollowingV2] Entering user loop. users.length: ${users.length}`);
+            if (users.length > 0) {
+              console.log('[hikerApi] [FollowingV2] Usernames in users:', users.map(u => u.username));
+            }
             for (const user of users) {
-              // If coin limit is set, stop when usersExtracted reaches maxUsersWithinCoinLimit
-              if (maxUsersWithinCoinLimit !== undefined && usersExtracted >= maxUsersWithinCoinLimit) {
+              // Check if we have enough coins for the full batch (skip in worker context)
+              if (!skipCoinCheck && usersProcessedInBatch === 0 && coins < COIN_RULES.followings.perChunk.coins) {
+                console.log(`[hikerApi] [FollowingV2] Not enough coins for batch, stopping extraction.`);
                 stopExtraction = true;
                 break;
               }
-              
-              // Check if we have enough coins for the full batch
-              if (usersProcessedInBatch === 0 && coins < COIN_RULES.followings.perChunk.coins) {
-                stopExtraction = true;
-                break;
-              }
-              
               allFollowings.push(user);
+              console.log(`[hikerApi] [FollowingV2] Added user to allFollowings:`, user.username);
               usersExtracted++;
               usersProcessedInBatch++;
+              console.log(`[hikerApi] [FollowingV2] usersExtracted: ${usersExtracted}, maxUsersWithinCoinLimit: ${maxUsersWithinCoinLimit}`);
               if (onProgress) onProgress(allFollowings.length);
-              
+              // If coin limit is set, stop when usersExtracted >= maxUsersWithinCoinLimit
+              if (maxUsersWithinCoinLimit !== undefined && usersExtracted >= maxUsersWithinCoinLimit) {
+                console.log(`[hikerApi] [FollowingV2] Reached max users within coin limit: ${maxUsersWithinCoinLimit}`);
+                stopExtraction = true;
+                break;
+              }
               // Deduct coins when we complete a full batch (every 10 users)
-              if (usersProcessedInBatch >= COIN_RULES.followings.perChunk.users) {
+              if (usersProcessedInBatch >= COIN_RULES.followings.perChunk.users && !skipCoinCheck) {
                 console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.followings.perChunk.coins} coins for batch of ${COIN_RULES.followings.perChunk.users} users`);
-                coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabase);
+                coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabaseToUse);
                 usersProcessedInBatch = 0; // Reset batch counter
               }
             }
+            // Log allFollowings after each batch
+            console.log('[hikerApi] [FollowingV2] allFollowings after batch:', allFollowings.length, allFollowings.map(u => u.username));
+            if (stopExtraction) {
+              console.log('[hikerApi] [FollowingV2] stopExtraction is TRUE after user loop. Reason: batch/coin/limit logic triggered.');
+            }
             
             // Deduct coins for any remaining partial batch
-            if (usersProcessedInBatch > 0 && !stopExtraction) {
+            if (usersProcessedInBatch > 0 && !stopExtraction && !skipCoinCheck) {
               console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.followings.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
-              coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabase);
+              coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabaseToUse);
             }
             
             if (stopExtraction) break;
@@ -556,15 +681,16 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
   console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowings.length);
   // Deduct coins for allFollowings before calling extractFilteredUsers
   const perUserTotalCost = allFollowings.length * COIN_RULES.followings.perUser;
-  if (coins < perUserTotalCost) {
+  if (!skipCoinCheck && coins < perUserTotalCost) {
     stopExtraction = true;
-  } else {
-    coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+  } else if (!skipCoinCheck) {
+    coins = await deductCoins(userIdStr, perUserTotalCost, supabaseToUse);
   }
+  console.log('[hikerApi] [FollowingV2] allFollowings before filtering:', allFollowings.map(u => u.username));
   const result = await extractFilteredUsers(
     allFollowings,
     filterOptions,
-    async (username: string): Promise<UserDetails> => (await hikerClient.get("/v1/user/by/username", { params: { username } })).data as UserDetails
+    async (username: string): Promise<UserDetails> => (await getHikerClient().get("/v1/user/by/username", { params: { username } })).data as UserDetails
   );
     // Ensure all required columns are present for each user
     const filteredFollowings = result.map((user: ExtractedUser) => ({
@@ -590,73 +716,91 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
     // Save extraction and extracted users to DB only if followings found
   if (userIdStr && filteredFollowings.length > 0) {
       try {
-        const { data: extraction, error: extractionError } = await supabase
-          .from("extractions")
-          .insert([
-            {
-              user_id: userId,
-              extraction_type: "following",
-              target_username: target_username || null,
-              target_user_id: Array.isArray(user_id) ? user_id.join(",") : user_id,
-              requested_at: new Date().toISOString(),
+        let extractionId = extraction_id;
+        
+        // If no extraction_id provided (direct frontend call), create new extraction record
+        if (!extractionId) {
+          const { data: extraction, error: extractionError } = await supabaseToUse
+            .from("extractions")
+            .insert([
+              {
+                user_id: userIdStr,
+                extraction_type: "following",
+                target_usernames: target_username || null,
+                target_user_id: Array.isArray(user_id) ? user_id.join(",") : user_id,
+                requested_at: new Date().toISOString(),
+                completed_at: new Date().toISOString(),
+                status: "completed",
+                page_count: pageCount,
+                next_page_id: null,
+                error_message: null,
+              },
+            ])
+            .select()
+            .single();
+          
+          if (extractionError) {
+            console.error("[hikerApi] Error saving extraction:", extractionError);
+            // Calculate actual coin cost for error case
+            const extractionCost = Math.ceil(allFollowings.length / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
+            const filteringCost = allFollowings.length * COIN_RULES.followings.perUser;
+            const actualCoinCost = extractionCost + filteringCost;
+            return { filteredFollowings: allFollowings as ExtractedUser[], actualCoinCost };
+          }
+          extractionId = extraction?.id;
+        } else {
+          // Update existing extraction record with completion info
+          await supabaseToUse
+            .from("extractions")
+            .update({
               completed_at: new Date().toISOString(),
               status: "completed",
               page_count: pageCount,
               next_page_id: null,
               error_message: null,
-            },
-          ])
-          .select()
-          .single();
-        if (extractionError) {
-          console.error("[hikerApi] Error saving extraction:", extractionError);
-        } else if (extraction && extraction.id) {
+            })
+            .eq('id', extractionId);
+        }
+        
+        if (extractionId) {
+          // Add extraction_id to all users
           for (const user of filteredFollowings) {
-            (user as ExtractedUser).extraction_id = extraction.id;
+            (user as ExtractedUser).extraction_id = String(extractionId);
           }
+          
+          // Insert extracted users
           if (filteredFollowings.length > 0) {
-            const { error: usersError } = await supabase
+            const { error: usersError } = await supabaseToUse
               .from("extracted_users")
               .insert(filteredFollowings);
             if (usersError) {
               console.error("[hikerApi] Error saving extracted users:", usersError);
-            }
-          }
-          // Deduct coins for current user
-          try {
-            const { data: userData, error: coinsError } = await supabase
-              .from("users")
-              .select("coins")
-              .eq("id", userId)
-              .single();
-            if (!coinsError && userData && typeof userData.coins === "number") {
-              const newCoins = Math.max(0, userData.coins - filteredFollowings.length);
-              const { error: updateError } = await supabase
-                .from("users")
-                .update({ coins: newCoins })
-                .eq("id", userId);
-              if (updateError) {
-                console.error(`[hikerApi] Error updating coins:`, updateError);
-              } else {
-                console.log(`[hikerApi] Coins updated. Deducted:`, filteredFollowings.length, `New balance:`, newCoins);
-              }
             } else {
-              console.error(`[hikerApi] Error fetching coins for deduction:`, coinsError);
+              console.log(`[hikerApi] Successfully saved ${filteredFollowings.length} following users for extraction ${extractionId}`);
             }
-          } catch (err) {
-            console.error(`[hikerApi] Exception during coin deduction:`, err);
           }
         }
       } catch (err) {
         console.error("[hikerApi] Exception during DB save:", err);
       }
     } else {
-      console.warn(`[hikerApi] [FollowingV2] No filtered followings found, skipping DB save and coin deduction.`);
+      console.warn(`[hikerApi] [FollowingV2] No filtered followings found, skipping DB save.`);
     }
-    return filteredFollowings;
+    
+    // Calculate actual coin cost for the extraction
+    const extractedCount = allFollowings.length;
+    const extractionCost = Math.ceil(extractedCount / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
+    const filteringCost = extractedCount * COIN_RULES.followings.perUser;
+    const actualCoinCost = extractionCost + filteringCost;
+    
+    console.log(`[Following Extraction] Actual coin cost calculation: extracted=${extractedCount}, extraction=${extractionCost}, filtering=${filteringCost}, total=${actualCoinCost}`);
+    
+    return { filteredFollowings: filteredFollowings as ExtractedUser[], actualCoinCost };
   } catch (error: unknown) {
     console.error('[hikerApi] userFollowingChunkGql actual error:', error);
     handleHikerError(error);
+    // Return empty result in case of error
+    return { filteredFollowings: [], actualCoinCost: 0 };
   }
 }
 
@@ -666,11 +810,17 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
 /***********************************************************/
 
 // Bulk likers extraction for multiple post URLs
-export async function mediaLikersBulkV1(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
+export async function mediaLikersBulkV1(
+  payload: { urls: string[], filters: FilterOptions, user_id?: string },
+  onProgress?: (count: number) => void,
+  onTotalEstimated?: (total: number) => void,
+  extraction_id?: number | null,
+  supabaseClient?: any
+) {
   // Coin deduction logic
-  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-  const userIdStr: string = userId ?? "";
-  let coins: number = await getUserCoins(userIdStr, supabase);
+  const supabaseToUse = supabaseClient || supabase;
+  const userIdStr: string = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") ?? "" : "");
+  let coins: number = await getUserCoins(userIdStr, supabaseToUse);
   let stopExtraction: boolean = false;
   const { urls, filters } = payload;
   // Support both array and single string with newlines
@@ -702,7 +852,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
       }
       urlsProcessed++;
       const params: Record<string, unknown> = { id: mediaObj.id };
-      const res = await hikerClient.get("/v1/media/likers", { params });
+      const res = await getHikerClient().get("/v1/media/likers", { params });
       let newLikers = [];
       if (Array.isArray(res.data)) {
         newLikers = res.data;
@@ -743,7 +893,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
           // Deduct coins when we complete a full batch (every 10 users)
           if (usersProcessedInBatch >= COIN_RULES.likers.perChunk.users) {
             console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for batch of ${COIN_RULES.likers.perChunk.users} users`);
-            coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabase);
+            coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
             usersProcessedInBatch = 0; // Reset batch counter
           }
         }
@@ -751,7 +901,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
         // Deduct coins for any remaining partial batch
         if (usersProcessedInBatch > 0 && !stopExtraction) {
           console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
-          coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabase);
+          coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
         }
       }
       if (stopExtraction) break;
@@ -786,17 +936,24 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
     console.warn(`[mediaLikersBulkV1] Insufficient coins for userByUsername calls. Required: ${perUserTotalCost}, Available: ${coins}`);
     stopExtraction = true;
   } else {
-    coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+    coins = await deductCoins(userIdStr, perUserTotalCost, supabaseToUse);
     console.log(`[mediaLikersBulkV1] Coins deducted successfully for userByUsername calls. New balance: ${coins}`);
+    stopExtraction = false; // Ensure we always run the loop after successful deduction
   }
   // 2. Fetch details for each remaining user
   const detailedLikers: UserDetails[] = [];
+  console.log('[mediaLikersBulkV1][DEBUG] stopExtraction:', stopExtraction);
   if (!stopExtraction) {
+    console.log('[mediaLikersBulkV1][DEBUG] Entering userByUsernameV1 loop with', preFilteredLikers.length, 'users');
     for (const liker of preFilteredLikers) {
       try {
+        console.log('[mediaLikersBulkV1][DEBUG] Calling userByUsernameV1 with:', liker.username, liker);
         const details = await userByUsernameV1(liker.username);
+        console.log('[mediaLikersBulkV1][DEBUG] userByUsernameV1 result for', liker.username, ':', details);
         if (details) {
           detailedLikers.push(details);
+        } else {
+          console.warn('[mediaLikersBulkV1][DEBUG] No details returned for', liker.username);
         }
       } catch (err) {
         // If error is 403 or 404, skip and continue
@@ -807,9 +964,13 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
             continue;
           }
         }
+        console.error('[mediaLikersBulkV1][DEBUG] Error fetching details for', liker.username, ':', err);
         errorMessages.push(`Error fetching details for username: ${liker.username} - ${String(err)}`);
       }
     }
+    console.log('[mediaLikersBulkV1][DEBUG] Finished userByUsernameV1 loop');
+  } else {
+    console.warn('[mediaLikersBulkV1][DEBUG] Skipping userByUsernameV1 loop due to stopExtraction');
   }
   console.log('[mediaLikersBulkV1] Detailed likers fetched:', detailedLikers.length, detailedLikers);
 
@@ -821,43 +982,46 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
   );
   console.log('[mediaLikersBulkV1] Likers after filtering:', filteredLikers.length, filteredLikers);
 
-  // Save filtered likers to database with extraction record
-  if (filteredLikers.length > 0) {
+  // Save filtered likers to database with extraction_id if provided
+  if (filteredLikers.length > 0 && supabaseToUse) {
     try {
-      // Create extraction record
-      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-      const extractionType = "likers";
-      const targetUsernames = cleanUrls.join(",");
-      const requestedAt = new Date().toISOString();
-      const completedAt = new Date().toISOString();
-      const pageCount = cleanUrls.length;
-      const extractionInsert = {
-        user_id: userId,
-        extraction_type: extractionType,
-        target_username: targetUsernames,
-        target_user_id: null,
-        requested_at: requestedAt,
-        completed_at: completedAt,
-        status: "completed",
-        page_count: pageCount,
-        next_page_id: null,
-        error_message: null,
-      };
-      const { data: extraction, error: extractionError } = await supabase
-        .from("extractions")
-        .insert([extractionInsert])
-        .select()
-        .single();
-      if (extractionError) {
-        errorMessages.push("Error saving extraction record: " + String(extractionError.message));
-      } else if (extraction && extraction.id) {
-        // Attach extraction_id to each liker
-        for (const liker of filteredLikers) {
-          liker.extraction_id = extraction.id;
+      let extractionIdToUse = extraction_id;
+      if (!extractionIdToUse) {
+        // Create extraction record if not provided (frontend direct call)
+        const extractionType = "likers";
+        const targetUsernames = cleanUrls.join(",");
+        const requestedAt = new Date().toISOString();
+        const completedAt = new Date().toISOString();
+        const pageCount = cleanUrls.length;
+        const extractionInsert = {
+          user_id: userIdStr,
+          extraction_type: extractionType,
+          target_usernames: targetUsernames,
+          target_user_id: null,
+          requested_at: requestedAt,
+          completed_at: completedAt,
+          status: "completed",
+          page_count: pageCount,
+          next_page_id: null,
+          error_message: null,
+        };
+        const { data: extraction, error: extractionError } = await supabaseToUse
+          .from("extractions")
+          .insert([extractionInsert])
+          .select()
+          .single();
+        if (extractionError) {
+          errorMessages.push("Error saving extraction record: " + String(extractionError.message));
+        } else if (extraction && extraction.id) {
+          extractionIdToUse = extraction.id;
+          console.log('[mediaLikersBulkV1] Extraction record created with ID:', extraction.id);
         }
-        console.log('[mediaLikersBulkV1] Extraction record created with ID:', extraction.id);
-        // Save likers to extracted_users
-        const { error: usersError } = await supabase
+      }
+      if (extractionIdToUse) {
+        for (const liker of filteredLikers) {
+          liker.extraction_id = String(extractionIdToUse);
+        }
+        const { error: usersError } = await supabaseToUse
           .from("extracted_users")
           .insert(filteredLikers);
         if (usersError) {
@@ -880,7 +1044,7 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 //   try {
 //     const mediaObj = await mediaByUrlV1(url);
 //     const params: Record<string, unknown> = { id: mediaObj.id };
-//     const res = await hikerClient.get("/v1/media/likers", { params });
+//     const res = await getHikerClient().get("/v1/media/likers", { params });
 //     return res.data;
 //   } catch (error: unknown) {
 //     handleHikerError(error);
@@ -896,11 +1060,12 @@ export async function mediaLikersBulkV1(payload: { urls: string[], filters: Filt
 /******************************************************/
 
 // Bulk commenters extraction for multiple post URLs
-export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
+export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any) {
   // Coin deduction logic
-  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
   const userIdStr: string = userId ?? "";
-  let coins: number = await getUserCoins(userIdStr, supabase);
+  const supabaseToUse = supabaseClient || supabase;
+  let coins: number = await getUserCoins(userIdStr, supabaseToUse);
   let commentersSinceLastDeduction = 0;
   
   // Get coin limit from filters and track total coins deducted
@@ -989,10 +1154,11 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
               break;
             }
             const prevCommentersCoins = coins;
-            coins = await deductCoins(userIdStr, COIN_RULES.commenters.perChunk.coins, supabase);
+            coins = await deductCoins(userIdStr, COIN_RULES.commenters.perChunk.coins, supabaseToUse);
             totalCoinsDeducted += COIN_RULES.commenters.perChunk.coins;
             console.log(`[hikerApi] [CommentersV2] Deducted ${COIN_RULES.commenters.perChunk.coins} coins from user ${userIdStr}. Previous balance: ${prevCommentersCoins}, New balance: ${coins}. Total deducted: ${totalCoinsDeducted}`);
             commentersSinceLastDeduction = 0;
+            stopExtraction = false; // Ensure extraction continues after successful deduction
           }
           if (stopExtraction) break;
           // Prepare data for DB
@@ -1027,16 +1193,16 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
   // Save comments to database with extraction record
   if (allComments.length > 0) {
     try {
-      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+      const userIdForDb = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
       const extractionType = "commenters";
       const targetUsernames = cleanUrlsTrimmed.join(",");
       const requestedAt = new Date().toISOString();
       const completedAt = new Date().toISOString();
       const pageCount = cleanUrlsTrimmed.length;
       const extractionInsert = {
-        user_id: userId,
+        user_id: userIdForDb,
         extraction_type: extractionType,
-        target_username: targetUsernames,
+        target_usernames: targetUsernames,
         target_user_id: null,
         requested_at: requestedAt,
         completed_at: completedAt,
@@ -1046,7 +1212,7 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
         error_message: null,
       };
       console.log('[extractCommentersBulkV2] Saving extraction record:', extractionInsert);
-      const { data: extraction, error: extractionError } = await supabase
+      const { data: extraction, error: extractionError } = await supabaseToUse
         .from("extractions")
         .insert([extractionInsert])
         .select()
@@ -1059,7 +1225,7 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
           (comment as ExtractedCommenter).extraction_id = extraction.id;
         }
         console.log('[extractCommentersBulkV2] Extraction record created with ID:', extraction.id);
-        const { error: commentsError } = await supabase
+        const { error: commentsError } = await supabaseToUse
           .from("extracted_commenters")
           .insert(allComments);
         if (commentsError) {
@@ -1088,7 +1254,7 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
     const params: Record<string, unknown> = { id };
     if (can_support_threading !== undefined) params.can_support_threading = can_support_threading;
     if (page_id !== undefined) params.page_id = page_id;
-    const res = await hikerClient.get("/v2/media/comments", { params });
+    const res = await getHikerClient().get("/v2/media/comments", { params });
     console.log('[mediaCommentsV2] Hiker API response:', JSON.stringify(res.data, null, 2));
     return res.data;
   } catch (error: unknown) {
@@ -1119,16 +1285,22 @@ export interface ExtractedPost {
   extraction_id?: number;
 }
 
-export async function getUserPosts(payload: { target: string | string[], filters?: FilterOptions }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
-  // Coin deduction logic
-  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+export async function getUserPosts(
+  payload: { target: string | string[], filters?: FilterOptions, user_id?: string },
+  onProgress?: (count: number) => void,
+  onTotalEstimated?: (total: number) => void,
+  supabaseClient?: any
+) {
+  // Accept user_id and supabase from payload or arguments (for worker compatibility)
+  const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
   const userIdStr: string = userId ?? "";
-  let coins: number = await getUserCoins(userIdStr, supabase);
-  
+  const supabaseToUse = supabaseClient || supabase;
+  let coins: number = await getUserCoins(userIdStr, supabaseToUse);
+
   // Get coin limit from filters and track total coins deducted
   const coinLimit = payload.filters?.coinLimit ? Math.floor(payload.filters.coinLimit) : undefined;
   let totalCoinsDeducted = 0;
-  
+
   console.log('[getUserPosts] FULL PAYLOAD:', JSON.stringify(payload, null, 2));
   const { target, filters } = payload;
   console.log('[getUserPosts] Called with target:', target, 'filters:', filters);
@@ -1138,7 +1310,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
     console.log('[getUserPosts] Filters keys:', Object.keys(filters));
   }
   const usernames = Array.isArray(target) ? target : [target];
-  
+
   const extractedPosts: ExtractedPost[] = [];
   let totalEstimated = 0;
   let usersProcessed = 0;
@@ -1173,7 +1345,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
       console.log(`[getUserPosts] Fetching medias for user_id:`, user_id, 'page_id:', nextPageId);
       let res, data, medias;
       try {
-        res = await hikerClient.get("/v2/user/medias", { params });
+        res = await getHikerClient().get("/v2/user/medias", { params });
         data = res.data;
         medias = data && data.response && Array.isArray(data.response.items) ? data.response.items : [];
         console.log(`[getUserPosts] Medias fetched for user_id:`, user_id, 'Count:', medias.length);
@@ -1200,10 +1372,11 @@ export async function getUserPosts(payload: { target: string | string[], filters
           stopExtraction = true;
           break;
         }
-  const prevPostsCoins = coins;
-  coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabase);
-  totalCoinsDeducted += COIN_RULES.posts.perPost;
-  console.log(`[hikerApi] [PostsV2] Deducted ${COIN_RULES.posts.perPost} coins from user ${userIdStr}. Previous balance: ${prevPostsCoins}, New balance: ${coins}. Total deducted: ${totalCoinsDeducted}`);
+        const prevPostsCoins = coins;
+        coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabaseToUse);
+        totalCoinsDeducted += COIN_RULES.posts.perPost;
+        console.log(`[hikerApi] [PostsV2] Deducted ${COIN_RULES.posts.perPost} coins from user ${userIdStr}. Previous balance: ${prevPostsCoins}, New balance: ${coins}. Total deducted: ${totalCoinsDeducted}`);
+        stopExtraction = false; // Ensure extraction continues after successful deduction
         // Filtering logic
         let includePost = true;
   const filterReasons: string[] = [];
@@ -1308,8 +1481,8 @@ export async function getUserPosts(payload: { target: string | string[], filters
   console.log(`[getUserPosts] Attempting to save ${extractedPosts.length} posts to DB.`);
   if (extractedPosts.length > 0) {
     try {
-      // Get userId from localStorage (frontend) or pass in payload if available
-      const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+      // Use userId from payload or fallback to localStorage (frontend)
+      const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
       const extractionType = "posts";
       const targetUsernames = usernames.join(",");
       const requestedAt = new Date().toISOString();
@@ -1319,7 +1492,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
       const extractionInsert = {
         user_id: userId,
         extraction_type: extractionType,
-        target_username: targetUsernames,
+        target_usernames: targetUsernames,
         target_user_id: null,
         requested_at: requestedAt,
         completed_at: completedAt,
@@ -1329,7 +1502,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
         error_message: null,
       };
       console.log('[getUserPosts] Inserting extraction record:', extractionInsert);
-      const { data: extraction, error: extractionError } = await supabase
+      const { data: extraction, error: extractionError } = await supabaseToUse
         .from("extractions")
         .insert([extractionInsert])
         .select()
@@ -1344,7 +1517,7 @@ export async function getUserPosts(payload: { target: string | string[], filters
         console.log('[getUserPosts] Extraction record created with ID:', extraction.id);
         console.log('[getUserPosts] Saving extracted posts:', extractedPosts);
         // Save posts to extracted_posts
-        const { error: postsError } = await supabase
+        const { error: postsError } = await supabaseToUse
           .from("extracted_posts")
           .insert(extractedPosts);
         if (postsError) {
@@ -1392,7 +1565,7 @@ function handleHikerError(error: unknown) {
  * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
  * @param payload { hashtags: string[], filters: any }
  */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void) {
+export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any) {
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
@@ -1402,23 +1575,37 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   const hashtagLimit = filters && typeof filters.hashtagLimit === 'number' ? filters.hashtagLimit : (filters && typeof filters.hashtagLimit === 'string' ? Number(filters.hashtagLimit) : undefined);
 
   // Calculate total estimated posts based on hashtag limit
-  if (onTotalEstimated && hashtagLimit) {
-    const totalEstimated = hashtagLimit * hashtags.length; // hashtag limit per hashtag * number of hashtags
-    console.log(`[hikerApi] Total hashtag posts estimated: ${totalEstimated} (${hashtagLimit} per hashtag × ${hashtags.length} hashtags)`);
+  // Defensive: ensure hashtags is always an array
+  let hashtagsArr: string[] = [];
+  const hashtagsInput: string[] | string | undefined = hashtags as string[] | string | undefined;
+  if (Array.isArray(hashtagsInput)) {
+    hashtagsArr = hashtagsInput.filter((h): h is string => typeof h === 'string');
+  } else if (typeof hashtagsInput === 'string' && hashtagsInput.length > 0) {
+    hashtagsArr = hashtagsInput.split(',').map((h: string) => h.trim()).filter(Boolean);
+  }
+  if (onTotalEstimated && hashtagLimit && hashtagsArr.length) {
+    const totalEstimated = hashtagLimit * hashtagsArr.length; // hashtag limit per hashtag * number of hashtags
+    console.log(`[hikerApi] Total hashtag posts estimated: ${totalEstimated} (${hashtagLimit} per hashtag × ${hashtagsArr.length} hashtags)`);
     onTotalEstimated(totalEstimated);
   }
 
-  console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtags);
-  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+  if (!hashtagsArr.length) {
+    console.error('[extractHashtagClipsBulkV2] No hashtags provided for extraction. Skipping extraction.');
+    return { error: 'No hashtags provided', results: [] };
+  }
+
+  console.log('[extractHashtagClipsBulkV2] Starting hashtag extraction for:', hashtagsArr);
+  const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
   const userIdStr: string = userId ?? "";
-  let coins: number = await getUserCoins(userIdStr, supabase);
+  const supabaseToUse = supabaseClient || supabase;
+  let coins: number = await getUserCoins(userIdStr, supabaseToUse);
   const extractionType = "hashtags";
-  const targetUsernames = hashtags.join(",");
+  const targetUsernames = hashtagsArr.join(",");
   const requestedAt = new Date().toISOString();
   const extractionInsert = {
     user_id: userId,
     extraction_type: extractionType,
-    target_username: targetUsernames,
+    target_usernames: targetUsernames,
     target_user_id: null,
     requested_at: requestedAt,
     status: "completed",
@@ -1427,7 +1614,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
     error_message: null,
   };
   console.log('[extractHashtagClipsBulkV2] Inserting extraction record:', extractionInsert);
-  const { data: extraction, error: extractionError } = await supabase
+  const { data: extraction, error: extractionError } = await supabaseToUse
     .from("extractions")
     .insert([extractionInsert])
     .select()
@@ -1457,7 +1644,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
         Object.assign(params, apiFilterParams);
       }
       try {
-        const res = await hikerClient.get("/v2/hashtag/medias/clips", { params });
+        const res = await getHikerClient().get("/v2/hashtag/medias/clips", { params });
         const data = res.data ?? {};
         // Extract clips and media from response.sections
         const sections = data?.response?.sections ?? [];
@@ -1502,8 +1689,9 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
               break;
             }
             const prevHashtagCoins = coins;
-            coins = await deductCoins(userIdStr, 10, supabase);
+            coins = await deductCoins(userIdStr, 10, supabaseToUse);
             console.log(`[hikerApi] [HashtagV2] Deducted 10 coins from user ${userIdStr}. Previous balance: ${prevHashtagCoins}, New balance: ${coins}`);
+            stopExtraction = false; // Ensure extraction continues after successful deduction
             console.log(`[hikerApi] [HashtagV2] Creating dbRow for clip:`, JSON.stringify(clip, null, 2));
             // If clip has a nested 'media' object, extract fields from there
             const mediaObj = clip.media || clip;
@@ -1561,7 +1749,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   console.log('[extractHashtagClipsBulkV2] Attempting to save', allResults.length, 'hashtag posts to DB.');
   if (allResults.length > 0) {
     console.log('[extractHashtagClipsBulkV2] Data to be inserted:', JSON.stringify(allResults, null, 2));
-    const { error: postsError } = await supabase
+    const { error: postsError } = await supabaseToUse
       .from("extracted_hashtag_posts")
       .insert(allResults);
     if (postsError) {
@@ -1606,6 +1794,8 @@ export async function extractFilteredUsers<T extends UserLike>(
   getDetails: (username: string) => Promise<UserDetails>
 ): Promise<ExtractedUser[]> {
   console.log('[Backend] [extractFilteredUsers] Filtering users with filters:', filters);
+  const usernames = users.map(u => u.username);
+  console.log('[Backend] [extractFilteredUsers] Usernames before filtering:', usernames);
   const filteredUsers: ExtractedUser[] = [];
   for (const userObj of users) {
     // Get detailed info for each user (followers, followings, likers, etc.)
@@ -1805,7 +1995,7 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
 export async function mediaByUrlV1(url: string) {
   try {
     const params: Record<string, unknown> = { url };
-    const res = await hikerClient.get("/v1/media/by/url", { params });
+    const res = await getHikerClient().get("/v1/media/by/url", { params });
     return res.data;
   } catch (error: unknown) {
     handleHikerError(error);

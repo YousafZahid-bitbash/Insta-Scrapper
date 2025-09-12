@@ -8,17 +8,16 @@ import StripePaymentForm from "@/components/StripePaymentForm";
 import { FaLock, FaShieldAlt, FaCheckCircle, FaCoins, FaCreditCard, FaBolt } from "react-icons/fa";
 
 const paymentMethods = [
-  { 
-    label: "Visa / Mastercard", 
-    value: "stripe", 
-    logo: "/stripe.svg", 
-    description: "Visa, Mastercard",
-    badge: "POPULAR"
+  {
+    label: "Bank Payment",
+    value: "stripe",
+    logos: ["/visa.svg", "/mastercard.svg"],
+    badge: "BANK PAYMENT"
   },
-  { 
-    label: "NOWPayments (Crypto)", 
-    value: "nowpayments", 
-    logo: "https://nowpayments.io/images/logo/logo.svg", 
+  {
+    label: "NOWPayments (Crypto)",
+    value: "nowpayments",
+    logo: "https://nowpayments.io/images/logo/logo.svg",
     description: "Bitcoin, Ethereum, USDT, and 300+ cryptocurrencies",
     badge: "CRYPTO"
   },
@@ -78,10 +77,11 @@ function PaymentSummary({ deal }: { deal: { name: string; description: string; p
 
 
 export default function ClientComponent({ deal }: { deal: { name: string; description: string; price: string; coins: string } }) {
+  const [currencyInput, setCurrencyInput] = useState("");
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState("stripe");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [termsChecked, setTermsChecked] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   // Removed unused cryptoPayment state
@@ -254,7 +254,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
                 {paymentMethods.map((method) => (
                   <div
                     key={method.value}
-                    className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all shadow-sm hover:shadow-lg bg-white/90 backdrop-blur-md ${
+                    className={`relative p-3 rounded-2xl border-2 cursor-pointer transition-all shadow-sm hover:shadow-lg bg-white/90 backdrop-blur-md ${
                       selectedMethod === method.value
                         ? 'border-blue-600 ring-2 ring-blue-100'
                         : 'border-gray-200 hover:border-gray-300'
@@ -271,47 +271,43 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
                           onChange={() => setSelectedMethod(method.value)}
                           className="w-5 h-5 text-blue-600 accent-blue-600 focus:ring-2 focus:ring-blue-400"
                         />
-                        <div className="w-12 h-12 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100">
-                          <Image src={method.logo} alt={method.label} width={36} height={36} className="object-contain" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-lg">{method.label}</h3>
-                          <p className="text-sm text-gray-500">{method.description}</p>
-                        </div>
+                        {method.value === "stripe" ? (
+                          <div className="flex items-center gap-4">
+                            <div className="w-20 h-14 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100">
+                              <Image src="/visa.svg" alt="Visa" width={70} height={44} className="object-contain" />
+                            </div>
+                            <div className="w-20 h-14 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100">
+                              <Image src="/mastercard.svg" alt="Mastercard" width={70} height={44} className="object-contain" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center bg-black p-3 rounded-xl-6xl shadow-sm border border-gray-100">
+                            <Image src={typeof method.logo === 'string' ? method.logo : '' } alt={typeof method.label === 'string' ? method.label : ''} width={200} height={104} className="object-contain" />
+                          </div>
+                        )}
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm ${
-                        method.badge === 'POPULAR' 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                        method.value === 'stripe'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
                           : 'bg-blue-100 text-blue-800 border border-blue-200'
                       }`}>
-                        {method.badge}
+                        {method.value === 'stripe' ? 'Bank Payment' : method.badge}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Terms and Conditions */}
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                <label className="flex items-start space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termsChecked}
-                    onChange={(e) => setTermsChecked(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 mt-0.5"
-                  />
-                  <span className="text-sm text-gray-700">
-                    I agree to the{' '}
-                    <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link> and{' '}
-                    <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
-                  </span>
-                </label>
-              </div>
+              {/* ...removed terms and privacy policy checkbox... */}
 
               {/* Stripe Payment Form */}
               {selectedMethod === "stripe" && clientSecret && (
                 <div className="mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Payment</h3>
+                  <div className="mb-4 flex gap-6 items-center">
+                    <span className="text-xl font-bold text-black">Amount: ${deal.price}</span>
+                    <span className="text-lg font-semibold text-black">Coins: {deal.coins}</span>
+                  </div>
                   <StripeProvider clientSecret={clientSecret}>
                     <StripePaymentForm 
                       amount={deal.price}
@@ -326,45 +322,73 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
               {/* NOWPayments Crypto Payment */}
               {selectedMethod === "nowpayments" && (
                 <div className="mt-10">
-                  <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#2563eb" opacity=".1"/><path d="M12 7v5l3 3" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span className="text-blue-800 text-sm font-medium">
-                      You’ll be redirected to a secure payment page. If you’re on a device with a crypto wallet (like MetaMask, Trust Wallet, or Coinbase Wallet), you can copy the payment address and pay directly—no need to scan the QR code. If you’re on a different device, simply scan the QR code with your wallet app.
-                    </span>
-                  </div>
+                  
                   <label className="block mb-2 text-sm font-semibold text-gray-700">Select Crypto to Pay With</label>
-                  <div className="flex gap-2 items-center">
-                    <select
-                      value={currencies.some(c => c.ticker === payCurrency) ? payCurrency : ''}
-                      onChange={e => setPayCurrency(e.target.value)}
-                      className="flex-1 p-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white text-gray-900 font-medium shadow-sm"
-                    >
-                      {currencies.length === 0 ? (
-                        <>
-                          <option value="eth">No currencies found (default: Ethereum)</option>
-                          <option disabled>Check console for debugging info.</option>
-                        </>
-                      ) : (
-                        currencies
-                          .filter(c => c && c.ticker && c.name)
-                          .map(c => (
-                            <option key={c.ticker} value={c.ticker}>
-                              {c.name} ({c.ticker.toUpperCase()})
-                            </option>
-                          ))
+                  <div className="w-full max-w-md flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                    <div className="relative w-full">
+                      <input
+                        type="text"
+                        placeholder="Type or select currency (e.g. usdt)"
+                        className="w-full px-4 py-3 rounded-lg border-2 border-blue-200 bg-white text-gray-900 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
+                        value={currencyInput}
+                        onChange={e => {
+                          setCurrencyInput(e.target.value);
+                          setShowCurrencyDropdown(true);
+                          // If user types a valid ticker, auto-select it
+                          const match = currencies.find(c => c.ticker.toLowerCase() === e.target.value.toLowerCase());
+                          if (match) setPayCurrency(match.ticker);
+                          else setPayCurrency(e.target.value);
+                        }}
+                        onFocus={() => setShowCurrencyDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowCurrencyDropdown(false), 150)}
+                        autoComplete="off"
+                      />
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 20 20"><path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
+                      {showCurrencyDropdown && currencies.length > 0 && (
+                        <ul className="absolute z-20 left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white border-2 border-blue-200 rounded-lg shadow-lg text-gray-900 font-medium">
+                          {currencies
+                            .filter(c => {
+                              if (!currencyInput) return true;
+                              const f = currencyInput.toLowerCase();
+                              return c.ticker.toLowerCase().includes(f) || c.name.toLowerCase().includes(f);
+                            })
+                            .slice(0, 30)
+                            .map(c => (
+                              <li
+                                key={c.ticker}
+                                className="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                                onMouseDown={() => {
+                                  setCurrencyInput(c.ticker);
+                                  setPayCurrency(c.ticker);
+                                  setShowCurrencyDropdown(false);
+                                }}
+                              >
+                                {c.name} ({c.ticker.toUpperCase()})
+                              </li>
+                            ))}
+                          <li className="px-4 py-2 text-xs text-gray-400 select-none">Type to enter a custom ticker</li>
+                        </ul>
                       )}
-                      <option value="__custom__">Other (enter manually)</option>
-                    </select>
+                    </div>
                     {payCurrency === '__custom__' && (
                       <input
                         type="text"
                         placeholder="Enter currency ticker (e.g. usdt)"
-                        className="flex-1 p-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white text-gray-900 font-medium shadow-sm"
+                        className="w-full sm:w-48 px-4 py-3 rounded-lg border-2 border-blue-200 bg-white text-gray-900 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
                         onChange={e => setPayCurrency(e.target.value.toLowerCase())}
                         value={payCurrency !== '__custom__' ? payCurrency : ''}
                         style={{ minWidth: 120 }}
                       />
                     )}
+                  </div>
+
+                  <div className="mb-4 mt-10 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#2563eb" opacity=".1"/><path d="M12 7v5l3 3" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span className="text-blue-800 text-sm font-medium">
+                      You’ll be redirected to a secure payment page. If you’re on a device with a crypto wallet (like MetaMask, Trust Wallet, or Coinbase Wallet), you can copy the payment address and pay directly—no need to scan the QR code. If you’re on a different device, simply scan the QR code with your wallet app.
+                    </span>
                   </div>
                 </div>
               )}
@@ -374,7 +398,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
                 <div className="mt-8 flex gap-4">
                   <button
                     onClick={handleProceedToPayment}
-                    disabled={!termsChecked || loading}
+                    disabled={loading}
                     className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-8 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                   >
                     {loading ? (
