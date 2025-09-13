@@ -19,7 +19,7 @@ const paymentMethods = [
     value: "nowpayments",
     logo: "https://nowpayments.io/images/logo/logo.svg",
     description: "Bitcoin, Ethereum, USDT, and 300+ cryptocurrencies",
-    badge: "CRYPTO"
+    badge: "Crypto"
   },
 ];
 
@@ -42,14 +42,6 @@ function PaymentSummary({ deal }: { deal: { name: string; description: string; p
         <div className="flex justify-between items-center">
           <span className="text-gray-500 font-medium">Credits Amount</span>
           <span className="font-semibold text-blue-700">{deal.coins} coins</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 font-medium">Platform Fee</span>
-          <span className="font-semibold text-green-600">$0.00</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 font-medium">Processing Fee</span>
-          <span className="font-semibold text-green-600">$0.00</span>
         </div>
         <hr className="border-gray-200 my-4" />
         <div className="flex justify-between items-center">
@@ -87,6 +79,21 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
   // Removed unused cryptoPayment state
   const [payCurrency, setPayCurrency] = useState("eth");
   const [currencies, setCurrencies] = useState<{ ticker: string; name: string }[]>([]);
+  const [coins, setCoins] = useState<number>(0);
+
+  useEffect(() => {
+    async function fetchCoins() {
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) throw new Error("Not authenticated");
+        const user = await res.json();
+        if (user && typeof user.coins === "number") setCoins(user.coins);
+      } catch {
+        setCoins(0);
+      }
+    }
+    fetchCoins();
+  }, []);
 
   useEffect(() => {
     async function fetchCurrencies() {
@@ -202,7 +209,7 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overscroll-none">
       {/* Navbar */}
       <div className="w-full sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm">
-        <Navbar />
+        <Navbar coins={coins} />
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -281,12 +288,15 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-center bg-black p-3 rounded-xl-6xl shadow-sm border border-gray-100">
-                            <Image src={typeof method.logo === 'string' ? method.logo : '' } alt={typeof method.label === 'string' ? method.label : ''} width={200} height={104} className="object-contain" />
+                          <div className="flex items-center justify-center p-3">
+                            <span className="text-3xl font-extrabold">
+                              <span className="text-blue-600">NOW</span>
+                              <span className="text-black">Payments</span>
+                            </span>
                           </div>
                         )}
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm ${
+                      <div className={`px-3 py-1 rounded-full text-2xs font-bold tracking-wide shadow-sm ${
                         method.value === 'stripe'
                           ? 'bg-blue-100 text-blue-800 border border-blue-200'
                           : 'bg-blue-100 text-blue-800 border border-blue-200'

@@ -108,6 +108,12 @@ export default function AdminUsers() {
   };
 
   const handleUserStatusToggle = async (userId: string, currentStatus: boolean) => {
+    const action = currentStatus ? 'ban' : 'unban';
+    const confirmMsg = currentStatus
+      ? 'Are you sure you want to ban this user? This will prevent them from logging in.'
+      : 'Are you sure you want to unban this user and allow them to log in again?';
+    const confirmed = window.confirm(confirmMsg);
+    if (!confirmed) return;
     try {
       console.log('🔍 [Frontend] Starting user status toggle...');
       console.log('  - User ID:', userId);
