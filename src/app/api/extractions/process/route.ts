@@ -1,10 +1,4 @@
-// Allow GET requests for Vercel cron jobs (GET is the only supported method)
-export async function GET(req: NextRequest) {
-  // Optionally, you can add a secret check here if you want to secure the endpoint
-  return POST(req);
-}
 import { NextRequest, NextResponse } from 'next/server';
-
 import { createClient } from '@supabase/supabase-js';
 import { userFollowersChunkGqlByUsername, userFollowingChunkGqlByUsername, mediaLikersBulkV1, getUserPosts, extractCommentersBulkV2, extractHashtagClipsBulkV2 } from '../../../../services/hikerApi';
 
@@ -15,26 +9,24 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Security: Check for Supabase webhook secret
+  const supabaseSecret = req.headers.get('x-supabase-signature');
+  if (!supabaseSecret || supabaseSecret !== process.env.SUPABASE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // 1. Find a job to process (pending or in_progress)
-  const { data: jobs, error: fetchError } = await supabase
-    .from('extractions')
-    .select('*')
-    .in('status', ['pending', 'in_progress'])
-    .order('requested_at', { ascending: true })
-    .limit(1);
-
-  if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  // Parse the webhook payload (Supabase sends { record: { ...row } })
+  let payload;
+  try {
+    payload = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
   }
-  if (!jobs || jobs.length === 0) {
-    return NextResponse.json({ message: 'No jobs to process.' });
+  const job = payload.record;
+  if (!job) {
+    return NextResponse.json({ error: 'No job record in payload' }, { status: 400 });
   }
 
-  const job = jobs[0];
   let updateFields: Record<string, unknown> = {};
   try {
     // Parse filters and targets
@@ -136,20 +128,16 @@ export async function POST(req: NextRequest) {
         throw new Error('Unsupported extraction_type: ' + job.extraction_type);
     }
 
-    // Determine if done (for now, if next_page_id is null or undefined, mark as completed)
-    // You may want to refine this based on your extraction logic
+    // Determine if done (for now, if next_page_id is null or progress threshold met, mark as completed)
     const isDone = !job.next_page_id || progressCount >= 100;
 
     updateFields = {
       page_count: (job.page_count || 0) + 1,
       progress: progressCount,
-      // next_page_id: set by extraction logic if available, else null
       status: isDone ? 'completed' : 'in_progress',
       completed_at: isDone ? new Date().toISOString() : null,
       error_message: null,
     };
-
-    // If chunking is supported, update next_page_id here. For now, clear it if done, else keep existing.
     if (isDone) {
       updateFields.next_page_id = null;
     } else {
@@ -178,3 +166,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+      
