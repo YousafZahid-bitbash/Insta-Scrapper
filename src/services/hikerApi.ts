@@ -82,14 +82,14 @@ export interface ExtractedUser {
 import { HikerUser, FilterOptions } from "../utils/types";
 import axios, { AxiosInstance } from "axios";
 // Conditional import to avoid environment issues in worker context
-let supabase: any = null;
-try {
-  if (typeof window !== 'undefined' || process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    const { supabase: sb } = require("../supabaseClient");
-    supabase = sb;
-  }
-} catch (e) {
-  console.log('[hikerApi] Supabase client not available, will use passed clients');
+import type { SupabaseClient } from '@supabase/supabase-js';
+let supabase: SupabaseClient | null = null;
+if (typeof window !== 'undefined' || process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  import("../supabaseClient").then(mod => {
+    supabase = mod.supabase;
+  }).catch(() => {
+    console.log('[hikerApi] Supabase client not available, will use passed clients');
+  });
 }
 import { COIN_RULES, deductCoins, getUserCoins } from "../utils/coinLogic";
 import { SignJWT, jwtVerify, JWTPayload } from "jose";
@@ -170,7 +170,6 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 
 // Get a user's followers (one page) with cursor
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 // Helper: Save extracted users to DB, linking to extraction_id
 async function saveExtractedUsersToDB(users: ExtractedUser[], extraction_id: string, supabase: SupabaseClient) {
   if (!users.length) return;
@@ -293,7 +292,8 @@ export async function userFollowersChunkGql(
     let pageCount = 0;
     const userId = override_user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null); // Get user ID from local storage or use override
     const userIdStr = userId ?? "";
-    let coins = skipCoinCheck ? Infinity : await getUserCoins(userIdStr, supabase);
+  if (!supabase) throw new Error("Supabase client not initialized");
+  let coins = skipCoinCheck ? Infinity : await getUserCoins(userIdStr, supabase);
     let stopExtraction = false;
     let usersExtracted = 0;
   // Get coin limit from filters (integer, no decimals)
@@ -350,6 +350,7 @@ export async function userFollowersChunkGql(
               if (usersProcessedInBatch >= COIN_RULES.followers.perChunk.users) {
                 if (!skipCoinCheck) {
                   console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for batch of ${COIN_RULES.followers.perChunk.users} users`);
+                  if (!supabase) throw new Error("Supabase client not initialized");
                   coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
                 } else {
                   console.log(`[hikerApi] [FollowersV2] Skipping coin deduction for batch (worker mode)`);
@@ -362,6 +363,7 @@ export async function userFollowersChunkGql(
             if (usersProcessedInBatch > 0 && !stopExtraction) {
               if (!skipCoinCheck) {
                 console.log(`[hikerApi] [FollowersV2] Deducting ${COIN_RULES.followers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
+                if (!supabase) throw new Error("Supabase client not initialized");
                 coins = await deductCoins(userIdStr, COIN_RULES.followers.perChunk.coins, supabase);
               } else {
                 console.log(`[hikerApi] [FollowersV2] Skipping coin deduction for partial batch (worker mode)`);
@@ -405,7 +407,8 @@ export async function userFollowersChunkGql(
     if (coins < perUserTotalCost) {
       stopExtraction = true;
     } else {
-      coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
+  if (!supabase) throw new Error("Supabase client not initialized");
+  coins = await deductCoins(userIdStr, perUserTotalCost, supabase);
     }
   } else {
     console.log(`[hikerApi] [FollowersV2] Skipping per-user coin deduction (worker mode) - would deduct ${perUserTotalCost} coins for ${allFollowers.length} users`);
@@ -435,7 +438,8 @@ export async function userFollowersChunkGql(
     // Save extraction and extracted users to DB only if followers found
   if (userIdStr && filteredFollowers.length > 0) {
       try {
-        const { data: extraction, error: extractionError } = await supabase
+  if (!supabase) throw new Error("Supabase client not initialized");
+  const { data: extraction, error: extractionError } = await supabase
           .from("extractions")
           .insert([
             {
@@ -460,6 +464,7 @@ export async function userFollowersChunkGql(
             (user as ExtractedUser).extraction_id = extraction.id;
           }
           if (filteredFollowers.length > 0) {
+            if (!supabase) throw new Error("Supabase client not initialized");
             const { error: usersError } = await supabase
               .from("extracted_users")
               .insert(filteredFollowers);

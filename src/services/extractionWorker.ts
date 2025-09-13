@@ -50,12 +50,20 @@ process.on('SIGINT', () => {
 
 
 // Main extraction dispatcher supporting all types
-async function runExtractionJob(extraction: any) {
+async function runExtractionJob(extraction: Record<string, unknown>) {
   if (isShuttingDown) throw new Error('Worker shutting down');
-  const { extraction_type, target_usernames, filters, urls, hashtags, user_id } = extraction;
-  let parsedFilters = filters;
+  const extraction_type = extraction.extraction_type as string;
+  const target_usernames = extraction.target_usernames as string | undefined;
+  const filters = extraction.filters;
+  const urls = extraction.urls;
+  const hashtags = extraction.hashtags;
+  const user_id = extraction.user_id as string | undefined;
+  const extractionId = extraction.id as string | number;
+  let parsedFilters: Record<string, unknown> = {};
   if (typeof filters === 'string') {
-    try { parsedFilters = JSON.parse(filters); } catch {}
+    try { parsedFilters = JSON.parse(filters); } catch { parsedFilters = {}; }
+  } else if (typeof filters === 'object' && filters !== null) {
+    parsedFilters = filters as Record<string, unknown>;
   }
   // Parse target_usernames into array
   const targets = typeof target_usernames === 'string' ? target_usernames.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -64,8 +72,8 @@ async function runExtractionJob(extraction: any) {
     await supabase
       .from('extractions')
       .update({ progress: count })
-      .eq('id', extraction.id);
-    console.log(`Extraction ${extraction.id}: progress ${count}`);
+      .eq('id', extractionId);
+    console.log(`Extraction ${extractionId}: progress ${count}`);
   };
 
   switch (extraction_type) {
@@ -77,8 +85,8 @@ async function runExtractionJob(extraction: any) {
       console.log('[Worker] Filters:', parsedFilters);
       
       const result = await userFollowersChunkGqlByUsername(
-        extraction.id,
-        { target: targets, filters: parsedFilters || {}, user_id, skipCoinCheck: true },
+        typeof extractionId === 'string' ? extractionId : String(extractionId),
+        { target: targets, filters: parsedFilters, user_id, skipCoinCheck: true },
         (count: number) => {
           console.log(`[Worker] Progress callback: ${count}`);
           return updateProgress(count);
@@ -149,9 +157,10 @@ async function runExtractionJob(extraction: any) {
       console.log('[Worker] Target usernames:', targets);
       console.log('[Worker] Filters:', parsedFilters);
       
+      const followingExtractionId = typeof extractionId === 'number' ? extractionId : null;
       const followingResult = await userFollowingChunkGqlByUsername(
-        extraction.id,
-        { target: targets, filters: parsedFilters || {}, user_id, skipCoinCheck: true },
+        followingExtractionId,
+        { target: targets, filters: parsedFilters, user_id, skipCoinCheck: true },
         (count: number) => {
           console.log(`[Worker] Progress callback: ${count}`);
           return updateProgress(count);
@@ -223,8 +232,9 @@ async function runExtractionJob(extraction: any) {
       console.log('[Worker] Filters:', parsedFilters);
 
       // Call the posts extraction function, passing progress callback and supabase
+      const postsExtractionId = typeof extractionId === 'number' ? extractionId : undefined;
       const postsResult = await getUserPosts(
-        { target: targets, filters: parsedFilters || {}, user_id },
+        { target: targets, filters: parsedFilters, user_id },
         (count: number) => {
           console.log(`[Worker] Progress callback: ${count}`);
           return updateProgress(count);
@@ -243,14 +253,15 @@ async function runExtractionJob(extraction: any) {
       console.log('[Worker] Filters:', parsedFilters);
 
       // Call the likers extraction function, passing extraction_id and supabase
+  const likersExtractionId = typeof extractionId === 'number' ? extractionId : undefined;
   const { filteredLikers, errorMessages: likersErrorMessages } = await mediaLikersBulkV1(
-        { urls: targets, filters: parsedFilters || {}, user_id },
+        { urls: targets, filters: parsedFilters, user_id },
         (count) => {
           console.log(`[Worker] Progress callback: ${count}`);
           return updateProgress(count);
         },
         undefined, // onTotalEstimated
-        extraction.id,
+        likersExtractionId,
         supabase
       );
       console.log('[Worker] Likers extraction finished for extraction ID:', extraction.id);
@@ -271,7 +282,7 @@ async function runExtractionJob(extraction: any) {
 
       // Call the commenters extraction function, passing user_id and supabase
   const { comments, errorMessages: commentersErrorMessages } = await extractCommentersBulkV2(
-        { urls: targets, filters: parsedFilters || {}, user_id },
+        { urls: targets, filters: parsedFilters, user_id },
         (count) => {
           console.log(`[Worker] Progress callback: ${count}`);
           return updateProgress(count);
@@ -288,11 +299,12 @@ async function runExtractionJob(extraction: any) {
       console.log('[Worker] Extraction ID:', extraction.id);
       console.log('[Worker] User ID:', user_id);
       // Always use the original user input (target_usernames) as the source for hashtags
-      let hashtagsArr = typeof target_usernames === 'string'
-        ? target_usernames.split(',').map(h => h.trim()).filter(Boolean)
-        : Array.isArray(target_usernames)
-          ? target_usernames.map(h => String(h).trim()).filter(Boolean)
-          : [];
+      const hashtagsArr =
+        typeof target_usernames === 'string'
+          ? target_usernames.split(',').map((h: string) => h.trim()).filter(Boolean)
+          : Array.isArray(target_usernames)
+            ? (target_usernames as string[]).map((h: string) => String(h).trim()).filter(Boolean)
+            : [];
       console.log('[Worker] Hashtags (from user input):', hashtagsArr);
       console.log('[Worker] Filters:', parsedFilters);
 
@@ -303,7 +315,7 @@ async function runExtractionJob(extraction: any) {
 
       // Call the hashtags extraction function, passing user_id and supabase
       const hashtagResult = await extractHashtagClipsBulkV2(
-        { hashtags: hashtagsArr, filters: parsedFilters || {}, user_id },
+        { hashtags: hashtagsArr, filters: parsedFilters, user_id },
         (count) => {
           console.log(`[Worker] Progress callback: ${count}`);
           return updateProgress(count);
@@ -317,8 +329,8 @@ async function runExtractionJob(extraction: any) {
   }
 }
 
-async function processExtraction(extraction: any) {
-  const extractionId = extraction.id;
+async function processExtraction(extraction: Record<string, unknown>) {
+  const extractionId = extraction.id as string | number;
   try {
     // Lock the job (set status to 'processing' if still pending)
     const { data: locked, error: lockError } = await supabase
@@ -343,10 +355,14 @@ async function processExtraction(extraction: any) {
       .update({ completed_at: new Date().toISOString(), status: 'completed', progress: 100 })
       .eq('id', extractionId);
     console.log(`Extraction ${extractionId} completed.`);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    let message = 'Unknown error';
+    if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+      message = (err as { message: string }).message;
+    }
     await supabase
       .from('extractions')
-      .update({ status: 'failed', error_message: err.message })
+      .update({ status: 'failed', error_message: message })
       .eq('id', extractionId);
     console.error(`Extraction ${extractionId} failed:`, err);
   }
