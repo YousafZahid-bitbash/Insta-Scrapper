@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { userFollowersChunkGqlByUsername, userFollowingChunkGqlByUsername, mediaLikersBulkV1, getUserPosts, extractCommentersBulkV2, extractHashtagClipsBulkV2 } from '../../../../services/hikerApi';
 
+console.log('[Process API] Loaded process route');
+
 // Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,9 +11,12 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+
+  console.log('[Process API] POST /api/extractions/process called');
   // Security: Check for Supabase webhook secret
   const supabaseSecret = req.headers.get('x-supabase-signature');
   if (!supabaseSecret || supabaseSecret !== process.env.SUPABASE_WEBHOOK_SECRET) {
+    console.warn('[Process API] Unauthorized: Invalid or missing x-supabase-signature');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -19,11 +24,14 @@ export async function POST(req: NextRequest) {
   let payload;
   try {
     payload = await req.json();
-  } catch {
+    console.log('[Process API] Received payload:', JSON.stringify(payload));
+  } catch (e) {
+    console.error('[Process API] Invalid JSON payload', e);
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
   }
   const job = payload.record;
   if (!job) {
+    console.warn('[Process API] No job record in payload');
     return NextResponse.json({ error: 'No job record in payload' }, { status: 400 });
   }
 
@@ -43,6 +51,7 @@ export async function POST(req: NextRequest) {
     };
 
     let extractionResult;
+    console.log('[Process API] Processing job:', job.id, 'type:', job.extraction_type);
     switch (job.extraction_type) {
       case 'followers':
         extractionResult = await userFollowersChunkGqlByUsername(
@@ -125,6 +134,7 @@ export async function POST(req: NextRequest) {
         );
         break;
       default:
+        console.error('[Process API] Unsupported extraction_type:', job.extraction_type);
         throw new Error('Unsupported extraction_type: ' + job.extraction_type);
     }
 
@@ -150,19 +160,22 @@ export async function POST(req: NextRequest) {
       .eq('id', job.id);
 
     if (updateError) {
+      console.error('[Process API] Error updating extraction:', updateError.message);
       throw new Error(updateError.message);
     }
 
+    console.log('[Process API] Chunk processed for job:', job.id, 'isDone:', isDone);
     return NextResponse.json({ message: 'Chunk processed', jobId: job.id, ...updateFields });
   } catch (err: unknown) {
     let message = 'Unknown error';
     if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
       message = (err as { message: string }).message;
     }
+    console.error('[Process API] Job failed:', job?.id, message);
     await supabase
       .from('extractions')
       .update({ status: 'failed', error_message: message })
-      .eq('id', job.id);
+      .eq('id', job?.id);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
