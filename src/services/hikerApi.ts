@@ -203,7 +203,7 @@ export async function userFollowersChunkGqlByUsername(
   },
   onProgress?: (count: number) => void,
   onTotalEstimated?: (total: number) => void,
-  supabase?: any
+  supabase?: SupabaseClient
 ): Promise<{ filteredFollowers: ExtractedUser[], actualCoinCost?: number }> {
   const { target, filters, force, end_cursor, user_id, skipCoinCheck } = payload;
   console.log('[Followers Extraction] Raw target:', target);
@@ -539,7 +539,18 @@ export async function userFollowingChunkGqlByUsername(extraction_id: number | nu
 }
 
 // Original function (still available if you already have user_id)
-export async function userFollowingChunkGql(user_id: string | string[], force?: boolean, end_cursor?: string, target_username?: string, filters?: Record<string, FilterOptions>, onProgress?: (count: number) => void, extraction_id?: number | null, worker_user_id?: string, skipCoinCheck?: boolean, supabaseClient?: any): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
+export async function userFollowingChunkGql(
+  user_id: string | string[],
+  force?: boolean,
+  end_cursor?: string,
+  target_username?: string,
+  filters?: Record<string, FilterOptions>,
+  onProgress?: (count: number) => void,
+  extraction_id?: number | null,
+  worker_user_id?: string,
+  skipCoinCheck?: boolean,
+  supabaseClient?: SupabaseClient
+): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
   try {
     type Following = {
       pk: string;
@@ -560,6 +571,7 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
   let stopExtraction: boolean = false;
   let userIdStr: string = "";
   
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
   if (!skipCoinCheck) {
     const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") : (worker_user_id || null);
     userIdStr = userId ?? "";
@@ -721,77 +733,74 @@ export async function userFollowingChunkGql(user_id: string | string[], force?: 
     console.log(`[hikerApi] [FollowingV2] Total followings collected:`, allFollowings.length);
     // Save extraction and extracted users to DB only if followings found
   if (userIdStr && filteredFollowings.length > 0) {
-      try {
-        let extractionId = extraction_id;
-        
-        // If no extraction_id provided (direct frontend call), create new extraction record
-        if (!extractionId) {
-          const { data: extraction, error: extractionError } = await supabaseToUse
-            .from("extractions")
-            .insert([
-              {
-                user_id: userIdStr,
-                extraction_type: "following",
-                target_usernames: target_username || null,
-                target_user_id: Array.isArray(user_id) ? user_id.join(",") : user_id,
-                requested_at: new Date().toISOString(),
-                completed_at: new Date().toISOString(),
-                status: "completed",
-                page_count: pageCount,
-                next_page_id: null,
-                error_message: null,
-              },
-            ])
-            .select()
-            .single();
-          
-          if (extractionError) {
-            console.error("[hikerApi] Error saving extraction:", extractionError);
-            // Calculate actual coin cost for error case
-            const extractionCost = Math.ceil(allFollowings.length / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
-            const filteringCost = allFollowings.length * COIN_RULES.followings.perUser;
-            const actualCoinCost = extractionCost + filteringCost;
-            return { filteredFollowings: allFollowings as ExtractedUser[], actualCoinCost };
-          }
-          extractionId = extraction?.id;
-        } else {
-          // Update existing extraction record with completion info
-          await supabaseToUse
-            .from("extractions")
-            .update({
+    if (!supabaseToUse) throw new Error("Supabase client not initialized");
+    try {
+      let extractionId = extraction_id;
+      // If no extraction_id provided (direct frontend call), create new extraction record
+      if (!extractionId) {
+        const { data: extraction, error: extractionError } = await supabaseToUse
+          .from("extractions")
+          .insert([
+            {
+              user_id: userIdStr,
+              extraction_type: "following",
+              target_usernames: target_username || null,
+              target_user_id: Array.isArray(user_id) ? user_id.join(",") : user_id,
+              requested_at: new Date().toISOString(),
               completed_at: new Date().toISOString(),
               status: "completed",
               page_count: pageCount,
               next_page_id: null,
               error_message: null,
-            })
-            .eq('id', extractionId);
+            },
+          ])
+          .select()
+          .single();
+        if (extractionError) {
+          console.error("[hikerApi] Error saving extraction:", extractionError);
+          // Calculate actual coin cost for error case
+          const extractionCost = Math.ceil(allFollowings.length / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
+          const filteringCost = allFollowings.length * COIN_RULES.followings.perUser;
+          const actualCoinCost = extractionCost + filteringCost;
+          return { filteredFollowings: allFollowings as ExtractedUser[], actualCoinCost };
         }
-        
-        if (extractionId) {
-          // Add extraction_id to all users
-          for (const user of filteredFollowings) {
-            (user as ExtractedUser).extraction_id = String(extractionId);
-          }
-          
-          // Insert extracted users
-          if (filteredFollowings.length > 0) {
-            const { error: usersError } = await supabaseToUse
-              .from("extracted_users")
-              .insert(filteredFollowings);
-            if (usersError) {
-              console.error("[hikerApi] Error saving extracted users:", usersError);
-            } else {
-              console.log(`[hikerApi] Successfully saved ${filteredFollowings.length} following users for extraction ${extractionId}`);
-            }
-          }
-        }
-      } catch (err) {
-        console.error("[hikerApi] Exception during DB save:", err);
+        extractionId = extraction?.id;
+      } else {
+        // Update existing extraction record with completion info
+        await supabaseToUse
+          .from("extractions")
+          .update({
+            completed_at: new Date().toISOString(),
+            status: "completed",
+            page_count: pageCount,
+            next_page_id: null,
+            error_message: null,
+          })
+          .eq('id', extractionId);
       }
-    } else {
-      console.warn(`[hikerApi] [FollowingV2] No filtered followings found, skipping DB save.`);
+      if (extractionId) {
+        // Add extraction_id to all users
+        for (const user of filteredFollowings) {
+          (user as ExtractedUser).extraction_id = String(extractionId);
+        }
+        // Insert extracted users
+        if (filteredFollowings.length > 0) {
+          const { error: usersError } = await supabaseToUse
+            .from("extracted_users")
+            .insert(filteredFollowings);
+          if (usersError) {
+            console.error("[hikerApi] Error saving extracted users:", usersError);
+          } else {
+            console.log(`[hikerApi] Successfully saved ${filteredFollowings.length} following users for extraction ${extractionId}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[hikerApi] Exception during DB save:", err);
     }
+  } else {
+    console.warn(`[hikerApi] [FollowingV2] No filtered followings found, skipping DB save.`);
+  }
     
     // Calculate actual coin cost for the extraction
     const extractedCount = allFollowings.length;
@@ -821,10 +830,11 @@ export async function mediaLikersBulkV1(
   onProgress?: (count: number) => void,
   onTotalEstimated?: (total: number) => void,
   extraction_id?: number | null,
-  supabaseClient?: any
+  supabaseClient?: SupabaseClient
 ) {
   // Coin deduction logic
   const supabaseToUse = supabaseClient || supabase;
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
   const userIdStr: string = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") ?? "" : "");
   let coins: number = await getUserCoins(userIdStr, supabaseToUse);
   let stopExtraction: boolean = false;
@@ -1066,11 +1076,17 @@ export async function mediaLikersBulkV1(
 /******************************************************/
 
 // Bulk commenters extraction for multiple post URLs
-export async function extractCommentersBulkV2(payload: { urls: string[], filters: FilterOptions, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any) {
+export async function extractCommentersBulkV2(
+  payload: { urls: string[], filters: FilterOptions, user_id?: string },
+  onProgress?: (count: number) => void,
+  onTotalEstimated?: (total: number) => void,
+  supabaseClient?: SupabaseClient
+) {
   // Coin deduction logic
   const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
   const userIdStr: string = userId ?? "";
   const supabaseToUse = supabaseClient || supabase;
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
   let coins: number = await getUserCoins(userIdStr, supabaseToUse);
   let commentersSinceLastDeduction = 0;
   
@@ -1218,7 +1234,8 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
         error_message: null,
       };
       console.log('[extractCommentersBulkV2] Saving extraction record:', extractionInsert);
-      const { data: extraction, error: extractionError } = await supabaseToUse
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
+  const { data: extraction, error: extractionError } = await supabaseToUse
         .from("extractions")
         .insert([extractionInsert])
         .select()
@@ -1231,7 +1248,8 @@ export async function extractCommentersBulkV2(payload: { urls: string[], filters
           (comment as ExtractedCommenter).extraction_id = extraction.id;
         }
         console.log('[extractCommentersBulkV2] Extraction record created with ID:', extraction.id);
-        const { error: commentsError } = await supabaseToUse
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
+  const { error: commentsError } = await supabaseToUse
           .from("extracted_commenters")
           .insert(allComments);
         if (commentsError) {
@@ -1295,12 +1313,13 @@ export async function getUserPosts(
   payload: { target: string | string[], filters?: FilterOptions, user_id?: string },
   onProgress?: (count: number) => void,
   onTotalEstimated?: (total: number) => void,
-  supabaseClient?: any
+  supabaseClient?: SupabaseClient
 ) {
   // Accept user_id and supabase from payload or arguments (for worker compatibility)
   const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
   const userIdStr: string = userId ?? "";
   const supabaseToUse = supabaseClient || supabase;
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
   let coins: number = await getUserCoins(userIdStr, supabaseToUse);
 
   // Get coin limit from filters and track total coins deducted
@@ -1379,7 +1398,7 @@ export async function getUserPosts(
           break;
         }
         const prevPostsCoins = coins;
-        coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabaseToUse);
+  coins = await deductCoins(userIdStr, COIN_RULES.posts.perPost, supabaseToUse);
         totalCoinsDeducted += COIN_RULES.posts.perPost;
         console.log(`[hikerApi] [PostsV2] Deducted ${COIN_RULES.posts.perPost} coins from user ${userIdStr}. Previous balance: ${prevPostsCoins}, New balance: ${coins}. Total deducted: ${totalCoinsDeducted}`);
         stopExtraction = false; // Ensure extraction continues after successful deduction
@@ -1508,7 +1527,8 @@ export async function getUserPosts(
         error_message: null,
       };
       console.log('[getUserPosts] Inserting extraction record:', extractionInsert);
-      const { data: extraction, error: extractionError } = await supabaseToUse
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
+  const { data: extraction, error: extractionError } = await supabaseToUse
         .from("extractions")
         .insert([extractionInsert])
         .select()
@@ -1523,7 +1543,8 @@ export async function getUserPosts(
         console.log('[getUserPosts] Extraction record created with ID:', extraction.id);
         console.log('[getUserPosts] Saving extracted posts:', extractedPosts);
         // Save posts to extracted_posts
-        const { error: postsError } = await supabaseToUse
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
+  const { error: postsError } = await supabaseToUse
           .from("extracted_posts")
           .insert(extractedPosts);
         if (postsError) {
