@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   const job = jobs[0];
-  let updateFields: any = {};
+  let updateFields: Record<string, unknown> = {};
   try {
     // Parse filters and targets
     let parsedFilters = job.filters;
@@ -160,11 +160,15 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ message: 'Chunk processed', jobId: job.id, ...updateFields });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    let message = 'Unknown error';
+    if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+      message = (err as { message: string }).message;
+    }
     await supabase
       .from('extractions')
-      .update({ status: 'failed', error_message: err.message })
+      .update({ status: 'failed', error_message: message })
       .eq('id', job.id);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

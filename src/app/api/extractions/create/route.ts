@@ -196,7 +196,11 @@ export async function POST(req: NextRequest) {
 
     console.log('[Extraction API] Successfully created extraction:', data);
     return NextResponse.json({ id: data.id, status: data.status, progress: data.progress }, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Unknown error' }, { status: 500 });
+  } catch (err: unknown) {
+    let message = 'Unknown error';
+    if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+      message = (err as { message: string }).message;
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

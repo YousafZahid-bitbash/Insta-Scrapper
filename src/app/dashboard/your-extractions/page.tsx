@@ -52,7 +52,7 @@ export default function YourExtractionsPage() {
     error_message: string | null;
     progress: number | null;
     current_step: string | null;
-    filters: any | null;
+  filters: Record<string, unknown> | null;
   };
   type ExtractedUser = {
     id: string;

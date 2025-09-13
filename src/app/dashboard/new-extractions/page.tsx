@@ -79,33 +79,30 @@ export default function NewExtractionsPage() {
 
 	useEffect(() => {
 		if (!polling || !extractionId) return;
-		let interval: NodeJS.Timeout;
-		const poll = async () => {
-			try {
-				const res = await fetch(`/api/extractions/status?id=${extractionId}`);
-				if (!res.ok) throw new Error('Failed to fetch extraction status');
-				const data = await res.json();
-				
-				// Update progress if available
-				if (data.progress !== undefined) {
-					setProgressCount(data.progress);
-				}
-				
-				if (data.status === 'completed') {
-					setShowSuccess(true);
+			const poll = async () => {
+				try {
+					const res = await fetch(`/api/extractions/status?id=${extractionId}`);
+					if (!res.ok) throw new Error('Failed to fetch extraction status');
+					const data = await res.json();
+					// Update progress if available
+					if (data.progress !== undefined) {
+						setProgressCount(data.progress);
+					}
+					if (data.status === 'completed') {
+						setShowSuccess(true);
+						setPolling(false);
+						setProgressCount(data.progress || progressCount); // Final progress count
+					} else if (data.status === 'failed') {
+						setError('Extraction failed.');
+						setPolling(false);
+					}
+				} catch (err) {
+					setError(String(err));
 					setPolling(false);
-					setProgressCount(data.progress || progressCount); // Final progress count
-				} else if (data.status === 'failed') {
-					setError('Extraction failed.');
-					setPolling(false);
 				}
-			} catch (err) {
-				setError(String(err));
-				setPolling(false);
-			}
-		};
-		interval = setInterval(poll, 2000); // Poll every 2 seconds for better UX
-		return () => clearInterval(interval);
+			};
+			const interval = setInterval(poll, 2000); // Poll every 2 seconds for better UX
+			return () => clearInterval(interval);
 	}, [polling, extractionId, progressCount]);
 
 	// Helper: parse targets from textarea
