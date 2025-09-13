@@ -499,7 +499,13 @@ export async function userFollowersChunkGql(
  * Accepts frontend payload: { target: string | string[], filters: FilterOptions }
  * Resolves user_id(s), fetches followings, filters, and saves to DB.
  */
-export async function userFollowingChunkGqlByUsername(extraction_id: number | null, payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string, user_id?: string, skipCoinCheck?: boolean }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
+export async function userFollowingChunkGqlByUsername(
+  extraction_id: number | null,
+  payload: { target: string | string[], filters: FilterOptions, force?: boolean, end_cursor?: string, user_id?: string, skipCoinCheck?: boolean },
+  onProgress?: (count: number) => void,
+  onTotalEstimated?: (total: number) => void,
+  supabaseClient?: SupabaseClient | null
+): Promise<{ filteredFollowings: ExtractedUser[], actualCoinCost?: number }> {
   const { target, filters, force, end_cursor, user_id, skipCoinCheck = false } = payload;
   console.log(`[hikerApi] userFollowingChunkGqlByUsername called with target(s):`, target, 'force:', force, 'end_cursor:', end_cursor);
   console.log('[hikerApi] [userFollowingChunkGqlByUsername] Filters received:', filters);
@@ -535,6 +541,7 @@ export async function userFollowingChunkGqlByUsername(extraction_id: number | nu
   
   // Wrap filters in a Record<string, FilterOptions> for compatibility
   const filtersRecord: Record<string, FilterOptions> = { following: filters };
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
   return userFollowingChunkGql(userIds, force, end_cursor, usernames.join(","), filtersRecord, onProgress, extraction_id, user_id, skipCoinCheck, supabaseToUse);
 }
 
@@ -1590,9 +1597,14 @@ function handleHikerError(error: unknown) {
 
 /**
  * Extract all hashtag clips for multiple hashtags, paginating until no next_page_id.
- * @param payload { hashtags: string[], filters: any }
+ * @param payload { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number, user_id?: string }
  */
-export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number, user_id?: string }, onProgress?: (count: number) => void, onTotalEstimated?: (total: number) => void, supabaseClient?: any) {
+export async function extractHashtagClipsBulkV2(
+  payload: { hashtags: string[], filters?: Record<string, unknown>, extraction_id?: number, user_id?: string },
+  onProgress?: (count: number) => void,
+  onTotalEstimated?: (total: number) => void,
+  supabaseClient?: SupabaseClient | null
+) {
   const { hashtags, filters } = payload;
   // Extract hashtagLimit from filters, ensure it's a number
   // hashtagLimit is extracted and used later in the function, so no need to assign it here if not used immediately
@@ -1625,6 +1637,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   const userId = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") : null);
   const userIdStr: string = userId ?? "";
   const supabaseToUse = supabaseClient || supabase;
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
   let coins: number = await getUserCoins(userIdStr, supabaseToUse);
   const extractionType = "hashtags";
   const targetUsernames = hashtagsArr.join(",");
@@ -1641,6 +1654,7 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
     error_message: null,
   };
   console.log('[extractHashtagClipsBulkV2] Inserting extraction record:', extractionInsert);
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
   const { data: extraction, error: extractionError } = await supabaseToUse
     .from("extractions")
     .insert([extractionInsert])
@@ -1776,7 +1790,8 @@ export async function extractHashtagClipsBulkV2(payload: { hashtags: string[], f
   console.log('[extractHashtagClipsBulkV2] Attempting to save', allResults.length, 'hashtag posts to DB.');
   if (allResults.length > 0) {
     console.log('[extractHashtagClipsBulkV2] Data to be inserted:', JSON.stringify(allResults, null, 2));
-    const { error: postsError } = await supabaseToUse
+  if (!supabaseToUse) throw new Error("Supabase client not initialized");
+  const { error: postsError } = await supabaseToUse
       .from("extracted_hashtag_posts")
       .insert(allResults);
     if (postsError) {
