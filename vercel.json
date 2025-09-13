@@ -2,7 +2,8 @@
   "crons": [
     {
       "path": "/api/extractions/process",
-      "schedule": "* * * * *"
+      "schedule": "* * * * *",
+      "method": "POST"
     }
   ]
 }
