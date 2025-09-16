@@ -1,6 +1,5 @@
 
 "use client";
-import Head from "next/head";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
@@ -10,9 +9,15 @@ export default function SettingsPage() {
   type User = { id: string; email: string; username: string };
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [coins, setCoins] = useState<number>(0);
   // ...existing code...
 //   const 
 // [stripeConnected, setStripeConnected] = useState(false);
+
+  useEffect(() => {
+    // Set page title
+    document.title = "Settings | Scrapper Glass";
+  }, []);
 
   useEffect(() => {
     async function fetchUser() {
@@ -21,8 +26,10 @@ export default function SettingsPage() {
         if (!res.ok) throw new Error("Not authenticated");
         const user = await res.json();
         setUser(user);
+        if (user && typeof user.coins === "number") setCoins(user.coins);
       } catch {
         setUser(null);
+        setCoins(0);
       }
       setLoading(false);
     }
@@ -32,8 +39,7 @@ export default function SettingsPage() {
   return (
     
     <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
-       <Head><title>Settings | Scrapper Glass</title></Head>
-      <Navbar />
+      <Navbar coins={coins} />
       <div className="hidden md:block">
         <Sidebar />
       </div>

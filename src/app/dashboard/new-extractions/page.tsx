@@ -1,6 +1,5 @@
 
 "use client"
-import Head from "next/head";
 import { useEffect, useState } from "react";
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
 import Navbar from "@/components/Navbar";
@@ -64,6 +63,11 @@ export default function NewExtractionsPage() {
 	});
 
 		useEffect(() => {
+			// Set page title
+			document.title = "New Extractions | Scrapper Glass";
+		}, []);
+
+		useEffect(() => {
 			async function checkAuthAndFetchCoins() {
 				try {
 					const res = await fetch("/api/me");
@@ -119,9 +123,6 @@ export default function NewExtractionsPage() {
 	console.log("[NewExtractions] Rendering Navbar with coins:", coins);
 	return (
 			<>
-				<Head>
-					<title>New Extractions | Scrapper Glass</title>
-				</Head>
 				<div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
 					<Navbar coins={coins} />
 					<FilterPanel

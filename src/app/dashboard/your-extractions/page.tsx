@@ -1,7 +1,6 @@
 
 
 "use client";
-import Head from "next/head";
 import { useEffect, useState } from "react";
 import React from "react";
 import { supabase } from "../../../supabaseClient";
@@ -111,6 +110,11 @@ export default function YourExtractionsPage() {
   };
 
   useEffect(() => {
+    // Set page title
+    document.title = "Your Extractions | Scrapper Glass";
+  }, []);
+
+  useEffect(() => {
     async function fetchExtractions() {
       try {
         const res = await fetch("/api/me");
@@ -167,9 +171,6 @@ export default function YourExtractionsPage() {
 
   return (
     <>
-      <Head>
-        <title>Your Extractions | Scrapper Glass</title>
-      </Head>
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
         <Navbar coins={coins} />
         {/* Fixed Sidebar */}
