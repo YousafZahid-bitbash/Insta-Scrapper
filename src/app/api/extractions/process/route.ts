@@ -465,8 +465,16 @@ export async function POST(req: NextRequest) {
         const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
         if (usernames.length === 0) throw new Error('No usernames provided');
 
-        let step: any = {};
-        try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
+        interface StepPosts {
+          idx: number;
+          page_id?: string;
+          targets: { username: string; pk: string; total: number }[];
+          totalEstimated?: number;
+        }
+        let step: StepPosts = { idx: 0, targets: [] };
+        try {
+          step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
+        } catch {}
         if (!Array.isArray(step.targets)) {
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
           let totalEstimated = 0;
@@ -508,17 +516,23 @@ export async function POST(req: NextRequest) {
         }
 
         // Apply posts filters AFTER deduction (likes/comments ranges, caption contains/stop, etc.)
-        const likesMin = Number((parsedFilters?.likesMin as any) ?? NaN);
-        const likesMax = Number((parsedFilters?.likesMax as any) ?? NaN);
-        const commentsMin = Number((parsedFilters?.commentsMin as any) ?? NaN);
-        const commentsMax = Number((parsedFilters?.commentsMax as any) ?? NaN);
+  const likesMin = Number((parsedFilters?.likesMin as number | string | undefined) ?? NaN);
+  const likesMax = Number((parsedFilters?.likesMax as number | string | undefined) ?? NaN);
+  const commentsMin = Number((parsedFilters?.commentsMin as number | string | undefined) ?? NaN);
+  const commentsMax = Number((parsedFilters?.commentsMax as number | string | undefined) ?? NaN);
         const captionContainsStr = parsedFilters?.captionContains as string | undefined;
         const captionStopStr = parsedFilters?.captionStopWords as string | undefined;
         const containsWords = captionContainsStr ? captionContainsStr.split(/\r?\n/).map(w=>w.trim()).filter(Boolean) : [];
         const stopWords = captionStopStr ? captionStopStr.split(/\r?\n/).map(w=>w.trim()).filter(Boolean) : [];
         let stopTriggered = false;
-        const filteredMedias = [] as any[];
-        for (const m of toProcess) {
+        interface Media {
+          like_count?: number;
+          comment_count?: number;
+          caption?: string | { text?: string };
+          [key: string]: unknown;
+        }
+        const filteredMedias: Media[] = [];
+  for (const m of toProcess) {
           let include = true;
           if (!Number.isNaN(likesMin) && typeof m.like_count === 'number' && m.like_count < likesMin) include = false;
           if (!Number.isNaN(likesMax) && typeof m.like_count === 'number' && m.like_count > likesMax) include = false;
@@ -536,20 +550,38 @@ export async function POST(req: NextRequest) {
         }
 
         // Map to extracted_posts rows
-        const postsRows = filteredMedias.map((m: any) => ({
-          extraction_id: job.id,
-          post_id: m.id,
-          code: m.code,
-          caption_text: m.caption?.text || null,
-          media_type: m.media_type,
-          product_type: m.product_type || null,
-          taken_at: m.taken_at ? new Date(m.taken_at * 1000).toISOString() : null,
-          like_count: m.like_count ?? 0,
-          comment_count: m.comment_count ?? 0,
-          thumbnail_url: m.thumbnail_url || (m.image_versions2?.candidates?.[0]?.url) || null,
-          user_id: active.pk,
-          username: active.username,
-        }));
+        const postsRows = filteredMedias.map((m) => {
+          let captionText: string | null = null;
+          if (typeof m.caption === 'string') {
+            captionText = m.caption;
+          } else if (m.caption && typeof m.caption === 'object' && 'text' in m.caption && typeof (m.caption as { text?: string }).text === 'string') {
+            captionText = (m.caption as { text?: string }).text || null;
+          }
+          let takenAt: string | null = null;
+          if (typeof m.taken_at === 'number') {
+            takenAt = new Date(m.taken_at * 1000).toISOString();
+          }
+          let thumbnailUrl: string | null = null;
+          if (typeof m.thumbnail_url === 'string') {
+            thumbnailUrl = m.thumbnail_url;
+          } else if (m.image_versions2 && typeof m.image_versions2 === 'object' && Array.isArray((m.image_versions2 as { candidates?: { url?: string }[] }).candidates)) {
+            thumbnailUrl = (m.image_versions2 as { candidates?: { url?: string }[] }).candidates?.[0]?.url || null;
+          }
+          return {
+            extraction_id: job.id,
+            post_id: m.id,
+            code: m.code,
+            caption_text: captionText,
+            media_type: m.media_type,
+            product_type: m.product_type || null,
+            taken_at: takenAt,
+            like_count: m.like_count ?? 0,
+            comment_count: m.comment_count ?? 0,
+            thumbnail_url: thumbnailUrl,
+            user_id: active.pk,
+            username: active.username,
+          };
+        });
         if (postsRows.length > 0) {
           const { error: insErr } = await supabase.from('extracted_posts').insert(postsRows);
           if (insErr) throw new Error(insErr.message);
@@ -564,7 +596,7 @@ export async function POST(req: NextRequest) {
         }
         {
           const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
-          const upd = {
+          const upd: Record<string, unknown> = {
             page_count: (job.page_count || 0) + 1,
             progress: (job.progress || 0) + postsRows.length,
             status: hasMore ? 'running' : 'completed',
@@ -727,8 +759,15 @@ export async function POST(req: NextRequest) {
           : [];
         if (!hashtagsArr.length) throw new Error('No hashtags provided');
 
-        let step: any = {};
-        try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
+        interface StepHashtag {
+          idx: number;
+          page_id?: string;
+          targets: string[];
+        }
+        let step: StepHashtag = { idx: 0, targets: [] };
+        try {
+          step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
+        } catch {}
         if (!Array.isArray(step.targets)) {
           step = { idx: 0, page_id: undefined, targets: hashtagsArr };
           await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
@@ -763,11 +802,46 @@ export async function POST(req: NextRequest) {
         const containsWords = captionContainsStr ? captionContainsStr.split(/\r?\n/).map(w=>w.trim()).filter(Boolean) : [];
         const stopWords = stopStr ? stopStr.split(/\r?\n/).map(w=>w.trim()).filter(Boolean) : [];
         let stopTriggered = false;
-        type ClipItem = { media?: any; id?: string; pk?: string; media_url?: string; video_url?: string; image_url?: string; image_versions2?: { candidates?: { url?: string }[] }; taken_at?: number; like_count?: number; caption?: string | { text?: string }; caption_text?: string; hashtags?: string[] | string; username?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_verified?: boolean; is_private?: boolean } };
+        interface ClipUser {
+          username?: string;
+          full_name?: string;
+          profile_pic_url?: string;
+          is_verified?: boolean;
+          is_private?: boolean;
+        }
+        interface ClipItem {
+          media?: unknown;
+          id?: string;
+          pk?: string;
+          media_url?: string;
+          video_url?: string;
+          image_url?: string;
+          image_versions2?: { candidates?: { url?: string }[] };
+          taken_at?: number;
+          like_count?: number;
+          caption?: string | { text?: string };
+          caption_text?: string;
+          hashtags?: string[] | string;
+          username?: string;
+          user?: ClipUser;
+        }
         const filteredClips: ClipItem[] = [];
         for (const clip of toProcess as ClipItem[]) {
-          const m = clip.media || clip;
-          const text = typeof m.caption?.text === 'string' ? m.caption.text.toLowerCase() : String(m.caption || m.caption_text || '').toLowerCase();
+          const m: ClipItem = (clip.media && typeof clip.media === 'object') ? (clip.media as ClipItem) : clip;
+          let text = '';
+          if (
+            typeof m.caption === 'object' &&
+            m.caption &&
+            'text' in m.caption &&
+            typeof (m.caption as { text?: string }).text === 'string' &&
+            (m.caption as { text?: string }).text != null
+          ) {
+            text = ((m.caption as { text?: string }).text ?? '').toLowerCase();
+          } else if (typeof m.caption === 'string') {
+            text = m.caption.toLowerCase();
+          } else if (typeof m.caption_text === 'string') {
+            text = m.caption_text.toLowerCase();
+          }
           if (containsWords.length && !containsWords.some(w => text.includes(w.toLowerCase()))) continue;
           if (stopWords.length && stopWords.some(w => text.includes(w.toLowerCase()))) { stopTriggered = true; }
           if (!stopTriggered) filteredClips.push(clip);
@@ -776,22 +850,24 @@ export async function POST(req: NextRequest) {
 
         // Map to extracted_hashtag_posts rows
         const rows = filteredClips.map((clip) => {
-          const m = (clip as any).media || clip;
+          const m: ClipItem = (clip.media && typeof clip.media === 'object') ? (clip.media as ClipItem) : clip;
           return {
             extraction_id: job.id,
             post_id: m.id || m.pk || null,
             media_url: m.media_url || m.video_url || m.image_url || (m.image_versions2?.candidates?.[0]?.url) || null,
-            taken_at: m.taken_at ? new Date(m.taken_at * 1000).toISOString() : null,
-            like_count: m.like_count || 0,
-            caption: typeof m.caption === 'object' && m.caption ? (m.caption.text || null) : (m.caption || m.caption_text || null),
-            hashtags: Array.isArray(m.hashtags) ? m.hashtags.join(',') : (m.hashtags || null),
-            username: m.username || m.user?.username || null,
-            full_name: m.user?.full_name || null,
-            profile_pic_url: m.user?.profile_pic_url || null,
-            is_verified: m.user?.is_verified || false,
-            is_private: m.user?.is_private || false,
+            taken_at: typeof m.taken_at === 'number' ? new Date(m.taken_at * 1000).toISOString() : null,
+            like_count: typeof m.like_count === 'number' ? m.like_count : 0,
+            caption: (typeof m.caption === 'object' && m.caption && 'text' in m.caption && typeof (m.caption as { text?: string }).text === 'string')
+              ? (m.caption as { text?: string }).text
+              : (typeof m.caption === 'string' ? m.caption : (typeof m.caption_text === 'string' ? m.caption_text : null)),
+            hashtags: Array.isArray(m.hashtags) ? m.hashtags.join(',') : (typeof m.hashtags === 'string' ? m.hashtags : null),
+            username: typeof m.username === 'string' ? m.username : (m.user && typeof m.user.username === 'string' ? m.user.username : null),
+            full_name: m.user && typeof m.user.full_name === 'string' ? m.user.full_name : null,
+            profile_pic_url: m.user && typeof m.user.profile_pic_url === 'string' ? m.user.profile_pic_url : null,
+            is_verified: m.user && typeof m.user.is_verified === 'boolean' ? m.user.is_verified : false,
+            is_private: m.user && typeof m.user.is_private === 'boolean' ? m.user.is_private : false,
           };
-        }).filter((r)=> (r as any).post_id);
+        }).filter((r) => typeof r.post_id === 'string' && !!r.post_id);
 
         // Coin cost for hashtags: perData (2) per row
         if (rows.length > 0) {
@@ -809,7 +885,7 @@ export async function POST(req: NextRequest) {
 
         {
           const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
-          const upd = {
+          const upd: Record<string, unknown> = {
             page_count: (job.page_count || 0) + 1,
             progress: (job.progress || 0) + rows.length,
             status: hasMore ? 'running' : 'completed',
