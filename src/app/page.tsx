@@ -1,4 +1,6 @@
+
 "use client";
+import Head from "next/head";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import HomeNavbar from "@/components/HomeNavbar";
@@ -77,6 +79,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col font-sans">
+      <Head><title>Scrapper Glass</title></Head>
       <HomeNavbar />
       {/* Hero Section */}
       <section className="w-full bg-black py-32 md:py-40 px-4 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-screen">

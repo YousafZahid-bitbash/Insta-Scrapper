@@ -1,4 +1,6 @@
+
 "use client";
+import Head from "next/head";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Shimmer from "@/components/Shimmer";
@@ -49,6 +51,7 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
+       <Head><title>Billing | Scrapper Glass</title></Head>
       <Navbar coins={coins} />
       <div className="hidden md:block">
         <Sidebar />

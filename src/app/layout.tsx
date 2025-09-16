@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Insta Scrapper",
+  title: "Scrapper Glass",
   description: "Instagram data extraction tool",
   icons: {
     icon: '/favicon.ico',

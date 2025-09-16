@@ -1,4 +1,6 @@
+
 "use client";
+import Head from "next/head";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -69,6 +71,7 @@ export default function SignupPage() {
 
 	return (
 		<main className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+			<Head><title>Signup | Scrapper Glass</title></Head>
 			{/* Gold abstract accents */}
 			<div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-[#d4af37]/40 to-transparent rounded-full blur-2xl opacity-60 animate-fade-in" />
 			<div className="absolute bottom-0 right-0 w-56 h-56 bg-gradient-to-tr from-[#d4af37]/30 to-transparent rounded-full blur-3xl opacity-50 animate-fade-in" />

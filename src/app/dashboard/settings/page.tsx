@@ -1,4 +1,6 @@
+
 "use client";
+import Head from "next/head";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
@@ -28,7 +30,9 @@ export default function SettingsPage() {
   }, []);
 
   return (
+    
     <div className="min-h-screen bg-[#f7f9fc] flex flex-col">
+       <Head><title>Settings | Scrapper Glass</title></Head>
       <Navbar />
       <div className="hidden md:block">
         <Sidebar />

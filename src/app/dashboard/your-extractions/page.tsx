@@ -1,4 +1,7 @@
-"use client"
+
+
+"use client";
+import Head from "next/head";
 import { useEffect, useState } from "react";
 import React from "react";
 import { supabase } from "../../../supabaseClient";
@@ -7,6 +10,7 @@ import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 
 export default function YourExtractionsPage() {
+  // ...existing code...
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
@@ -39,6 +43,7 @@ export default function YourExtractionsPage() {
       alert('Failed to delete extraction.');
     }
   };
+  
   type Extraction = {
     id: string;
     extraction_type: string;
@@ -71,6 +76,10 @@ export default function YourExtractionsPage() {
   const [coins, setCoins] = useState<number>(0);
 
   // Download handler
+
+  // --- Dynamic title ---
+  // Place this at the top of your return statement:
+  // <Head><title>Your Extractions | Scrapper Glass</title></Head>
   const handleDownload = (format: 'json' | 'csv' | 'txt') => {
     setShowDownloadDropdown(false);
     if (!extractedUsers || extractedUsers.length === 0) return;
@@ -157,16 +166,18 @@ export default function YourExtractionsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
-      <Navbar coins={coins} />
-      
-      {/* Fixed Sidebar */}
-      <div className="hidden md:block">
-        <Sidebar />
-      </div>
-      
-      <main className="flex-1 p-6 lg:p-8 md:ml-64">
-        <div className="max-w-6xl mx-auto">
+    <>
+      <Head>
+        <title>Your Extractions | Scrapper Glass</title>
+      </Head>
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
+        <Navbar coins={coins} />
+        {/* Fixed Sidebar */}
+        <div className="hidden md:block">
+          <Sidebar />
+        </div>
+        <main className="flex-1 p-6 lg:p-8 md:ml-64">
+          <div className="max-w-6xl mx-auto">
           {/* Header Section */}
           <div className="text-center mb-8">
             <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent mb-4">
@@ -443,5 +454,6 @@ export default function YourExtractionsPage() {
             </>
           )}
     </div>
+    </>
   );
 }

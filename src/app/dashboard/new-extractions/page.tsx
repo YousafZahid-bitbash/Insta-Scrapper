@@ -1,4 +1,6 @@
+
 "use client"
+import Head from "next/head";
 import { useEffect, useState } from "react";
 import { FaUserFriends, FaUserPlus, FaIdBadge, FaHashtag, FaThumbsUp } from "react-icons/fa";
 import Navbar from "@/components/Navbar";
@@ -116,43 +118,46 @@ export default function NewExtractionsPage() {
 
 	console.log("[NewExtractions] Rendering Navbar with coins:", coins);
 	return (
-		<div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
-			<Navbar coins={coins} />
-			
-			<FilterPanel
-				open={filterOpen}
-				value={filters}
-				onChange={setFilters}
-				onClose={() => setFilterOpen(false)}
-				reset={() => setFilters({
-					extractPhone: false,
-					extractEmail: false,
-					extractLinkInBio: false,
-					privacy: "doesn't matter",
-					profilePicture: "doesn't matter",
-					verifiedAccount: "doesn't matter",
-					businessAccount: "doesn't matter",
-					followersMin: '',
-					followersMax: '',
-					followingsMin: '',
-					followingsMax: '',
-					filterByName: '',
-					filterByNameInBioContains: '',
-					filterByNameInBioStop: '',
-					coinLimit: '',
-					postDateFrom: '',
-					postDateTo: '',
-					postType: 'any',
-					postLikesMin: '',
-					postLikesMax: '',
-					postCommentsMin: '',
-					postCommentsMax: '',
-					postCaptionContains: '',
-					postHashtagsContains: '',
-					postLocation: '',
-				})}
-				selectedType={selected}
-			/>
+			<>
+				<Head>
+					<title>New Extractions | Scrapper Glass</title>
+				</Head>
+				<div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
+					<Navbar coins={coins} />
+					<FilterPanel
+						open={filterOpen}
+						value={filters}
+						onChange={setFilters}
+						onClose={() => setFilterOpen(false)}
+						reset={() => setFilters({
+							extractPhone: false,
+							extractEmail: false,
+							extractLinkInBio: false,
+							privacy: "doesn't matter",
+							profilePicture: "doesn't matter",
+							verifiedAccount: "doesn't matter",
+							businessAccount: "doesn't matter",
+							followersMin: '',
+							followersMax: '',
+							followingsMin: '',
+							followingsMax: '',
+							filterByName: '',
+							filterByNameInBioContains: '',
+							filterByNameInBioStop: '',
+							coinLimit: '',
+							postDateFrom: '',
+							postDateTo: '',
+							postType: 'any',
+							postLikesMin: '',
+							postLikesMax: '',
+							postCommentsMin: '',
+							postCommentsMax: '',
+							postCaptionContains: '',
+							postHashtagsContains: '',
+							postLocation: '',
+						})}
+						selectedType={selected}
+					/>
 			
 			{/* Fixed Sidebar */}
 			<div className="hidden md:block">
@@ -587,5 +592,6 @@ export default function NewExtractionsPage() {
 				</>
 			)}
 		</div>
+		</>
 	);
 }
