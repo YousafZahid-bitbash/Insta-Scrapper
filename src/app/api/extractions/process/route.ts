@@ -15,7 +15,6 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   console.log('[Process API] --- Handler Entry ---');
-
   console.log('[Process API] POST /api/extractions/process called');
   // Security: Check for Supabase webhook secret
   const supabaseSecret = req.headers.get('x-supabase-signature');
@@ -146,6 +145,14 @@ export async function POST(req: NextRequest) {
               user = await userByUsernameV1(clean);
               console.log(`[Process API] userByUsernameV1 result for ${clean}:`, user);
             } catch (err) {
+              // If error is 403 or 404, skip and continue
+              if (err && typeof err === 'object' && 'response' in err) {
+                const response = (err as { response?: { status?: number } }).response;
+                if (response && (response.status === 404 || response.status === 403)) {
+                  console.warn(`[Process API] Skipping username due to ${response.status} error: ${clean}`);
+                  continue;
+                }
+              }
               console.error(`[Process API] Error in userByUsernameV1 for ${clean}:`, err);
             }
             if (user?.pk) {

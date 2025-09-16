@@ -152,8 +152,58 @@ function getHikerClient(): AxiosInstance {
 
 
 
+// Generate mock user data for testing
+function generateMockUserData(username: string): HikerUser {
+  const mockData: HikerUser = {
+    pk: `mock_${username}_${Math.random().toString(36).substr(2, 9)}`,
+    username: username,
+    full_name: `Mock User ${username}`,
+    is_private: Math.random() > 0.5,
+    profile_pic_url: `https://via.placeholder.com/150/000000/FFFFFF?text=${username.charAt(0).toUpperCase()}`,
+    profile_pic_url_hd: `https://via.placeholder.com/300/000000/FFFFFF?text=${username.charAt(0).toUpperCase()}`,
+    is_verified: Math.random() > 0.8,
+    media_count: Math.floor(Math.random() * 1000) + 10,
+    follower_count: Math.floor(Math.random() * 10000) + 100,
+    following_count: Math.floor(Math.random() * 2000) + 50,
+    biography: `This is a mock biography for ${username}. Testing data for Instagram scraper.`,
+    external_url: Math.random() > 0.7 ? `https://example.com/${username}` : "",
+    account_type: Math.random() > 0.5 ? 1 : 0,
+    is_business: Math.random() > 0.6,
+    public_email: Math.random() > 0.8 ? `${username}@example.com` : "",
+    contact_phone_number: Math.random() > 0.9 ? `+1234567890` : "",
+    public_phone_country_code: Math.random() > 0.9 ? "+1" : "",
+    public_phone_number: Math.random() > 0.9 ? "234567890" : "",
+    business_contact_method: Math.random() > 0.7 ? "EMAIL" : "",
+    business_category_name: Math.random() > 0.7 ? "Business" : "",
+    category_name: Math.random() > 0.7 ? "Category" : "",
+    category: Math.random() > 0.7 ? "category" : "",
+    address_street: Math.random() > 0.8 ? "123 Mock Street" : "",
+    city_id: Math.random() > 0.8 ? "mock_city_id" : "",
+    city_name: Math.random() > 0.8 ? "Mock City" : "",
+    latitude: Math.random() > 0.8 ? 40.7128 : 0,
+    longitude: Math.random() > 0.8 ? -74.0060 : 0,
+    zip: Math.random() > 0.8 ? "10001" : "",
+    instagram_location_id: Math.random() > 0.8 ? "mock_location_id" : "",
+    interop_messaging_user_fbid: Math.random() > 0.8 ? "mock_fbid" : ""
+  };
+  return mockData;
+}
+
 // Get user object by username (returns user info, including pk as user_id)
 export async function userByUsernameV1(username: string): Promise<HikerUser | undefined> {
+  // Check if testing mode is enabled
+  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
+  
+  if (isTestingMode) {
+    console.log('[hikerApi] TESTING MODE: userByUsernameV1 called with:', username);
+    console.log('[hikerApi] TESTING MODE: Returning mock data for:', username);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+    const mockData = generateMockUserData(username);
+    console.log('[hikerApi] TESTING MODE: Mock data generated:', mockData);
+    return mockData;
+  }
+
   try {
     console.log('[hikerApi] userByUsernameV1 called with:', username);
     const params = { username };
