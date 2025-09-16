@@ -139,14 +139,25 @@ export async function POST(req: NextRequest) {
           let totalEstimated = 0;
           for (const uname of usernames) {
             const clean = uname.replace(/^@/, '');
-            const user = await userByUsernameV1(clean);
+            console.log(`[Process API] Resolving username: ${uname} (clean: ${clean})`);
+            let user;
+            try {
+              user = await userByUsernameV1(clean);
+              console.log(`[Process API] userByUsernameV1 result for ${clean}:`, user);
+            } catch (err) {
+              console.error(`[Process API] Error in userByUsernameV1 for ${clean}:`, err);
+            }
             if (user?.pk) {
               const total = typeof user.follower_count === 'number' ? user.follower_count : 0;
               totalEstimated += total;
               resolvedTargets.push({ username: clean, pk: user.pk, total });
+              console.log(`[Process API] Resolved target:`, { username: clean, pk: user.pk, total });
+            } else {
+              console.warn(`[Process API] Could not resolve user for username: ${clean}`);
             }
           }
           step = { idx: 0, page_id: undefined, targets: resolvedTargets, totalEstimated };
+          console.log('[Process API] Final resolvedTargets:', resolvedTargets, 'totalEstimated:', totalEstimated);
           await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
         }
 

@@ -155,11 +155,13 @@ function getHikerClient(): AxiosInstance {
 // Get user object by username (returns user info, including pk as user_id)
 export async function userByUsernameV1(username: string): Promise<HikerUser | undefined> {
   try {
+    console.log('[hikerApi] userByUsernameV1 called with:', username);
     const params = { username };
     const res = await getHikerClient().get("/v1/user/by/username", { params });
+    console.log('[hikerApi] userByUsernameV1 response for', username, ':', res.data);
     return res.data;
   } catch (error: unknown) {
-    console.error('[hikerApi] userFollowersChunkGql actual error:', error);
+    console.error('[hikerApi] userByUsernameV1 error for', username, ':', error);
     handleHikerError(error);
   }
 }
