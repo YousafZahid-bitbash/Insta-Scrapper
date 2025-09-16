@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'node:crypto';
-import { userFollowersChunkGqlByUsername, userFollowingChunkGqlByUsername, mediaLikersBulkV1, getUserPosts, extractCommentersBulkV2, extractHashtagClipsBulkV2, userByUsernameV1, getFollowersPage, getFollowingPage, extractFilteredUsers, mediaByUrlV1, getCommentsPage, getUserMediasPage, getHashtagClipsPage } from '../../../../services/hikerApi';
+import { userFollowersChunkGqlByUsername, userFollowingChunkGqlByUsername, mediaLikersBulkV1, getUserPosts, extractCommentersBulkV2, extractHashtagClipsBulkV2, userByUsernameV1, getFollowersPage, getFollowingPage, extractFilteredUsers, mediaByUrlV1, getCommentsPage, getUserMediasPage, getHashtagClipsPage, UserDetails } from '../../../../services/hikerApi';
 import { COIN_RULES, deductCoins } from '../../../../utils/coinLogic';
 
 console.log('[Process API] Loaded process route');
@@ -109,8 +109,16 @@ export async function POST(req: NextRequest) {
         const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
         if (usernames.length === 0) throw new Error('No usernames provided');
 
-        let step: any = {};
-        try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
+        interface Step {
+          idx: number;
+          page_id?: string;
+          targets: { username: string; pk: string; total: number }[];
+          totalEstimated?: number;
+        }
+        let step: Step = { idx: 0, targets: [] };
+        try {
+          step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
+        } catch {}
 
         if (!Array.isArray(step.targets)) {
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
@@ -129,7 +137,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (!step.targets.length || step.idx >= step.targets.length) {
-          extractionResult = { filteredFollowers: [], actualCoinCost: 0 } as any;
+          extractionResult = { filteredFollowers: [], actualCoinCost: 0 } as { filteredFollowers: unknown[]; actualCoinCost: number };
           break;
         }
 
@@ -137,12 +145,13 @@ export async function POST(req: NextRequest) {
         const page = await getFollowersPage(active.pk, step.page_id);
         const pageUsers = page.items || [];
 
+        type FilterObject = Record<string, unknown>;
         const filteredUsers = await extractFilteredUsers(
           pageUsers.map(u => ({ username: u.username })),
-          (parsedFilters?.followers || parsedFilters || {}) as any,
-          async (username: string) => {
+          (parsedFilters?.followers || parsedFilters || {}) as FilterObject,
+          async (username: string): Promise<UserDetails> => {
             const d = await userByUsernameV1(username);
-            return d as any;
+            return d as UserDetails;
           }
         );
 
@@ -235,8 +244,16 @@ export async function POST(req: NextRequest) {
         const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
         if (usernames.length === 0) throw new Error('No usernames provided');
 
-        let step: any = {};
-        try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
+        interface StepFollowing {
+          idx: number;
+          page_id?: string;
+          targets: { username: string; pk: string; total: number }[];
+          totalEstimated?: number;
+        }
+        let step: StepFollowing = { idx: 0, targets: [] };
+        try {
+          step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
+        } catch {}
 
         if (!Array.isArray(step.targets)) {
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
@@ -255,7 +272,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (!step.targets.length || step.idx >= step.targets.length) {
-          extractionResult = { filteredFollowings: [], actualCoinCost: 0 } as any;
+          extractionResult = { filteredFollowings: [], actualCoinCost: 0 } as { filteredFollowings: unknown[]; actualCoinCost: number };
           break;
         }
 
@@ -263,12 +280,13 @@ export async function POST(req: NextRequest) {
         const page = await getFollowingPage(active.pk, step.page_id);
         const pageUsers = page.items || [];
 
+        type FilterObject = Record<string, unknown>;
         const filteredUsers = await extractFilteredUsers(
           pageUsers.map(u => ({ username: u.username })),
-          (parsedFilters?.following || parsedFilters || {}) as any,
-          async (username: string) => {
+          (parsedFilters?.following || parsedFilters || {}) as FilterObject,
+          async (username: string): Promise<UserDetails> => {
             const d = await userByUsernameV1(username);
-            return d as any;
+            return d as UserDetails;
           }
         );
 
@@ -330,7 +348,7 @@ export async function POST(req: NextRequest) {
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
-          } as any;
+          } as Record<string, unknown>;
           const { error: updateErrorF } = await supabase
             .from('extractions')
             .update(updateFollowing)
@@ -354,8 +372,15 @@ export async function POST(req: NextRequest) {
         const urls = String(urlStr).split(',').map((u: string) => u.trim()).filter(Boolean);
         if (urls.length === 0) throw new Error('No URLs provided');
 
-        let step: any = {};
-        try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
+        interface StepLikers {
+          idx: number;
+          page_id?: string;
+          targets: { url: string; mediaId: string }[];
+        }
+        let step: StepLikers = { idx: 0, targets: [] };
+        try {
+          step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
+        } catch {}
         if (!Array.isArray(step.targets)) {
           const resolved: { url: string; mediaId: string }[] = [];
           for (const url of urls) {
