@@ -396,7 +396,7 @@ export async function POST(req: NextRequest) {
         const active = step.targets[step.idx];
         // For likers endpoint, no pagination page_id (single list). Process per-URL per batch.
         const res = await mediaLikersBulkV1({ urls: [active.url], filters: parsedFilters || {}, user_id: job.user_id, skipCoinCheck: true }, updateProgress, undefined, job.id, supabase);
-        const likers = (res as any)?.filteredLikers || [];
+  const likers = (res as { filteredLikers?: UserDetails[] })?.filteredLikers || [];
 
         // Decide how many we can afford BEFORE filtration (extraction per-chunk + per-user detail)
         const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
@@ -417,7 +417,7 @@ export async function POST(req: NextRequest) {
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
-        const rows = toProcess.map((u: any) => ({
+  const rows = toProcess.map((u: UserDetails) => ({
             extraction_id: job.id,
             pk: u.pk || null,
             username: u.username,
@@ -425,8 +425,8 @@ export async function POST(req: NextRequest) {
             profile_pic_url: u.profile_pic_url,
             is_private: u.is_private,
             is_verified: u.is_verified,
-            email: u.email ?? null,
-            phone: u.phone ?? null,
+            email: u.public_email ?? null,
+            phone: u.public_phone_number ?? null,
             link_in_bio: u.link_in_bio ?? null,
             is_business: typeof u.is_business === 'boolean' ? u.is_business : null,
           }));
@@ -447,7 +447,7 @@ export async function POST(req: NextRequest) {
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
-          } as any;
+          } as Record<string, unknown>;
           const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
           if (upErr) throw new Error(upErr.message);
           if (hasMore) {
