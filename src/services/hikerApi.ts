@@ -164,11 +164,42 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
   }
 }
 
+
 /***********************************************************/
 /**                FOLLOWERS API CALL METHOD              **/
 /***********************************************************/
 
 // Get a user's followers (one page) with cursor
+export async function getFollowersPage(
+  userPk: string,
+  page_id?: string
+): Promise<{ items: { pk: string; username: string; full_name: string; profile_pic_url: string; is_private: boolean; is_verified: boolean }[]; next_page_id?: string }> {
+  const params: Record<string, unknown> = { user_id: userPk };
+  if (page_id) params.page_id = page_id;
+  const res = await getHikerClient().get("/v2/user/followers", { params });
+  const data = res.data ?? {};
+  const items = Array.isArray(data?.response?.users) ? data.response.users : [];
+  const nextPageId = typeof data?.next_page_id === 'string' && data.next_page_id
+    ? data.next_page_id
+    : (typeof data?.response?.next_page_id === 'string' && data.response.next_page_id ? data.response.next_page_id : undefined);
+  return { items, next_page_id: nextPageId };
+}
+
+// Single-page followings fetch for batching (no internal loops)
+export async function getFollowingPage(
+  userPk: string,
+  page_id?: string
+): Promise<{ items: { pk: string; username: string; full_name: string; profile_pic_url: string; is_private: boolean; is_verified: boolean }[]; next_page_id?: string }> {
+  const params: Record<string, unknown> = { user_id: userPk };
+  if (page_id) params.page_id = page_id;
+  const res = await getHikerClient().get("/v2/user/following", { params });
+  const data = res.data ?? {};
+  const items = Array.isArray(data?.response?.users) ? data.response.users : [];
+  const nextPageId = typeof data?.next_page_id === 'string' && data.next_page_id
+    ? data.next_page_id
+    : (typeof data?.response?.next_page_id === 'string' && data.response.next_page_id ? data.response.next_page_id : undefined);
+  return { items, next_page_id: nextPageId };
+}
 
 // Helper: Save extracted users to DB, linking to extraction_id
 async function saveExtractedUsersToDB(users: ExtractedUser[], extraction_id: string, supabase: SupabaseClient) {
@@ -833,7 +864,7 @@ export async function userFollowingChunkGql(
 
 // Bulk likers extraction for multiple post URLs
 export async function mediaLikersBulkV1(
-  payload: { urls: string[], filters: FilterOptions, user_id?: string },
+  payload: { urls: string[], filters: FilterOptions, user_id?: string, skipCoinCheck?: boolean },
   onProgress?: (count: number) => void,
   onTotalEstimated?: (total: number) => void,
   extraction_id?: number | null,
@@ -843,7 +874,8 @@ export async function mediaLikersBulkV1(
   const supabaseToUse = supabaseClient || supabase;
   if (!supabaseToUse) throw new Error("Supabase client not initialized");
   const userIdStr: string = payload.user_id || (typeof window !== "undefined" ? localStorage.getItem("user_id") ?? "" : "");
-  let coins: number = await getUserCoins(userIdStr, supabaseToUse);
+  const skipCoinCheck = !!payload.skipCoinCheck;
+  let coins: number = skipCoinCheck ? Infinity : await getUserCoins(userIdStr, supabaseToUse);
   let stopExtraction: boolean = false;
   const { urls, filters } = payload;
   // Support both array and single string with newlines
@@ -903,7 +935,7 @@ export async function mediaLikersBulkV1(
           }
           
           // Check if we have enough coins for the full batch
-          if (usersProcessedInBatch === 0 && coins < COIN_RULES.likers.perChunk.coins) {
+          if (!skipCoinCheck && usersProcessedInBatch === 0 && coins < COIN_RULES.likers.perChunk.coins) {
             stopExtraction = true;
             break;
           }
@@ -915,16 +947,20 @@ export async function mediaLikersBulkV1(
           
           // Deduct coins when we complete a full batch (every 10 users)
           if (usersProcessedInBatch >= COIN_RULES.likers.perChunk.users) {
-            console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for batch of ${COIN_RULES.likers.perChunk.users} users`);
-            coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
+            if (!skipCoinCheck) {
+              console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for batch of ${COIN_RULES.likers.perChunk.users} users`);
+              coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
+            }
             usersProcessedInBatch = 0; // Reset batch counter
           }
         }
         
         // Deduct coins for any remaining partial batch
         if (usersProcessedInBatch > 0 && !stopExtraction) {
-          console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
-          coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
+          if (!skipCoinCheck) {
+            console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
+            coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
+          }
         }
       }
       if (stopExtraction) break;
@@ -951,17 +987,18 @@ export async function mediaLikersBulkV1(
   console.log('[mediaLikersBulkV1] Likers after pre-filtering:', preFilteredLikers.length, preFilteredLikers);
 
   // Second deduction: For userByUsername calls (like followers pattern)
-  const perUserTotalCost = preFilteredLikers.length * COIN_RULES.likers.perUser;
-  console.log(`[mediaLikersBulkV1] Second deduction for userByUsername calls: ${preFilteredLikers.length} users × ${COIN_RULES.likers.perUser} = ${perUserTotalCost} coins`);
-  console.log(`[mediaLikersBulkV1] Current coins: ${coins}, Required: ${perUserTotalCost}`);
-  
-  if (coins < perUserTotalCost) {
-    console.warn(`[mediaLikersBulkV1] Insufficient coins for userByUsername calls. Required: ${perUserTotalCost}, Available: ${coins}`);
-    stopExtraction = true;
-  } else {
-    coins = await deductCoins(userIdStr, perUserTotalCost, supabaseToUse);
-    console.log(`[mediaLikersBulkV1] Coins deducted successfully for userByUsername calls. New balance: ${coins}`);
-    stopExtraction = false; // Ensure we always run the loop after successful deduction
+  if (!skipCoinCheck) {
+    const perUserTotalCost = preFilteredLikers.length * COIN_RULES.likers.perUser;
+    console.log(`[mediaLikersBulkV1] Second deduction for userByUsername calls: ${preFilteredLikers.length} users × ${COIN_RULES.likers.perUser} = ${perUserTotalCost} coins`);
+    console.log(`[mediaLikersBulkV1] Current coins: ${coins}, Required: ${perUserTotalCost}`);
+    if (coins < perUserTotalCost) {
+      console.warn(`[mediaLikersBulkV1] Insufficient coins for userByUsername calls. Required: ${perUserTotalCost}, Available: ${coins}`);
+      stopExtraction = true;
+    } else {
+      coins = await deductCoins(userIdStr, perUserTotalCost, supabaseToUse);
+      console.log(`[mediaLikersBulkV1] Coins deducted successfully for userByUsername calls. New balance: ${coins}`);
+      stopExtraction = false; // Ensure we always run the loop after successful deduction
+    }
   }
   // 2. Fetch details for each remaining user
   const detailedLikers: UserDetails[] = [];
@@ -1006,7 +1043,7 @@ export async function mediaLikersBulkV1(
   console.log('[mediaLikersBulkV1] Likers after filtering:', filteredLikers.length, filteredLikers);
 
   // Save filtered likers to database with extraction_id if provided
-  if (filteredLikers.length > 0 && supabaseToUse) {
+  if (!skipCoinCheck && filteredLikers.length > 0 && supabaseToUse) {
     try {
       let extractionIdToUse = extraction_id;
       if (!extractionIdToUse) {
@@ -1291,6 +1328,37 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
   } catch (error: unknown) {
     handleHikerError(error);
   }
+}
+
+// Single-page comments fetch for batching (no internal loops)
+export async function getCommentsPage(
+  mediaId: string,
+  page_id?: string
+): Promise<{ items: any[]; next_page_id?: string }> {
+  const data = await mediaCommentsV2(mediaId, undefined, page_id);
+  const comments = data && data.response && Array.isArray(data.response.comments)
+    ? data.response.comments
+    : [];
+  const nextPageId = typeof data?.next_page_id === 'string' && data.next_page_id
+    ? data.next_page_id
+    : (typeof data?.response?.next_page_id === 'string' && data.response.next_page_id ? data.response.next_page_id : undefined);
+  return { items: comments, next_page_id: nextPageId };
+}
+
+// Single-page user medias fetch for batching (no internal loops)
+export async function getUserMediasPage(
+  userPk: string,
+  page_id?: string
+): Promise<{ items: any[]; next_page_id?: string }> {
+  const params: Record<string, unknown> = { user_id: userPk };
+  if (page_id) params.page_id = page_id;
+  const res = await getHikerClient().get("/v2/user/medias", { params });
+  const data = res.data ?? {};
+  const items = Array.isArray(data?.response?.items) ? data.response.items : [];
+  const nextPageId = typeof data?.next_page_id === 'string' && data.next_page_id
+    ? data.next_page_id
+    : (typeof data?.response?.next_page_id === 'string' && data.response.next_page_id ? data.response.next_page_id : undefined);
+  return { items, next_page_id: nextPageId };
 }
 
 
@@ -1810,6 +1878,38 @@ export async function extractHashtagClipsBulkV2(
   }
   console.log('[extractHashtagClipsBulkV2] Extraction complete. Returning', allResults.length, 'clips.');
    return { clips: allResults };
+}
+
+// Single-page hashtag clips fetch for batching (no internal loops)
+export async function getHashtagClipsPage(
+  hashtag: string,
+  page_id?: string,
+  filters?: Record<string, unknown>
+): Promise<{ items: any[]; next_page_id?: string }> {
+  const params: Record<string, unknown> = { name: hashtag };
+  if (page_id) params.page_id = page_id;
+  if (filters) {
+    const { hashtagLimit, ...apiFilterParams } = filters as Record<string, unknown>;
+    Object.assign(params, apiFilterParams);
+  }
+  const res = await getHikerClient().get("/v2/hashtag/medias/clips", { params });
+  const data = res.data ?? {};
+  const sections = data?.response?.sections ?? [];
+  const items: any[] = [];
+  for (const section of sections) {
+    const oneByTwoClips = section?.layout_content?.one_by_two_item?.clips?.items;
+    if (Array.isArray(oneByTwoClips)) items.push(...oneByTwoClips);
+    const fillItems = section?.layout_content?.fill_items;
+    if (Array.isArray(fillItems)) {
+      for (const item of fillItems) {
+        if (item?.media) items.push(item.media);
+      }
+    }
+  }
+  const nextPageId = typeof data?.next_page_id === 'string' && data.next_page_id
+    ? data.next_page_id
+    : (typeof data?.response?.next_page_id === 'string' && data.response.next_page_id ? data.response.next_page_id : undefined);
+  return { items, next_page_id: nextPageId };
 }
 
 
