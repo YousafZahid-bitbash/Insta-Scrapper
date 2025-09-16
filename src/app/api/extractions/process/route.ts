@@ -117,8 +117,8 @@ export async function POST(req: NextRequest) {
       case 'followers': {
         console.log('[Process API] Starting followers extraction');
         // Initialize or load batching state from current_step
-  const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
-  console.log('[Process API] Followers usernames:', usernames);
+        const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+        console.log('[Process API] Followers usernames:', usernames);
         if (usernames.length === 0) throw new Error('No usernames provided');
 
         interface Step {
@@ -127,13 +127,14 @@ export async function POST(req: NextRequest) {
           targets: { username: string; pk: string; total: number }[];
           totalEstimated?: number;
         }
-  let step: Step = { idx: 0, targets: [] };
-  console.log('[Process API] Followers step:', step);
+        let step: Step = { idx: 0, targets: [] };
+        console.log('[Process API] Followers step:', step);
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
 
-        if (!Array.isArray(step.targets)) {
+        // Fix: resolve targets if not an array or if empty
+        if (!Array.isArray(step.targets) || step.targets.length === 0) {
           console.log('[Process API] Resolving follower targets...');
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
           let totalEstimated = 0;
@@ -167,15 +168,15 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-  const active = step.targets[step.idx];
-  console.log('[Process API] Processing follower target:', active);
-  console.log('[Process API] Fetching followers page for pk:', active.pk, 'page_id:', step.page_id);
-  const page = await getFollowersPage(active.pk, step.page_id);
+        const active = step.targets[step.idx];
+        console.log('[Process API] Processing follower target:', active);
+        console.log('[Process API] Fetching followers page for pk:', active.pk, 'page_id:', step.page_id);
+        const page = await getFollowersPage(active.pk, step.page_id);
         const pageUsers = page.items || [];
 
         type FilterObject = Record<string, unknown>;
-  console.log('[Process API] Filtering users...');
-  const filteredUsers = await extractFilteredUsers(
+        console.log('[Process API] Filtering users...');
+        const filteredUsers = await extractFilteredUsers(
           pageUsers.map(u => ({ username: u.username })),
           (parsedFilters?.followers || parsedFilters || {}) as FilterObject,
           async (username: string): Promise<UserDetails> => {
@@ -237,41 +238,41 @@ export async function POST(req: NextRequest) {
         }
 
         // Update state and decide chaining
-  const hasMore = (step.idx < step.targets.length) || !!step.page_id;
-  console.log('[Process API] hasMore:', hasMore);
-        updateFields = {
-          page_count: (job.page_count || 0) + 1,
-          progress: (job.progress || 0) + filteredUsers.length,
-          status: hasMore ? 'running' : 'completed',
-          completed_at: hasMore ? null : new Date().toISOString(),
-          error_message: null,
-          next_page_id: step.page_id || null,
-          current_step: JSON.stringify(step),
-          locked_by: hasMore ? workerId : null,
-          lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
-        };
+        const hasMore = (step.idx < step.targets.length) || !!step.page_id;
+        console.log('[Process API] hasMore:', hasMore);
+              updateFields = {
+                page_count: (job.page_count || 0) + 1,
+                progress: (job.progress || 0) + filteredUsers.length,
+                status: hasMore ? 'running' : 'completed',
+                completed_at: hasMore ? null : new Date().toISOString(),
+                error_message: null,
+                next_page_id: step.page_id || null,
+                current_step: JSON.stringify(step),
+                locked_by: hasMore ? workerId : null,
+                lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
+              };
 
-  console.log('[Process API] Updating extraction row for followers...');
-  const { error: updateErrorFollowers } = await supabase
-          .from('extractions')
-          .update(updateFields)
-          .eq('id', job.id)
-          .eq('locked_by', workerId);
-  if (updateErrorFollowers) throw new Error(updateErrorFollowers.message);
-  console.log('[Process API] Followers batch processed');
+        console.log('[Process API] Updating extraction row for followers...');
+        const { error: updateErrorFollowers } = await supabase
+                .from('extractions')
+                .update(updateFields)
+                .eq('id', job.id)
+                .eq('locked_by', workerId);
+        if (updateErrorFollowers) throw new Error(updateErrorFollowers.message);
+        console.log('[Process API] Followers batch processed');
 
-        // Chain next
-        if (hasMore) {
-          console.log('[Process API] Chaining next followers batch...');
-          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
-            body: JSON.stringify({ record: { id: job.id } }),
-          });
-        }
+              // Chain next
+              if (hasMore) {
+                console.log('[Process API] Chaining next followers batch...');
+                await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
+                  body: JSON.stringify({ record: { id: job.id } }),
+                });
+              }
 
-  console.log('[Process API] Followers extraction complete');
-  return NextResponse.json({ message: 'Followers batch processed', jobId: job.id, ...updateFields });
+        console.log('[Process API] Followers extraction complete');
+        return NextResponse.json({ message: 'Followers batch processed', jobId: job.id, ...updateFields });
       }
         
         
