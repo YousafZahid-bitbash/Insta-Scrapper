@@ -606,7 +606,7 @@ export async function POST(req: NextRequest) {
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
-          } as any;
+          };
           const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
           if (upErr) throw new Error(upErr.message);
           if (hasMore) {
@@ -626,7 +626,12 @@ export async function POST(req: NextRequest) {
         const urls = String(urlStr).split(',').map((u: string) => u.trim()).filter(Boolean);
         if (urls.length === 0) throw new Error('No URLs provided');
 
-        let step: any = {};
+        interface StepCommenters {
+          idx: number;
+          page_id?: string;
+          targets: { url: string; mediaId: string }[];
+        }
+        let step: StepCommenters = { idx: 0, targets: [] };
         try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
 
         if (!Array.isArray(step.targets)) {
@@ -895,7 +900,7 @@ export async function POST(req: NextRequest) {
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
-          } as any;
+          };
           const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
           if (upErr) throw new Error(upErr.message);
           if (hasMore) {
@@ -928,11 +933,11 @@ export async function POST(req: NextRequest) {
     updateFields.next_page_id = null;
     // maintain/refresh lock until done
     if (isDone) {
-      (updateFields as any).locked_by = null;
-      (updateFields as any).lock_expires_at = null;
+      updateFields.locked_by = null;
+      updateFields.lock_expires_at = null;
     } else {
-      (updateFields as any).locked_by = workerId;
-      (updateFields as any).lock_expires_at = new Date(Date.now() + 60_000).toISOString();
+      updateFields.locked_by = workerId;
+      updateFields.lock_expires_at = new Date(Date.now() + 60_000).toISOString();
     }
 
     const { error: updateError } = await supabase
