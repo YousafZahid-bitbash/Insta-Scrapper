@@ -1334,7 +1334,7 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
 export async function getCommentsPage(
   mediaId: string,
   page_id?: string
-): Promise<{ items: any[]; next_page_id?: string }> {
+): Promise<{ items: { pk: string; media_id: string; user_id: string; text?: string; like_count?: number; comment_like_count?: number; created_at?: number; parent_comment_id?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_private?: boolean; is_verified?: boolean; is_mentionable?: boolean } }[]; next_page_id?: string }> {
   const data = await mediaCommentsV2(mediaId, undefined, page_id);
   const comments = data && data.response && Array.isArray(data.response.comments)
     ? data.response.comments
@@ -1349,7 +1349,7 @@ export async function getCommentsPage(
 export async function getUserMediasPage(
   userPk: string,
   page_id?: string
-): Promise<{ items: any[]; next_page_id?: string }> {
+): Promise<{ items: { id: string; code?: string; caption?: { text?: string } | string; media_type?: number; product_type?: string; taken_at?: number; like_count?: number; comment_count?: number; thumbnail_url?: string; image_versions2?: { candidates?: { url?: string }[] } }[]; next_page_id?: string }> {
   const params: Record<string, unknown> = { user_id: userPk };
   if (page_id) params.page_id = page_id;
   const res = await getHikerClient().get("/v2/user/medias", { params });
@@ -1885,7 +1885,7 @@ export async function getHashtagClipsPage(
   hashtag: string,
   page_id?: string,
   filters?: Record<string, unknown>
-): Promise<{ items: any[]; next_page_id?: string }> {
+): Promise<{ items: { media?: unknown; id?: string; pk?: string; media_url?: string; video_url?: string; image_url?: string; image_versions2?: { candidates?: { url?: string }[] }; taken_at?: number; like_count?: number; caption?: string | { text?: string }; caption_text?: string; hashtags?: string[] | string; username?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_verified?: boolean; is_private?: boolean } }[]; next_page_id?: string }> {
   const params: Record<string, unknown> = { name: hashtag };
   if (page_id) params.page_id = page_id;
   if (filters) {
@@ -1895,7 +1895,7 @@ export async function getHashtagClipsPage(
   const res = await getHikerClient().get("/v2/hashtag/medias/clips", { params });
   const data = res.data ?? {};
   const sections = data?.response?.sections ?? [];
-  const items: any[] = [];
+  const items: { media?: unknown; id?: string; pk?: string; media_url?: string; video_url?: string; image_url?: string; image_versions2?: { candidates?: { url?: string }[] }; taken_at?: number; like_count?: number; caption?: string | { text?: string }; caption_text?: string; hashtags?: string[] | string; username?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_verified?: boolean; is_private?: boolean } }[] = [];
   for (const section of sections) {
     const oneByTwoClips = section?.layout_content?.one_by_two_item?.clips?.items;
     if (Array.isArray(oneByTwoClips)) items.push(...oneByTwoClips);

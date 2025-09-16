@@ -499,7 +499,11 @@ export async function POST(req: NextRequest) {
           if (!Number.isNaN(likesMax) && typeof m.like_count === 'number' && m.like_count > likesMax) include = false;
           if (!Number.isNaN(commentsMin) && typeof m.comment_count === 'number' && m.comment_count < commentsMin) include = false;
           if (!Number.isNaN(commentsMax) && typeof m.comment_count === 'number' && m.comment_count > commentsMax) include = false;
-          const captionText = typeof m.caption?.text === 'string' ? m.caption.text.toLowerCase() : '';
+          const captionText = ((): string => {
+            if (typeof m.caption === 'string') return m.caption.toLowerCase();
+            if (m.caption && typeof m.caption.text === 'string') return m.caption.text.toLowerCase();
+            return '';
+          })();
           if (containsWords.length && !containsWords.some(w => captionText.includes(w.toLowerCase()))) include = false;
           if (stopWords.length && stopWords.some(w => captionText.includes(w.toLowerCase()))) { stopTriggered = true; }
           if (!stopTriggered && include) filteredMedias.push(m);
@@ -610,7 +614,7 @@ export async function POST(req: NextRequest) {
         if (limitByCoinLimit !== undefined) allowed = Math.min(allowed, limitByCoinLimit);
         allowed = Math.min(allowed, limitByBalance);
 
-        let toProcess = comments.slice(0, Math.max(0, allowed));
+        const toProcess = comments.slice(0, Math.max(0, allowed));
         const batchCost = Math.ceil((toProcess.length || 0) / perChunkUsers) * perChunkCoins;
         if (toProcess.length > 0 && batchCost > 0) {
           await deductCoins(String(job.user_id), batchCost, supabase);
@@ -623,8 +627,9 @@ export async function POST(req: NextRequest) {
         const excludeWords = excludeWordsStr ? String(excludeWordsStr).split(/\r?\n/).map(w=>w.trim().toLowerCase()).filter(Boolean) : [];
         const stopWords = stopWordsStr ? String(stopWordsStr).split(/\r?\n/).map(w=>w.trim().toLowerCase()).filter(Boolean) : [];
         let stopTriggered = false;
-        const filtered = [] as any[];
-        for (const c of toProcess) {
+        type CommentItem = { pk: string; media_id: string; user_id: string; text?: string; like_count?: number; comment_like_count?: number; created_at?: number; parent_comment_id?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_private?: boolean; is_verified?: boolean; is_mentionable?: boolean } };
+        const filtered: CommentItem[] = [];
+        for (const c of toProcess as CommentItem[]) {
           const text = String(c.text || '').toLowerCase();
           if (excludeWords.length && excludeWords.some(w => text.includes(w))) continue;
           if (stopWords.length && stopWords.some(w => text.includes(w))) { stopTriggered = true; break; }
@@ -632,7 +637,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Map for DB
-        const rows = filtered.map((c: any) => ({
+        const rows = filtered.map((c) => ({
           extraction_id: job.id,
           comment_id: c.pk,
           media_id: c.media_id,
@@ -676,7 +681,7 @@ export async function POST(req: NextRequest) {
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
-          } as any;
+          } as Record<string, unknown>;
           const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
           if (upErr) throw new Error(upErr.message);
 
@@ -733,8 +738,9 @@ export async function POST(req: NextRequest) {
         const containsWords = captionContainsStr ? captionContainsStr.split(/\r?\n/).map(w=>w.trim()).filter(Boolean) : [];
         const stopWords = stopStr ? stopStr.split(/\r?\n/).map(w=>w.trim()).filter(Boolean) : [];
         let stopTriggered = false;
-        const filteredClips = [] as any[];
-        for (const clip of toProcess) {
+        type ClipItem = { media?: any; id?: string; pk?: string; media_url?: string; video_url?: string; image_url?: string; image_versions2?: { candidates?: { url?: string }[] }; taken_at?: number; like_count?: number; caption?: string | { text?: string }; caption_text?: string; hashtags?: string[] | string; username?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_verified?: boolean; is_private?: boolean } };
+        const filteredClips: ClipItem[] = [];
+        for (const clip of toProcess as ClipItem[]) {
           const m = clip.media || clip;
           const text = typeof m.caption?.text === 'string' ? m.caption.text.toLowerCase() : String(m.caption || m.caption_text || '').toLowerCase();
           if (containsWords.length && !containsWords.some(w => text.includes(w.toLowerCase()))) continue;
@@ -744,8 +750,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Map to extracted_hashtag_posts rows
-        const rows = filteredClips.map((clip: any) => {
-          const m = clip.media || clip;
+        const rows = filteredClips.map((clip) => {
+          const m = (clip as any).media || clip;
           return {
             extraction_id: job.id,
             post_id: m.id || m.pk || null,
@@ -760,7 +766,7 @@ export async function POST(req: NextRequest) {
             is_verified: m.user?.is_verified || false,
             is_private: m.user?.is_private || false,
           };
-        }).filter((r:any)=> r.post_id);
+        }).filter((r)=> (r as any).post_id);
 
         // Coin cost for hashtags: perData (2) per row
         if (rows.length > 0) {
@@ -808,7 +814,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Current service functions complete pagination internally and don't expose cursors
-    const nextCursor = null;
+    // Fallback path not used in batched types
     const isDone = true;
 
     updateFields = {
