@@ -14,6 +14,7 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  console.log('[Process API] --- Handler Entry ---');
 
   console.log('[Process API] POST /api/extractions/process called');
   // Security: Check for Supabase webhook secret
@@ -33,12 +34,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
   }
   let job = payload.record;
+  console.log('[Process API] Job record:', job);
   if (!job) {
     console.warn('[Process API] No job record in payload');
     return NextResponse.json({ error: 'No job record in payload' }, { status: 400 });
   }
 
   // Re-fetch current job row to ensure fresh state and use optimistic locking
+  console.log('[Process API] Fetching current job row from DB...');
   const { data: currentJob, error: fetchErr } = await supabase
     .from('extractions')
     .select('*')
@@ -49,18 +52,22 @@ export async function POST(req: NextRequest) {
     console.warn('[Process API] Could not fetch job row', fetchErr?.message);
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
+  console.log('[Process API] Current job:', currentJob);
 
   if (!['pending', 'running'].includes(currentJob.status)) {
+    console.warn('[Process API] Job not in runnable state:', currentJob.status);
     return NextResponse.json({ message: 'Job not in runnable state', status: currentJob.status });
   }
 
   const now = Date.now();
   const lockNotExpired = currentJob.lock_expires_at ? new Date(currentJob.lock_expires_at).getTime() > now : false;
   if (currentJob.locked_by && lockNotExpired) {
+    console.warn('[Process API] Lock held by another worker');
     return NextResponse.json({ message: 'Lock held by another worker' });
   }
 
   const workerId = crypto.randomUUID();
+  console.log('[Process API] Acquiring lock for worker:', workerId);
   const newLockExpiry = new Date(now + 60_000).toISOString();
   const currentVersion = typeof currentJob.version === 'number' ? currentJob.version : 0;
   const { error: lockErr, data: lockRows } = await supabase
@@ -80,11 +87,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Could not acquire lock' }, { status: 200 });
   }
   if (!lockRows || lockRows.length === 0) {
+    console.warn('[Process API] Lock already acquired elsewhere');
     return NextResponse.json({ message: 'Lock already acquired elsewhere' }, { status: 200 });
   }
 
   // Use the fresh row for processing
   job = currentJob;
+  console.log('[Process API] Using fresh job row for processing');
 
   let updateFields: Record<string, unknown> = {};
   try {
@@ -103,10 +112,13 @@ export async function POST(req: NextRequest) {
 
     let extractionResult;
     console.log('[Process API] Processing job:', job.id, 'type:', job.extraction_type);
-    switch (job.extraction_type) {
+  console.log('[Process API] Extraction type:', job.extraction_type);
+  switch (job.extraction_type) {
       case 'followers': {
+        console.log('[Process API] Starting followers extraction');
         // Initialize or load batching state from current_step
-        const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+  const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+  console.log('[Process API] Followers usernames:', usernames);
         if (usernames.length === 0) throw new Error('No usernames provided');
 
         interface Step {
@@ -115,12 +127,14 @@ export async function POST(req: NextRequest) {
           targets: { username: string; pk: string; total: number }[];
           totalEstimated?: number;
         }
-        let step: Step = { idx: 0, targets: [] };
+  let step: Step = { idx: 0, targets: [] };
+  console.log('[Process API] Followers step:', step);
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
 
         if (!Array.isArray(step.targets)) {
+          console.log('[Process API] Resolving follower targets...');
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
           let totalEstimated = 0;
           for (const uname of usernames) {
@@ -137,16 +151,20 @@ export async function POST(req: NextRequest) {
         }
 
         if (!step.targets.length || step.idx >= step.targets.length) {
+          console.log('[Process API] No followers to process, finishing.');
           extractionResult = { filteredFollowers: [], actualCoinCost: 0 } as { filteredFollowers: unknown[]; actualCoinCost: number };
           break;
         }
 
-        const active = step.targets[step.idx];
-        const page = await getFollowersPage(active.pk, step.page_id);
+  const active = step.targets[step.idx];
+  console.log('[Process API] Processing follower target:', active);
+  console.log('[Process API] Fetching followers page for pk:', active.pk, 'page_id:', step.page_id);
+  const page = await getFollowersPage(active.pk, step.page_id);
         const pageUsers = page.items || [];
 
         type FilterObject = Record<string, unknown>;
-        const filteredUsers = await extractFilteredUsers(
+  console.log('[Process API] Filtering users...');
+  const filteredUsers = await extractFilteredUsers(
           pageUsers.map(u => ({ username: u.username })),
           (parsedFilters?.followers || parsedFilters || {}) as FilterObject,
           async (username: string): Promise<UserDetails> => {
@@ -175,6 +193,7 @@ export async function POST(req: NextRequest) {
 
         // Insert + deduct coins
         if (filteredUsers.length > 0) {
+          console.log('[Process API] Inserting filtered users to DB:', filteredUsers.length);
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
@@ -199,6 +218,7 @@ export async function POST(req: NextRequest) {
         // Advance cursor
         const next_page_id = page.next_page_id;
         if (next_page_id) {
+          console.log('[Process API] Advancing to next page:', next_page_id);
           step.page_id = next_page_id;
         } else {
           step.idx += 1;
@@ -206,7 +226,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Update state and decide chaining
-        const hasMore = (step.idx < step.targets.length) || !!step.page_id;
+  const hasMore = (step.idx < step.targets.length) || !!step.page_id;
+  console.log('[Process API] hasMore:', hasMore);
         updateFields = {
           page_count: (job.page_count || 0) + 1,
           progress: (job.progress || 0) + filteredUsers.length,
@@ -219,15 +240,18 @@ export async function POST(req: NextRequest) {
           lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
         };
 
-        const { error: updateErrorFollowers } = await supabase
+  console.log('[Process API] Updating extraction row for followers...');
+  const { error: updateErrorFollowers } = await supabase
           .from('extractions')
           .update(updateFields)
           .eq('id', job.id)
           .eq('locked_by', workerId);
-        if (updateErrorFollowers) throw new Error(updateErrorFollowers.message);
+  if (updateErrorFollowers) throw new Error(updateErrorFollowers.message);
+  console.log('[Process API] Followers batch processed');
 
         // Chain next
         if (hasMore) {
+          console.log('[Process API] Chaining next followers batch...');
           await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
@@ -235,13 +259,16 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        return NextResponse.json({ message: 'Followers batch processed', jobId: job.id, ...updateFields });
+  console.log('[Process API] Followers extraction complete');
+  return NextResponse.json({ message: 'Followers batch processed', jobId: job.id, ...updateFields });
       }
         
         
         break;
       case 'following': {
-        const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+        console.log('[Process API] Starting following extraction');
+  const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+  console.log('[Process API] Following usernames:', usernames);
         if (usernames.length === 0) throw new Error('No usernames provided');
 
         interface StepFollowing {
@@ -250,12 +277,14 @@ export async function POST(req: NextRequest) {
           targets: { username: string; pk: string; total: number }[];
           totalEstimated?: number;
         }
-        let step: StepFollowing = { idx: 0, targets: [] };
+  let step: StepFollowing = { idx: 0, targets: [] };
+  console.log('[Process API] Following step:', step);
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
 
         if (!Array.isArray(step.targets)) {
+          console.log('[Process API] Resolving following targets...');
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
           let totalEstimated = 0;
           for (const uname of usernames) {
@@ -272,16 +301,20 @@ export async function POST(req: NextRequest) {
         }
 
         if (!step.targets.length || step.idx >= step.targets.length) {
+          console.log('[Process API] No followings to process, finishing.');
           extractionResult = { filteredFollowings: [], actualCoinCost: 0 } as { filteredFollowings: unknown[]; actualCoinCost: number };
           break;
         }
 
-        const active = step.targets[step.idx];
-        const page = await getFollowingPage(active.pk, step.page_id);
+  const active = step.targets[step.idx];
+  console.log('[Process API] Processing following target:', active);
+  console.log('[Process API] Fetching following page for pk:', active.pk, 'page_id:', step.page_id);
+  const page = await getFollowingPage(active.pk, step.page_id);
         const pageUsers = page.items || [];
 
         type FilterObject = Record<string, unknown>;
-        const filteredUsers = await extractFilteredUsers(
+  console.log('[Process API] Filtering users...');
+  const filteredUsers = await extractFilteredUsers(
           pageUsers.map(u => ({ username: u.username })),
           (parsedFilters?.following || parsedFilters || {}) as FilterObject,
           async (username: string): Promise<UserDetails> => {
@@ -307,6 +340,7 @@ export async function POST(req: NextRequest) {
         const batchCost = batchExtractionCost + batchFilteringCost;
 
         if (filteredUsers.length > 0) {
+          console.log('[Process API] Inserting filtered users to DB:', filteredUsers.length);
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
@@ -330,6 +364,7 @@ export async function POST(req: NextRequest) {
 
         const next_page_id = page.next_page_id;
         if (next_page_id) {
+          console.log('[Process API] Advancing to next page:', next_page_id);
           step.page_id = next_page_id;
         } else {
           step.idx += 1;
@@ -337,7 +372,8 @@ export async function POST(req: NextRequest) {
         }
 
         {
-          const hasMore = (step.idx < step.targets.length) || !!step.page_id;
+    const hasMore = (step.idx < step.targets.length) || !!step.page_id;
+    console.log('[Process API] hasMore:', hasMore);
           const updateFollowing = {
             page_count: (job.page_count || 0) + 1,
             progress: (job.progress || 0) + filteredUsers.length,
@@ -349,26 +385,32 @@ export async function POST(req: NextRequest) {
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
           } as Record<string, unknown>;
-          const { error: updateErrorF } = await supabase
+    console.log('[Process API] Updating extraction row for followings...');
+    const { error: updateErrorF } = await supabase
             .from('extractions')
             .update(updateFollowing)
             .eq('id', job.id)
             .eq('locked_by', workerId);
-          if (updateErrorF) throw new Error(updateErrorF.message);
+    if (updateErrorF) throw new Error(updateErrorF.message);
+    console.log('[Process API] Following batch processed');
 
           if (hasMore) {
+            console.log('[Process API] Chaining next following batch...');
             await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
           }
-          return NextResponse.json({ message: 'Following batch processed', jobId: job.id, ...updateFollowing });
+    console.log('[Process API] Following extraction complete');
+    return NextResponse.json({ message: 'Following batch processed', jobId: job.id, ...updateFollowing });
         }
       }
         break;
       case 'likers': {
-        const urlStr = job.target_usernames || '';
+        console.log('[Process API] Starting likers extraction');
+  const urlStr = job.target_usernames || '';
+  console.log('[Process API] Likers URLs:', urlStr);
         const urls = String(urlStr).split(',').map((u: string) => u.trim()).filter(Boolean);
         if (urls.length === 0) throw new Error('No URLs provided');
 
@@ -377,11 +419,13 @@ export async function POST(req: NextRequest) {
           page_id?: string;
           targets: { url: string; mediaId: string }[];
         }
-        let step: StepLikers = { idx: 0, targets: [] };
+  let step: StepLikers = { idx: 0, targets: [] };
+  console.log('[Process API] Likers step:', step);
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
         if (!Array.isArray(step.targets)) {
+          console.log('[Process API] Resolving likers targets...');
           const resolved: { url: string; mediaId: string }[] = [];
           for (const url of urls) {
             try { const media = await mediaByUrlV1(url); if (media?.id) resolved.push({ url, mediaId: media.id }); } catch {}
@@ -391,11 +435,14 @@ export async function POST(req: NextRequest) {
           await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
         }
         if (!step.targets.length || step.idx >= step.targets.length) {
+          console.log('[Process API] No likers to process, finishing.');
           return NextResponse.json({ message: 'No likers to process', jobId: job.id });
         }
-        const active = step.targets[step.idx];
+  const active = step.targets[step.idx];
+  console.log('[Process API] Processing likers target:', active);
         // For likers endpoint, no pagination page_id (single list). Process per-URL per batch.
-        const res = await mediaLikersBulkV1({ urls: [active.url], filters: parsedFilters || {}, user_id: job.user_id, skipCoinCheck: true }, updateProgress, undefined, job.id, supabase);
+  console.log('[Process API] Fetching likers for URL:', active.url);
+  const res = await mediaLikersBulkV1({ urls: [active.url], filters: parsedFilters || {}, user_id: job.user_id, skipCoinCheck: true }, updateProgress, undefined, job.id, supabase);
   const likers = (res as { filteredLikers?: UserDetails[] })?.filteredLikers || [];
 
         // Decide how many we can afford BEFORE filtration (extraction per-chunk + per-user detail)
@@ -414,6 +461,7 @@ export async function POST(req: NextRequest) {
         const toProcess = likers.slice(0, Math.max(0, allowedUsers));
         const batchCost = Math.ceil((toProcess.length || 0) / perChunkUsers) * perChunkCoins + (toProcess.length * perUserDetail);
         if (toProcess.length > 0 && batchCost > 0) {
+          console.log('[Process API] Deducting coins for likers:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -431,12 +479,15 @@ export async function POST(req: NextRequest) {
             is_business: typeof u.is_business === 'boolean' ? u.is_business : null,
           }));
         if (rows.length > 0) {
+          console.log('[Process API] Inserting likers to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_users').insert(rows);
           if (insErr) throw new Error(insErr.message);
         }
-        step.idx += 1;
+  step.idx += 1;
+  console.log('[Process API] Advancing to next likers target');
         {
-          const hasMore = step.idx < step.targets.length;
+    const hasMore = step.idx < step.targets.length;
+    console.log('[Process API] hasMore:', hasMore);
           const upd = {
             page_count: (job.page_count || 0) + 1,
             progress: (job.progress || 0) + rows.length,
@@ -448,21 +499,27 @@ export async function POST(req: NextRequest) {
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
           } as Record<string, unknown>;
-          const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
-          if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Updating extraction row for likers...');
+    const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
+    if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Likers batch processed');
           if (hasMore) {
+            console.log('[Process API] Chaining next likers batch...');
             await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
           }
-          return NextResponse.json({ message: 'Likers batch processed', jobId: job.id, ...upd });
+    console.log('[Process API] Likers extraction complete');
+    return NextResponse.json({ message: 'Likers batch processed', jobId: job.id, ...upd });
         }
       }
         break;
       case 'posts': {
-        const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+        console.log('[Process API] Starting posts extraction');
+  const usernames = targets.length ? targets : (job.target_usernames ? String(job.target_usernames).split(',').map((s:string)=>s.trim()).filter(Boolean) : []);
+  console.log('[Process API] Posts usernames:', usernames);
         if (usernames.length === 0) throw new Error('No usernames provided');
 
         interface StepPosts {
@@ -471,11 +528,13 @@ export async function POST(req: NextRequest) {
           targets: { username: string; pk: string; total: number }[];
           totalEstimated?: number;
         }
-        let step: StepPosts = { idx: 0, targets: [] };
+  let step: StepPosts = { idx: 0, targets: [] };
+  console.log('[Process API] Posts step:', step);
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
         if (!Array.isArray(step.targets)) {
+          console.log('[Process API] Resolving posts targets...');
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
           let totalEstimated = 0;
           for (const uname of usernames) {
@@ -491,11 +550,14 @@ export async function POST(req: NextRequest) {
           await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
         }
         if (!step.targets.length || step.idx >= step.targets.length) {
+          console.log('[Process API] No posts to process, finishing.');
           return NextResponse.json({ message: 'No posts to process', jobId: job.id });
         }
 
-        const active = step.targets[step.idx];
-        const page = await getUserMediasPage(active.pk, step.page_id);
+  const active = step.targets[step.idx];
+  console.log('[Process API] Processing posts target:', active);
+  console.log('[Process API] Fetching user medias page for pk:', active.pk, 'page_id:', step.page_id);
+  const page = await getUserMediasPage(active.pk, step.page_id);
         const medias = page.items || [];
 
         // Decide how many posts we can afford BEFORE filtration
@@ -512,6 +574,7 @@ export async function POST(req: NextRequest) {
         const toProcess = medias.slice(0, Math.max(0, allowedPosts));
         const batchCost = toProcess.length * perPost;
         if (toProcess.length > 0 && batchCost > 0) {
+          console.log('[Process API] Deducting coins for posts:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -583,19 +646,22 @@ export async function POST(req: NextRequest) {
           };
         });
         if (postsRows.length > 0) {
+          console.log('[Process API] Inserting posts to DB:', postsRows.length);
           const { error: insErr } = await supabase.from('extracted_posts').insert(postsRows);
           if (insErr) throw new Error(insErr.message);
         }
 
         const next_page_id = page.next_page_id;
         if (next_page_id) {
+          console.log('[Process API] Advancing to next posts page:', next_page_id);
           step.page_id = next_page_id;
         } else {
           step.idx += 1;
           step.page_id = undefined;
         }
         {
-          const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
+    const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
+    console.log('[Process API] hasMore:', hasMore);
           const upd: Record<string, unknown> = {
             page_count: (job.page_count || 0) + 1,
             progress: (job.progress || 0) + postsRows.length,
@@ -607,22 +673,28 @@ export async function POST(req: NextRequest) {
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
           };
-          const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
-          if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Updating extraction row for posts...');
+    const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
+    if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Posts batch processed');
           if (hasMore) {
+            console.log('[Process API] Chaining next posts batch...');
             await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
           }
-          return NextResponse.json({ message: 'Posts batch processed', jobId: job.id, ...upd });
+    console.log('[Process API] Posts extraction complete');
+    return NextResponse.json({ message: 'Posts batch processed', jobId: job.id, ...upd });
         }
       }
         break;
       case 'commenters': {
+        console.log('[Process API] Starting commenters extraction');
         // Resolve URLs to media IDs once; store in current_step
-        const urlStr = job.target_usernames || '';
+  const urlStr = job.target_usernames || '';
+  console.log('[Process API] Commenters URLs:', urlStr);
         const urls = String(urlStr).split(',').map((u: string) => u.trim()).filter(Boolean);
         if (urls.length === 0) throw new Error('No URLs provided');
 
@@ -631,10 +703,12 @@ export async function POST(req: NextRequest) {
           page_id?: string;
           targets: { url: string; mediaId: string }[];
         }
-        let step: StepCommenters = { idx: 0, targets: [] };
+  let step: StepCommenters = { idx: 0, targets: [] };
+  console.log('[Process API] Commenters step:', step);
         try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
 
         if (!Array.isArray(step.targets)) {
+          console.log('[Process API] Resolving commenters targets...');
           const resolved: { url: string; mediaId: string }[] = [];
           for (const url of urls) {
             try {
@@ -648,11 +722,14 @@ export async function POST(req: NextRequest) {
         }
 
         if (!step.targets.length || step.idx >= step.targets.length) {
+          console.log('[Process API] No commenters to process, finishing.');
           return NextResponse.json({ message: 'No commenters to process', jobId: job.id });
         }
 
-        const active = step.targets[step.idx];
-        const page = await getCommentsPage(active.mediaId, step.page_id);
+  const active = step.targets[step.idx];
+  console.log('[Process API] Processing commenters target:', active);
+  console.log('[Process API] Fetching comments page for mediaId:', active.mediaId, 'page_id:', step.page_id);
+  const page = await getCommentsPage(active.mediaId, step.page_id);
         const comments = page.items || [];
 
         // Determine how many commenters we can afford BEFORE filtration
@@ -679,6 +756,7 @@ export async function POST(req: NextRequest) {
         const toProcess = comments.slice(0, Math.max(0, allowed));
         const batchCost = Math.ceil((toProcess.length || 0) / perChunkUsers) * perChunkCoins;
         if (toProcess.length > 0 && batchCost > 0) {
+          console.log('[Process API] Deducting coins for commenters:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -718,6 +796,7 @@ export async function POST(req: NextRequest) {
 
         // Coins for commenters: batch cost by chunks of 2
         if (rows.length > 0) {
+          console.log('[Process API] Inserting commenters to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_commenters').insert(rows);
           if (insErr) throw new Error(insErr.message);
         }
@@ -725,6 +804,7 @@ export async function POST(req: NextRequest) {
         // Advance page/target
         const next_page_id = page.next_page_id;
         if (next_page_id) {
+          console.log('[Process API] Advancing to next commenters page:', next_page_id);
           step.page_id = next_page_id;
         } else {
           step.idx += 1;
@@ -732,7 +812,8 @@ export async function POST(req: NextRequest) {
         }
 
         {
-          const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
+    const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
+    console.log('[Process API] hasMore:', hasMore);
           const upd = {
             page_count: (job.page_count || 0) + 1,
             progress: (job.progress || 0) + rows.length,
@@ -744,45 +825,57 @@ export async function POST(req: NextRequest) {
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
           } as Record<string, unknown>;
-          const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
-          if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Updating extraction row for commenters...');
+    const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
+    if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Commenters batch processed');
 
           if (hasMore) {
+            console.log('[Process API] Chaining next commenters batch...');
             await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
           }
-          return NextResponse.json({ message: 'Commenters batch processed', jobId: job.id, ...upd });
+    console.log('[Process API] Commenters extraction complete');
+    return NextResponse.json({ message: 'Commenters batch processed', jobId: job.id, ...upd });
         }
       }
         break;
       case 'hashtags': {
-        const hashtagsArr = typeof job.target_usernames === 'string'
+        console.log('[Process API] Starting hashtags extraction');
+        
+  const hashtagsArr = typeof job.target_usernames === 'string'
+  
           ? job.target_usernames.split(',').map((h: string) => h.trim()).filter(Boolean)
           : [];
         if (!hashtagsArr.length) throw new Error('No hashtags provided');
-
+        console.log('[Process API] Hashtags:', job.target_usernames);
         interface StepHashtag {
           idx: number;
           page_id?: string;
           targets: string[];
         }
-        let step: StepHashtag = { idx: 0, targets: [] };
+  let step: StepHashtag = { idx: 0, targets: [] };
+  console.log('[Process API] Hashtag step:', step);
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
         if (!Array.isArray(step.targets)) {
+          console.log('[Process API] Resolving hashtag targets...');
           step = { idx: 0, page_id: undefined, targets: hashtagsArr };
           await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
         }
         if (!step.targets.length || step.idx >= step.targets.length) {
+          console.log('[Process API] No hashtags to process, finishing.');
           return NextResponse.json({ message: 'No hashtag clips to process', jobId: job.id });
         }
 
-        const hashtag = step.targets[step.idx];
-        const page = await getHashtagClipsPage(hashtag, step.page_id, parsedFilters || {});
+  const hashtag = step.targets[step.idx];
+  console.log('[Process API] Processing hashtag target:', hashtag);
+  console.log('[Process API] Fetching hashtag clips page for:', hashtag, 'page_id:', step.page_id);
+  const page = await getHashtagClipsPage(hashtag, step.page_id, parsedFilters || {});
         const clips = page.items || [];
 
         // Decide how many we can afford BEFORE filtration (hashtags cost per data)
@@ -798,6 +891,7 @@ export async function POST(req: NextRequest) {
         const toProcess = clips.slice(0, Math.max(0, allowed));
         const batchCost = toProcess.length * perData;
         if (toProcess.length > 0 && batchCost > 0) {
+          console.log('[Process API] Deducting coins for hashtags:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -876,12 +970,14 @@ export async function POST(req: NextRequest) {
 
         // Coin cost for hashtags: perData (2) per row
         if (rows.length > 0) {
+          console.log('[Process API] Inserting hashtag posts to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_hashtag_posts').insert(rows);
           if (insErr) throw new Error(insErr.message);
         }
 
         const next_page_id = page.next_page_id;
         if (next_page_id) {
+          console.log('[Process API] Advancing to next hashtag page:', next_page_id);
           step.page_id = next_page_id;
         } else {
           step.idx += 1;
@@ -889,7 +985,8 @@ export async function POST(req: NextRequest) {
         }
 
         {
-          const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
+    const hasMore = (!stopTriggered) && ((step.idx < step.targets.length) || !!step.page_id);
+    console.log('[Process API] hasMore:', hasMore);
           const upd: Record<string, unknown> = {
             page_count: (job.page_count || 0) + 1,
             progress: (job.progress || 0) + rows.length,
@@ -901,29 +998,35 @@ export async function POST(req: NextRequest) {
             locked_by: hasMore ? workerId : null,
             lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
           };
-          const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
-          if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Updating extraction row for hashtags...');
+    const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
+    if (upErr) throw new Error(upErr.message);
+    console.log('[Process API] Hashtags batch processed');
           if (hasMore) {
+            console.log('[Process API] Chaining next hashtags batch...');
             await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
           }
-          return NextResponse.json({ message: 'Hashtag batch processed', jobId: job.id, ...upd });
+    console.log('[Process API] Hashtags extraction complete');
+    return NextResponse.json({ message: 'Hashtag batch processed', jobId: job.id, ...upd });
         }
       }
         break;
       default:
         console.error('[Process API] Unsupported extraction_type:', job.extraction_type);
-        throw new Error('Unsupported extraction_type: ' + job.extraction_type);
+        console.error('[Process API] Unsupported extraction_type:', job.extraction_type);
+  throw new Error('Unsupported extraction_type: ' + job.extraction_type);
     }
 
     // Current service functions complete pagination internally and don't expose cursors
     // Fallback path not used in batched types
     const isDone = true;
 
-    updateFields = {
+  console.log('[Process API] Final updateFields:', updateFields);
+  updateFields = {
       page_count: (job.page_count || 0) + 1,
       progress: progressCount,
       status: isDone ? 'completed' : 'running',
@@ -940,7 +1043,8 @@ export async function POST(req: NextRequest) {
       updateFields.lock_expires_at = new Date(Date.now() + 60_000).toISOString();
     }
 
-    const { error: updateError } = await supabase
+  console.log('[Process API] Final DB update for job:', job.id);
+  const { error: updateError } = await supabase
       .from('extractions')
       .update(updateFields)
       .eq('id', job.id)
@@ -954,6 +1058,7 @@ export async function POST(req: NextRequest) {
     console.log('[Process API] Chunk processed for job:', job.id, 'isDone:', isDone);
     return NextResponse.json({ message: 'Chunk processed', jobId: job.id, ...updateFields });
   } catch (err: unknown) {
+    console.error('[Process API] Exception thrown:', err);
     let message = 'Unknown error';
     if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
       message = (err as { message: string }).message;
