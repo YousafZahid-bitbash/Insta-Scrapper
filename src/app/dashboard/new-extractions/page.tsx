@@ -168,7 +168,7 @@ export default function NewExtractionsPage() {
 			<main className="flex-1 p-6 lg:p-8 md:ml-64"> {/* Add left margin for fixed sidebar */}
 					<div className="max-w-5xl mx-auto">
 						{/* Header Section */}
-						<div className="text-center mb-8">
+                        <div className="text-center mb-6">
 							<h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 bg-clip-text text-transparent mb-4">
 								New Extraction
 							</h1>
@@ -178,9 +178,9 @@ export default function NewExtractionsPage() {
 						</div>
 
 						{/* Main Content Container */}
-						<div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
+                        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
 							{/* Extraction Options */}
-							<div className="p-8 border-b border-gray-100">
+                            <div className="p-6 border-b border-gray-100">
 								<h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
 									Choose Extraction Type
 								</h2>
@@ -216,7 +216,7 @@ export default function NewExtractionsPage() {
 							</div>
 
 							{/* Controls Section */}
-							<div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                            <div className="p-3 border-b border-gray-100 bg-gray-50/50">
 								<div className="flex flex-wrap gap-3 justify-center mb-6">
 									<button
 										type="button"
@@ -254,23 +254,12 @@ export default function NewExtractionsPage() {
 										</svg>
 										Clear Filters
 									</button>
-									{loading && (
-										<button
-											type="button"
-											className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold border border-red-300 bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
-										>
-											<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9l6 6m0-6l-6 6" />
-											</svg>
-											Stop
-										</button>
-									)}
+                                    {/* Stop button removed as requested */}
 								</div>
 							</div>
 
 							{/* Form Section */}
-							<div className="p-8">
+                            <div className="p-6">
 								<form
 									className="space-y-6"
 													onSubmit={async e => {
@@ -375,8 +364,8 @@ export default function NewExtractionsPage() {
 											</p>
 										</div>
 									</div>
-									<textarea
-										rows={8}
+                                    <textarea
+                                        rows={6}
 										className="w-full px-4 py-4 rounded-lg border-2 border-gray-200 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition-all duration-200 resize-none"
 										placeholder={
 											selected === "followers" || selected === "following" || selected === "posts"

@@ -152,57 +152,9 @@ function getHikerClient(): AxiosInstance {
 
 
 
-// Generate mock user data for testing
-function generateMockUserData(username: string): HikerUser {
-  const mockData: HikerUser = {
-    pk: `mock_${username}_${Math.random().toString(36).substr(2, 9)}`,
-    username: username,
-    full_name: `Mock User ${username}`,
-    is_private: Math.random() > 0.5,
-    profile_pic_url: `https://via.placeholder.com/150/000000/FFFFFF?text=${username.charAt(0).toUpperCase()}`,
-    profile_pic_url_hd: `https://via.placeholder.com/300/000000/FFFFFF?text=${username.charAt(0).toUpperCase()}`,
-    is_verified: Math.random() > 0.8,
-    media_count: Math.floor(Math.random() * 1000) + 10,
-    follower_count: Math.floor(Math.random() * 10000) + 100,
-    following_count: Math.floor(Math.random() * 2000) + 50,
-    biography: `This is a mock biography for ${username}. Testing data for Instagram scraper.`,
-    external_url: Math.random() > 0.7 ? `https://example.com/${username}` : "",
-    account_type: Math.random() > 0.5 ? 1 : 0,
-    is_business: Math.random() > 0.6,
-    public_email: Math.random() > 0.8 ? `${username}@example.com` : "",
-    contact_phone_number: Math.random() > 0.9 ? `+1234567890` : "",
-    public_phone_country_code: Math.random() > 0.9 ? "+1" : "",
-    public_phone_number: Math.random() > 0.9 ? "234567890" : "",
-    business_contact_method: Math.random() > 0.7 ? "EMAIL" : "",
-    business_category_name: Math.random() > 0.7 ? "Business" : "",
-    category_name: Math.random() > 0.7 ? "Category" : "",
-    category: Math.random() > 0.7 ? "category" : "",
-    address_street: Math.random() > 0.8 ? "123 Mock Street" : "",
-    city_id: Math.random() > 0.8 ? "mock_city_id" : "",
-    city_name: Math.random() > 0.8 ? "Mock City" : "",
-    latitude: Math.random() > 0.8 ? 40.7128 : 0,
-    longitude: Math.random() > 0.8 ? -74.0060 : 0,
-    zip: Math.random() > 0.8 ? "10001" : "",
-    instagram_location_id: Math.random() > 0.8 ? "mock_location_id" : "",
-    interop_messaging_user_fbid: Math.random() > 0.8 ? "mock_fbid" : ""
-  };
-  return mockData;
-}
 
 // Get user object by username (returns user info, including pk as user_id)
 export async function userByUsernameV1(username: string): Promise<HikerUser | undefined> {
-  // Check if testing mode is enabled
-  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
-  
-  if (isTestingMode) {
-    console.log('[hikerApi] TESTING MODE: userByUsernameV1 called with:', username);
-    console.log('[hikerApi] TESTING MODE: Returning mock data for:', username);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
-    const mockData = generateMockUserData(username);
-    console.log('[hikerApi] TESTING MODE: Mock data generated:', mockData);
-    return mockData;
-  }
 
   try {
     console.log('[hikerApi] userByUsernameV1 called with:', username);
@@ -222,45 +174,11 @@ export async function userByUsernameV1(username: string): Promise<HikerUser | un
 /***********************************************************/
 
 // Get a user's followers (one page) with cursor
-// Generate mock followers data for testing
-function generateMockFollowersData(userPk: string, page_id?: string): { items: { pk: string; username: string; full_name: string; profile_pic_url: string; is_private: boolean; is_verified: boolean }[]; next_page_id?: string } {
-  const itemsPerPage = 12; // Typical Instagram followers per page
-  const items = [];
-  
-  for (let i = 0; i < itemsPerPage; i++) {
-    const followerNum = page_id ? parseInt(page_id) * itemsPerPage + i : i;
-    items.push({
-      pk: `mock_follower_${userPk}_${followerNum}`,
-      username: `follower_${followerNum}`,
-      full_name: `Mock Follower ${followerNum}`,
-      profile_pic_url: `https://via.placeholder.com/150/000000/FFFFFF?text=F${followerNum}`,
-      is_private: Math.random() > 0.6,
-      is_verified: Math.random() > 0.9
-    });
-  }
-  
-  // Simulate pagination - return next page ID if not on last page
-  const currentPage = page_id ? parseInt(page_id) : 0;
-  const nextPageId = currentPage < 5 ? (currentPage + 1).toString() : undefined; // Simulate 6 pages of data
-  
-  return { items, next_page_id: nextPageId };
-}
 
 export async function getFollowersPage(
   userPk: string,
   page_id?: string
 ): Promise<{ items: { pk: string; username: string; full_name: string; profile_pic_url: string; is_private: boolean; is_verified: boolean }[]; next_page_id?: string }> {
-  // Check if testing mode is enabled
-  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
-  
-  if (isTestingMode) {
-    console.log('[hikerApi] TESTING MODE: getFollowersPage called with userPk:', userPk, 'page_id:', page_id);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
-    const mockData = generateMockFollowersData(userPk, page_id);
-    console.log('[hikerApi] TESTING MODE: Mock followers data generated:', mockData.items.length, 'followers');
-    return mockData;
-  }
 
   const params: Record<string, unknown> = { user_id: userPk };
   if (page_id) params.page_id = page_id;
@@ -273,46 +191,12 @@ export async function getFollowersPage(
   return { items, next_page_id: nextPageId };
 }
 
-// Generate mock following data for testing
-function generateMockFollowingData(userPk: string, page_id?: string): { items: { pk: string; username: string; full_name: string; profile_pic_url: string; is_private: boolean; is_verified: boolean }[]; next_page_id?: string } {
-  const itemsPerPage = 12; // Typical Instagram following per page
-  const items = [];
-  
-  for (let i = 0; i < itemsPerPage; i++) {
-    const followingNum = page_id ? parseInt(page_id) * itemsPerPage + i : i;
-    items.push({
-      pk: `mock_following_${userPk}_${followingNum}`,
-      username: `following_${followingNum}`,
-      full_name: `Mock Following ${followingNum}`,
-      profile_pic_url: `https://via.placeholder.com/150/000000/FFFFFF?text=G${followingNum}`,
-      is_private: Math.random() > 0.5,
-      is_verified: Math.random() > 0.85
-    });
-  }
-  
-  // Simulate pagination - return next page ID if not on last page
-  const currentPage = page_id ? parseInt(page_id) : 0;
-  const nextPageId = currentPage < 4 ? (currentPage + 1).toString() : undefined; // Simulate 5 pages of data
-  
-  return { items, next_page_id: nextPageId };
-}
 
 // Single-page followings fetch for batching (no internal loops)
 export async function getFollowingPage(
   userPk: string,
   page_id?: string
 ): Promise<{ items: { pk: string; username: string; full_name: string; profile_pic_url: string; is_private: boolean; is_verified: boolean }[]; next_page_id?: string }> {
-  // Check if testing mode is enabled
-  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
-  
-  if (isTestingMode) {
-    console.log('[hikerApi] TESTING MODE: getFollowingPage called with userPk:', userPk, 'page_id:', page_id);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
-    const mockData = generateMockFollowingData(userPk, page_id);
-    console.log('[hikerApi] TESTING MODE: Mock following data generated:', mockData.items.length, 'following');
-    return mockData;
-  }
 
   const params: Record<string, unknown> = { user_id: userPk };
   if (page_id) params.page_id = page_id;
@@ -1455,55 +1339,11 @@ export async function mediaCommentsV2(id: string, can_support_threading?: boolea
 }
 
 // Single-page comments fetch for batching (no internal loops)
-// Generate mock comments data for testing
-function generateMockCommentsData(mediaId: string, page_id?: string): { items: { pk: string; media_id: string; user_id: string; text?: string; like_count?: number; comment_like_count?: number; created_at?: number; parent_comment_id?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_private?: boolean; is_verified?: boolean; is_mentionable?: boolean } }[]; next_page_id?: string } {
-  const itemsPerPage = 20; // Typical Instagram comments per page
-  const items = [];
-  
-  for (let i = 0; i < itemsPerPage; i++) {
-    const commentNum = page_id ? parseInt(page_id) * itemsPerPage + i : i;
-    items.push({
-      pk: `mock_comment_${mediaId}_${commentNum}`,
-      media_id: mediaId,
-      user_id: `mock_user_${commentNum}`,
-      text: `Mock comment ${commentNum} for media ${mediaId}. This is test data for Instagram scraper.`,
-      like_count: Math.floor(Math.random() * 100) + 1,
-      comment_like_count: Math.floor(Math.random() * 50),
-      created_at: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 30 * 24 * 60 * 60), // Random time within last month
-      parent_comment_id: Math.random() > 0.8 ? `mock_parent_${commentNum}` : undefined,
-      user: {
-        username: `commenter_${commentNum}`,
-        full_name: `Mock Commenter ${commentNum}`,
-        profile_pic_url: `https://via.placeholder.com/150/000000/FFFFFF?text=C${commentNum}`,
-        is_private: Math.random() > 0.7,
-        is_verified: Math.random() > 0.9,
-        is_mentionable: Math.random() > 0.5
-      }
-    });
-  }
-  
-  // Simulate pagination - return next page ID if not on last page
-  const currentPage = page_id ? parseInt(page_id) : 0;
-  const nextPageId = currentPage < 3 ? (currentPage + 1).toString() : undefined; // Simulate 4 pages of data
-  
-  return { items, next_page_id: nextPageId };
-}
 
 export async function getCommentsPage(
   mediaId: string,
   page_id?: string
 ): Promise<{ items: { pk: string; media_id: string; user_id: string; text?: string; like_count?: number; comment_like_count?: number; created_at?: number; parent_comment_id?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_private?: boolean; is_verified?: boolean; is_mentionable?: boolean } }[]; next_page_id?: string }> {
-  // Check if testing mode is enabled
-  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
-  
-  if (isTestingMode) {
-    console.log('[hikerApi] TESTING MODE: getCommentsPage called with mediaId:', mediaId, 'page_id:', page_id);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 180 + Math.random() * 320));
-    const mockData = generateMockCommentsData(mediaId, page_id);
-    console.log('[hikerApi] TESTING MODE: Mock comments data generated:', mockData.items.length, 'comments');
-    return mockData;
-  }
 
   const data = await mediaCommentsV2(mediaId, undefined, page_id);
   const comments = data && data.response && Array.isArray(data.response.comments)
@@ -1515,59 +1355,12 @@ export async function getCommentsPage(
   return { items: comments, next_page_id: nextPageId };
 }
 
-// Generate mock user medias data for testing
-function generateMockUserMediasData(userPk: string, page_id?: string): { items: { id: string; code?: string; caption?: { text?: string } | string; media_type?: number; product_type?: string; taken_at?: number; like_count?: number; comment_count?: number; thumbnail_url?: string; image_versions2?: { candidates?: { url?: string }[] } }[]; next_page_id?: string } {
-  const itemsPerPage = 12; // Typical Instagram posts per page
-  const items = [];
-  
-  for (let i = 0; i < itemsPerPage; i++) {
-    const mediaNum = page_id ? parseInt(page_id) * itemsPerPage + i : i;
-    const mediaType = Math.random() > 0.3 ? 1 : 8; // 1 = image, 8 = video
-    items.push({
-      id: `mock_media_${userPk}_${mediaNum}`,
-      code: `mock_code_${mediaNum}`,
-      caption: {
-        text: `Mock post ${mediaNum} by user ${userPk}. This is test data for Instagram scraper. #test #mock #instagram`
-      },
-      media_type: mediaType,
-      product_type: mediaType === 8 ? "clips" : "feed",
-      taken_at: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 90 * 24 * 60 * 60), // Random time within last 3 months
-      like_count: Math.floor(Math.random() * 5000) + 10,
-      comment_count: Math.floor(Math.random() * 500) + 1,
-      thumbnail_url: `https://via.placeholder.com/640/000000/FFFFFF?text=P${mediaNum}`,
-      image_versions2: {
-        candidates: [
-          {
-            url: `https://via.placeholder.com/640/000000/FFFFFF?text=P${mediaNum}`
-          }
-        ]
-      }
-    });
-  }
-  
-  // Simulate pagination - return next page ID if not on last page
-  const currentPage = page_id ? parseInt(page_id) : 0;
-  const nextPageId = currentPage < 8 ? (currentPage + 1).toString() : undefined; // Simulate 9 pages of data
-  
-  return { items, next_page_id: nextPageId };
-}
 
 // Single-page user medias fetch for batching (no internal loops)
 export async function getUserMediasPage(
   userPk: string,
   page_id?: string
 ): Promise<{ items: { id: string; code?: string; caption?: { text?: string } | string; media_type?: number; product_type?: string; taken_at?: number; like_count?: number; comment_count?: number; thumbnail_url?: string; image_versions2?: { candidates?: { url?: string }[] } }[]; next_page_id?: string }> {
-  // Check if testing mode is enabled
-  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
-  
-  if (isTestingMode) {
-    console.log('[hikerApi] TESTING MODE: getUserMediasPage called with userPk:', userPk, 'page_id:', page_id);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 220 + Math.random() * 280));
-    const mockData = generateMockUserMediasData(userPk, page_id);
-    console.log('[hikerApi] TESTING MODE: Mock user medias data generated:', mockData.items.length, 'posts');
-    return mockData;
-  }
 
   const params: Record<string, unknown> = { user_id: userPk };
   if (page_id) params.page_id = page_id;
@@ -2100,68 +1893,12 @@ export async function extractHashtagClipsBulkV2(
 }
 
 // Single-page hashtag clips fetch for batching (no internal loops)
-// Generate mock hashtag clips data for testing
-function generateMockHashtagClipsData(hashtag: string, page_id?: string): { items: { media?: unknown; id?: string; pk?: string; media_url?: string; video_url?: string; image_url?: string; image_versions2?: { candidates?: { url?: string }[] }; taken_at?: number; like_count?: number; caption?: string | { text?: string }; caption_text?: string; hashtags?: string[] | string; username?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_verified?: boolean; is_private?: boolean } }[]; next_page_id?: string } {
-  const itemsPerPage = 24; // Typical Instagram hashtag clips per page
-  const items = [];
-  
-  for (let i = 0; i < itemsPerPage; i++) {
-    const clipNum = page_id ? parseInt(page_id) * itemsPerPage + i : i;
-    const mediaType = Math.random() > 0.2 ? 8 : 1; // Mostly videos for hashtag clips
-    items.push({
-      id: `mock_clip_${hashtag}_${clipNum}`,
-      pk: `mock_clip_${hashtag}_${clipNum}`,
-      media_url: `https://via.placeholder.com/640/000000/FFFFFF?text=H${clipNum}`,
-      video_url: mediaType === 8 ? `https://via.placeholder.com/640/000000/FFFFFF?text=V${clipNum}` : undefined,
-      image_url: mediaType === 1 ? `https://via.placeholder.com/640/000000/FFFFFF?text=I${clipNum}` : undefined,
-      image_versions2: {
-        candidates: [
-          {
-            url: `https://via.placeholder.com/640/000000/FFFFFF?text=H${clipNum}`
-          }
-        ]
-      },
-      taken_at: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 7 * 24 * 60 * 60), // Random time within last week
-      like_count: Math.floor(Math.random() * 10000) + 50,
-      caption: {
-        text: `Mock hashtag clip ${clipNum} for #${hashtag}. This is test data for Instagram scraper. #test #mock #${hashtag}`
-      },
-      caption_text: `Mock hashtag clip ${clipNum} for #${hashtag}. This is test data for Instagram scraper. #test #mock #${hashtag}`,
-      hashtags: [`${hashtag}`, 'test', 'mock', 'instagram'],
-      username: `hashtag_user_${clipNum}`,
-      user: {
-        username: `hashtag_user_${clipNum}`,
-        full_name: `Mock Hashtag User ${clipNum}`,
-        profile_pic_url: `https://via.placeholder.com/150/000000/FFFFFF?text=H${clipNum}`,
-        is_verified: Math.random() > 0.85,
-        is_private: Math.random() > 0.7
-      }
-    });
-  }
-  
-  // Simulate pagination - return next page ID if not on last page
-  const currentPage = page_id ? parseInt(page_id) : 0;
-  const nextPageId = currentPage < 10 ? (currentPage + 1).toString() : undefined; // Simulate 11 pages of data
-  
-  return { items, next_page_id: nextPageId };
-}
 
 export async function getHashtagClipsPage(
   hashtag: string,
   page_id?: string,
   filters?: Record<string, unknown>
 ): Promise<{ items: { media?: unknown; id?: string; pk?: string; media_url?: string; video_url?: string; image_url?: string; image_versions2?: { candidates?: { url?: string }[] }; taken_at?: number; like_count?: number; caption?: string | { text?: string }; caption_text?: string; hashtags?: string[] | string; username?: string; user?: { username?: string; full_name?: string; profile_pic_url?: string; is_verified?: boolean; is_private?: boolean } }[]; next_page_id?: string }> {
-  // Check if testing mode is enabled
-  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
-  
-  if (isTestingMode) {
-    console.log('[hikerApi] TESTING MODE: getHashtagClipsPage called with hashtag:', hashtag, 'page_id:', page_id);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 250 + Math.random() * 350));
-    const mockData = generateMockHashtagClipsData(hashtag, page_id);
-    console.log('[hikerApi] TESTING MODE: Mock hashtag clips data generated:', mockData.items.length, 'clips');
-    return mockData;
-  }
 
   const params: Record<string, unknown> = { name: hashtag };
   if (page_id) params.page_id = page_id;
@@ -2411,49 +2148,8 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
 
 
 
-// Generate mock media data for testing
-function generateMockMediaData(url: string) {
-  const mediaId = `mock_media_${Math.random().toString(36).substr(2, 9)}`;
-  return {
-    id: mediaId,
-    code: `mock_code_${Math.random().toString(36).substr(2, 6)}`,
-    media_type: Math.random() > 0.5 ? 1 : 8, // 1 = image, 8 = video
-    taken_at: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 365 * 24 * 60 * 60), // Random time within last year
-    like_count: Math.floor(Math.random() * 10000) + 10,
-    comment_count: Math.floor(Math.random() * 1000) + 1,
-    caption: {
-      text: `Mock caption for media from ${url}. This is test data for Instagram scraper.`
-    },
-    user: {
-      pk: `mock_user_${Math.random().toString(36).substr(2, 9)}`,
-      username: `mock_user_${Math.floor(Math.random() * 1000)}`,
-      full_name: `Mock User ${Math.floor(Math.random() * 1000)}`,
-      profile_pic_url: `https://via.placeholder.com/150/000000/FFFFFF?text=U${Math.floor(Math.random() * 100)}`,
-      is_private: Math.random() > 0.6,
-      is_verified: Math.random() > 0.8
-    },
-    image_versions2: {
-      candidates: [
-        {
-          url: `https://via.placeholder.com/640/000000/FFFFFF?text=IMG${Math.floor(Math.random() * 1000)}`
-        }
-      ]
-    }
-  };
-}
 
 export async function mediaByUrlV1(url: string) {
-  // Check if testing mode is enabled
-  const isTestingMode = process.env.HIKER_API_TESTING_MODE === 'true';
-  
-  if (isTestingMode) {
-    console.log('[hikerApi] TESTING MODE: mediaByUrlV1 called with url:', url);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 250));
-    const mockData = generateMockMediaData(url);
-    console.log('[hikerApi] TESTING MODE: Mock media data generated:', mockData.id);
-    return mockData;
-  }
 
   try {
     const params: Record<string, unknown> = { url };

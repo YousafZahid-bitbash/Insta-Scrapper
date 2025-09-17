@@ -205,8 +205,8 @@ export async function POST(req: NextRequest) {
           if (filteredUsers.length > remaining) filteredUsers.splice(remaining);
         }
 
-        // Batch cost
-        const batchExtractionCost = Math.ceil((pageUsers.length || 0) / COIN_RULES.followers.perChunk.users) * COIN_RULES.followers.perChunk.coins;
+        // Batch cost (charge only for rows we actually save)
+        const batchExtractionCost = Math.ceil((filteredUsers.length || 0) / COIN_RULES.followers.perChunk.users) * COIN_RULES.followers.perChunk.coins;
         const batchFilteringCost = (filteredUsers.length || 0) * COIN_RULES.followers.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
@@ -354,7 +354,7 @@ export async function POST(req: NextRequest) {
           if (filteredUsers.length > remaining) filteredUsers.splice(remaining);
         }
 
-        const batchExtractionCost = Math.ceil((pageUsers.length || 0) / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
+        const batchExtractionCost = Math.ceil((filteredUsers.length || 0) / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
         const batchFilteringCost = (filteredUsers.length || 0) * COIN_RULES.followings.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
@@ -591,11 +591,6 @@ export async function POST(req: NextRequest) {
         const allowedPosts = Math.min(medias.length, maxByLimit, maxByBalance);
 
         const toProcess = medias.slice(0, Math.max(0, allowedPosts));
-        const batchCost = toProcess.length * perPost;
-        if (toProcess.length > 0 && batchCost > 0) {
-          console.log('[Process API] Deducting coins for posts:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
-        }
 
         // Apply posts filters AFTER deduction (likes/comments ranges, caption contains/stop, etc.)
   const likesMin = Number((parsedFilters?.likesMin as number | string | undefined) ?? NaN);
@@ -665,9 +660,14 @@ export async function POST(req: NextRequest) {
           };
         });
         if (postsRows.length > 0) {
+          const batchCost = postsRows.length * perPost;
+          const { data: userDataP2, error: userErrP2 } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+          if (userErrP2 || typeof userDataP2?.coins !== 'number') throw new Error('Could not fetch user coins');
+          if (userDataP2.coins < batchCost) throw new Error('insufficient_coins');
           console.log('[Process API] Inserting posts to DB:', postsRows.length);
           const { error: insErr } = await supabase.from('extracted_posts').insert(postsRows);
           if (insErr) throw new Error(insErr.message);
+          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         const next_page_id = page.next_page_id;
@@ -773,11 +773,6 @@ export async function POST(req: NextRequest) {
         allowed = Math.min(allowed, limitByBalance);
 
         const toProcess = comments.slice(0, Math.max(0, allowed));
-        const batchCost = Math.ceil((toProcess.length || 0) / perChunkUsers) * perChunkCoins;
-        if (toProcess.length > 0 && batchCost > 0) {
-          console.log('[Process API] Deducting coins for commenters:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
-        }
 
         // Apply commenters filters AFTER deduction
         // Exclude words and stop words
@@ -813,11 +808,16 @@ export async function POST(req: NextRequest) {
           parent_comment_id: c.parent_comment_id ?? null,
         }));
 
-        // Coins for commenters: batch cost by chunks of 2
+        // Deduct only if rows exist; chunk cost is per 2 commenters
         if (rows.length > 0) {
+          const batchCost = Math.ceil(rows.length / perChunkUsers) * perChunkCoins;
+          const { data: userDataC2, error: userErrC2 } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+          if (userErrC2 || typeof userDataC2?.coins !== 'number') throw new Error('Could not fetch user coins');
+          if (userDataC2.coins < batchCost) throw new Error('insufficient_coins');
           console.log('[Process API] Inserting commenters to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_commenters').insert(rows);
           if (insErr) throw new Error(insErr.message);
+          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         // Advance page/target
@@ -908,11 +908,6 @@ export async function POST(req: NextRequest) {
         const maxByBalance = Math.floor(userDataH.coins / perData);
         const allowed = Math.min(clips.length, maxByLimit, maxByBalance);
         const toProcess = clips.slice(0, Math.max(0, allowed));
-        const batchCost = toProcess.length * perData;
-        if (toProcess.length > 0 && batchCost > 0) {
-          console.log('[Process API] Deducting coins for hashtags:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
-        }
 
         // Apply hashtag filters AFTER deduction (caption contains/stop, etc.) if provided
         const captionContainsStr = parsedFilters?.postCaptionContains as string | undefined;
@@ -987,11 +982,15 @@ export async function POST(req: NextRequest) {
           };
         }).filter((r) => typeof r.post_id === 'string' && !!r.post_id);
 
-        // Coin cost for hashtags: perData (2) per row
         if (rows.length > 0) {
+          const batchCost = rows.length * perData;
+          const { data: userDataH2, error: userErrH2 } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+          if (userErrH2 || typeof userDataH2?.coins !== 'number') throw new Error('Could not fetch user coins');
+          if (userDataH2.coins < batchCost) throw new Error('insufficient_coins');
           console.log('[Process API] Inserting hashtag posts to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_hashtag_posts').insert(rows);
           if (insErr) throw new Error(insErr.message);
+          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         const next_page_id = page.next_page_id;
