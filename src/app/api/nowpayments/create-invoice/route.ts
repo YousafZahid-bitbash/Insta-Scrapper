@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Always receive payout in ETH
-    const payout_currency = 'eth';
+    const payout_currency = 'usdt';
 
     const response = await fetch('https://api.nowpayments.io/v1/invoice', {
       method: 'POST',

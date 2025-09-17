@@ -4,7 +4,19 @@ This document explains how to use the testing mode for the Hiker API when you do
 
 ## Overview
 
-The testing mode allows you to continue development and testing of the extraction functionality without hitting the actual Hiker API. When enabled, the `userByUsernameV1` function will return mock data instead of making real API calls.
+The testing mode allows you to continue development and testing of the extraction functionality without hitting the actual Hiker API. When enabled, all Hiker API functions will return mock data instead of making real API calls.
+
+## Functions with Testing Mode Support
+
+The following functions now support testing mode:
+
+1. **`userByUsernameV1`** - Returns mock user profile data
+2. **`getFollowersPage`** - Returns mock followers data with pagination
+3. **`getFollowingPage`** - Returns mock following data with pagination
+4. **`mediaByUrlV1`** - Returns mock media/post data
+5. **`getCommentsPage`** - Returns mock comments data with pagination
+6. **`getUserMediasPage`** - Returns mock user posts data with pagination
+7. **`getHashtagClipsPage`** - Returns mock hashtag clips data with pagination
 
 ## How to Enable Testing Mode
 
@@ -37,9 +49,11 @@ unset HIKER_API_TESTING_MODE
 HIKER_API_TESTING_MODE=false
 ```
 
-## Mock Data Structure
+## Mock Data Structures
 
-When testing mode is enabled, the `userByUsernameV1` function returns mock data with the following structure:
+When testing mode is enabled, each function returns mock data with realistic structures:
+
+### 1. User Profile Data (`userByUsernameV1`)
 
 ```typescript
 {
@@ -73,6 +87,156 @@ When testing mode is enabled, the `userByUsernameV1` function returns mock data 
   "zip": "10001" or "",
   "instagram_location_id": "mock_location_id" or "",
   "interop_messaging_user_fbid": "mock_fbid" or ""
+}
+```
+
+### 2. Followers/Following Data (`getFollowersPage`, `getFollowingPage`)
+
+```typescript
+{
+  "items": [
+    {
+      "pk": "mock_follower_userPk_0",
+      "username": "follower_0",
+      "full_name": "Mock Follower 0",
+      "profile_pic_url": "https://via.placeholder.com/150/...",
+      "is_private": true/false,
+      "is_verified": true/false
+    }
+    // ... 12 items per page
+  ],
+  "next_page_id": "1" or undefined
+}
+```
+
+### 3. Media Data (`mediaByUrlV1`)
+
+```typescript
+{
+  "id": "mock_media_randomstring",
+  "code": "mock_code_randomstring",
+  "media_type": 1 or 8, // 1 = image, 8 = video
+  "taken_at": 1234567890,
+  "like_count": 10-10009,
+  "comment_count": 1-1000,
+  "caption": {
+    "text": "Mock caption for media from url..."
+  },
+  "user": {
+    "pk": "mock_user_randomstring",
+    "username": "mock_user_123",
+    "full_name": "Mock User 123",
+    "profile_pic_url": "https://via.placeholder.com/150/...",
+    "is_private": true/false,
+    "is_verified": true/false
+  },
+  "image_versions2": {
+    "candidates": [
+      {
+        "url": "https://via.placeholder.com/640/..."
+      }
+    ]
+  }
+}
+```
+
+### 4. Comments Data (`getCommentsPage`)
+
+```typescript
+{
+  "items": [
+    {
+      "pk": "mock_comment_mediaId_0",
+      "media_id": "mediaId",
+      "user_id": "mock_user_0",
+      "text": "Mock comment 0 for media...",
+      "like_count": 1-100,
+      "comment_like_count": 0-50,
+      "created_at": 1234567890,
+      "parent_comment_id": "mock_parent_0" or undefined,
+      "user": {
+        "username": "commenter_0",
+        "full_name": "Mock Commenter 0",
+        "profile_pic_url": "https://via.placeholder.com/150/...",
+        "is_private": true/false,
+        "is_verified": true/false,
+        "is_mentionable": true/false
+      }
+    }
+    // ... 20 items per page
+  ],
+  "next_page_id": "1" or undefined
+}
+```
+
+### 5. User Posts Data (`getUserMediasPage`)
+
+```typescript
+{
+  "items": [
+    {
+      "id": "mock_media_userPk_0",
+      "code": "mock_code_0",
+      "caption": {
+        "text": "Mock post 0 by user userPk. #test #mock #instagram"
+      },
+      "media_type": 1 or 8,
+      "product_type": "feed" or "clips",
+      "taken_at": 1234567890,
+      "like_count": 10-5009,
+      "comment_count": 1-500,
+      "thumbnail_url": "https://via.placeholder.com/640/...",
+      "image_versions2": {
+        "candidates": [
+          {
+            "url": "https://via.placeholder.com/640/..."
+          }
+        ]
+      }
+    }
+    // ... 12 items per page
+  ],
+  "next_page_id": "1" or undefined
+}
+```
+
+### 6. Hashtag Clips Data (`getHashtagClipsPage`)
+
+```typescript
+{
+  "items": [
+    {
+      "id": "mock_clip_hashtag_0",
+      "pk": "mock_clip_hashtag_0",
+      "media_url": "https://via.placeholder.com/640/...",
+      "video_url": "https://via.placeholder.com/640/..." or undefined,
+      "image_url": "https://via.placeholder.com/640/..." or undefined,
+      "image_versions2": {
+        "candidates": [
+          {
+            "url": "https://via.placeholder.com/640/..."
+          }
+        ]
+      },
+      "taken_at": 1234567890,
+      "like_count": 50-10049,
+      "caption": {
+        "text": "Mock hashtag clip 0 for #hashtag..."
+      },
+      "caption_text": "Mock hashtag clip 0 for #hashtag...",
+      "hashtags": ["hashtag", "test", "mock", "instagram"],
+      "username": "hashtag_user_0",
+      "user": {
+        "username": "hashtag_user_0",
+        "full_name": "Mock Hashtag User 0",
+        "profile_pic_url": "https://via.placeholder.com/150/...",
+        "is_verified": true/false,
+        "is_private": true/false
+      }
+    }
+    // ... 24 items per page
+  ],
+  "next_page_id": "1" or undefined
 }
 ```
 
