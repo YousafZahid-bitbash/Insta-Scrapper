@@ -16,6 +16,11 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   console.log('[Process API] --- Handler Entry ---');
   console.log('[Process API] POST /api/extractions/process called');
+  // Maintenance guard: short-circuit if MAINTENANCE_MODE is enabled
+  if (process.env.MAINTENANCE_MODE === 'true') {
+    console.warn('[Process API] Maintenance mode active, exiting early');
+    return NextResponse.json({ message: 'Maintenance mode active' }, { status: 200 });
+  }
   // Security: Check for Supabase webhook secret
   const supabaseSecret = req.headers.get('x-supabase-signature');
   if (!supabaseSecret || supabaseSecret !== process.env.SUPABASE_WEBHOOK_SECRET) {
@@ -93,6 +98,27 @@ export async function POST(req: NextRequest) {
   // Use the fresh row for processing
   job = currentJob;
   console.log('[Process API] Using fresh job row for processing');
+
+  // Step 1: early-exit on cancel and increment attempts (we own the lock now)
+  if (job.cancel_requested === true) {
+    console.warn('[Process API] Cancel requested for job, exiting:', job.id);
+    await supabase
+      .from('extractions')
+      .update({ status: 'cancelled', locked_by: null, lock_expires_at: null })
+      .eq('id', job.id)
+      .eq('locked_by', workerId);
+    return NextResponse.json({ message: 'Job cancelled' }, { status: 200 });
+  }
+  // attempts++ for observability and runaway protection
+  try {
+    await supabase
+      .from('extractions')
+      .update({ attempts: (typeof job.attempts === 'number' ? job.attempts : 0) + 1 })
+      .eq('id', job.id)
+      .eq('locked_by', workerId);
+  } catch (e) {
+    console.warn('[Process API] Failed to increment attempts for job:', job.id, e);
+  }
 
   let updateFields: Record<string, unknown> = {};
   try {
@@ -235,7 +261,11 @@ export async function POST(req: NextRequest) {
         }
 
         // Advance cursor
-        const next_page_id = page.next_page_id;
+        let next_page_id = page.next_page_id;
+        if (next_page_id && step.page_id && next_page_id === step.page_id) {
+          console.warn('[Process API] Duplicate next_page_id detected for followers; stopping pagination for this target:', next_page_id);
+          next_page_id = undefined;
+        }
         if (next_page_id) {
           console.log('[Process API] Advancing to next page:', next_page_id);
           step.page_id = next_page_id;
@@ -381,7 +411,11 @@ export async function POST(req: NextRequest) {
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
-        const next_page_id = page.next_page_id;
+        let next_page_id = page.next_page_id;
+        if (next_page_id && step.page_id && next_page_id === step.page_id) {
+          console.warn('[Process API] Duplicate next_page_id detected for following; stopping pagination for this target:', next_page_id);
+          next_page_id = undefined;
+        }
         if (next_page_id) {
           console.log('[Process API] Advancing to next page:', next_page_id);
           step.page_id = next_page_id;
@@ -670,7 +704,11 @@ export async function POST(req: NextRequest) {
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
-        const next_page_id = page.next_page_id;
+        let next_page_id = page.next_page_id;
+        if (next_page_id && step.page_id && next_page_id === step.page_id) {
+          console.warn('[Process API] Duplicate next_page_id detected for posts; stopping pagination for this target:', next_page_id);
+          next_page_id = undefined;
+        }
         if (next_page_id) {
           console.log('[Process API] Advancing to next posts page:', next_page_id);
           step.page_id = next_page_id;
@@ -821,7 +859,11 @@ export async function POST(req: NextRequest) {
         }
 
         // Advance page/target
-        const next_page_id = page.next_page_id;
+        let next_page_id = page.next_page_id;
+        if (next_page_id && step.page_id && next_page_id === step.page_id) {
+          console.warn('[Process API] Duplicate next_page_id detected for commenters; stopping pagination for this target:', next_page_id);
+          next_page_id = undefined;
+        }
         if (next_page_id) {
           console.log('[Process API] Advancing to next commenters page:', next_page_id);
           step.page_id = next_page_id;
@@ -993,7 +1035,11 @@ export async function POST(req: NextRequest) {
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
-        const next_page_id = page.next_page_id;
+        let next_page_id = page.next_page_id;
+        if (next_page_id && step.page_id && next_page_id === step.page_id) {
+          console.warn('[Process API] Duplicate next_page_id detected for hashtags; stopping pagination for this target:', next_page_id);
+          next_page_id = undefined;
+        }
         if (next_page_id) {
           console.log('[Process API] Advancing to next hashtag page:', next_page_id);
           step.page_id = next_page_id;
