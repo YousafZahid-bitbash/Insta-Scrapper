@@ -388,11 +388,17 @@ export async function POST(req: NextRequest) {
               // Chain next
               if (hasMore) {
                 console.log('[Process API] Chaining next followers batch...');
-                await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+                if (!baseUrl) {
+                  console.warn('[Process API] Base URL not set; skipping self-chaining for followers');
+                } else {
+                  const url = new URL('/api/extractions/process', baseUrl).toString();
+                  await fetch(url, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
                   body: JSON.stringify({ record: { id: job.id } }),
                 });
+                }
               }
 
         console.log('[Process API] Followers extraction complete');
@@ -577,11 +583,17 @@ export async function POST(req: NextRequest) {
 
           if (hasMore) {
             console.log('[Process API] Chaining next following batch...');
-            await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+            if (!baseUrl) {
+              console.warn('[Process API] Base URL not set; skipping self-chaining for following');
+            } else {
+              const url = new URL('/api/extractions/process', baseUrl).toString();
+              await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
+            }
           }
     console.log('[Process API] Following extraction complete');
     return NextResponse.json({ message: 'Following batch processed', jobId: job.id, ...updateFollowing });
@@ -730,11 +742,17 @@ export async function POST(req: NextRequest) {
     console.log('[Process API] Likers batch processed');
           if (hasMore) {
             console.log('[Process API] Chaining next likers batch...');
-            await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+            if (!baseUrl) {
+              console.warn('[Process API] Base URL not set; skipping self-chaining for likers');
+            } else {
+              const url = new URL('/api/extractions/process', baseUrl).toString();
+              await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
+            }
           }
     console.log('[Process API] Likers extraction complete');
     return NextResponse.json({ message: 'Likers batch processed', jobId: job.id, ...upd });
@@ -952,11 +970,17 @@ export async function POST(req: NextRequest) {
     console.log('[Process API] Posts batch processed');
           if (hasMore) {
             console.log('[Process API] Chaining next posts batch...');
-            await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+            if (!baseUrl) {
+              console.warn('[Process API] Base URL not set; skipping self-chaining for posts');
+            } else {
+              const url = new URL('/api/extractions/process', baseUrl).toString();
+              await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
+            }
           }
     console.log('[Process API] Posts extraction complete');
     return NextResponse.json({ message: 'Posts batch processed', jobId: job.id, ...upd });
@@ -1144,11 +1168,17 @@ export async function POST(req: NextRequest) {
 
           if (hasMore) {
             console.log('[Process API] Chaining next commenters batch...');
-            await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+            if (!baseUrl) {
+              console.warn('[Process API] Base URL not set; skipping self-chaining for commenters');
+            } else {
+              const url = new URL('/api/extractions/process', baseUrl).toString();
+              await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
+            }
           }
     console.log('[Process API] Commenters extraction complete');
     return NextResponse.json({ message: 'Commenters batch processed', jobId: job.id, ...upd });
@@ -1364,11 +1394,17 @@ export async function POST(req: NextRequest) {
     console.log('[Process API] Hashtags batch processed');
           if (hasMore) {
             console.log('[Process API] Chaining next hashtags batch...');
-            await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/extractions/process`, {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+            if (!baseUrl) {
+              console.warn('[Process API] Base URL not set; skipping self-chaining for hashtags');
+            } else {
+              const url = new URL('/api/extractions/process', baseUrl).toString();
+              await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-supabase-signature': process.env.SUPABASE_WEBHOOK_SECRET || '' },
               body: JSON.stringify({ record: { id: job.id } }),
             });
+            }
           }
     console.log('[Process API] Hashtags extraction complete');
     return NextResponse.json({ message: 'Hashtag batch processed', jobId: job.id, ...upd });
