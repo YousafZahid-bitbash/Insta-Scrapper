@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   const workerId = crypto.randomUUID();
   console.log('[Process API] Acquiring lock for worker:', workerId);
-  const newLockExpiry = new Date(now + 60_000).toISOString();
+  const newLockExpiry = new Date(now + 30 * 60_000).toISOString(); // 30 minutes instead of 1 minute
   const currentVersion = typeof currentJob.version === 'number' ? currentJob.version : 0;
   const { error: lockErr, data: lockRows } = await supabase
     .from('extractions')
@@ -277,6 +277,7 @@ export async function POST(req: NextRequest) {
           }));
           const { error: insertErr } = await supabase.from('extracted_users').insert(rows);
           if (insertErr) throw new Error(insertErr.message);
+          console.log('[Process API] Deducting coins for followers:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -306,7 +307,7 @@ export async function POST(req: NextRequest) {
                 next_page_id: step.page_id || null,
                 current_step: JSON.stringify(step),
                 locked_by: hasMore ? workerId : null,
-                lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
+                lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
               };
 
         console.log('[Process API] Updating extraction row for followers...');
@@ -428,6 +429,7 @@ export async function POST(req: NextRequest) {
           }));
           const { error: insertErr } = await supabase.from('extracted_users').insert(rows);
           if (insertErr) throw new Error(insertErr.message);
+          console.log('[Process API] Deducting coins for following:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -456,7 +458,7 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
+            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           } as Record<string, unknown>;
     console.log('[Process API] Updating extraction row for followings...');
     const { error: updateErrorF } = await supabase
@@ -570,7 +572,7 @@ export async function POST(req: NextRequest) {
             next_page_id: null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
+            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           } as Record<string, unknown>;
     console.log('[Process API] Updating extraction row for likers...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -721,6 +723,7 @@ export async function POST(req: NextRequest) {
           console.log('[Process API] Inserting posts to DB:', postsRows.length);
           const { error: insErr } = await supabase.from('extracted_posts').insert(postsRows);
           if (insErr) throw new Error(insErr.message);
+          console.log('[Process API] Deducting coins for posts:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -748,7 +751,7 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
+            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           };
     console.log('[Process API] Updating extraction row for posts...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -875,6 +878,7 @@ export async function POST(req: NextRequest) {
           console.log('[Process API] Inserting commenters to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_commenters').insert(rows);
           if (insErr) throw new Error(insErr.message);
+          console.log('[Process API] Deducting coins for commenters:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -904,7 +908,7 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
+            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           } as Record<string, unknown>;
     console.log('[Process API] Updating extraction row for commenters...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -1052,6 +1056,7 @@ export async function POST(req: NextRequest) {
           console.log('[Process API] Inserting hashtag posts to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_hashtag_posts').insert(rows);
           if (insErr) throw new Error(insErr.message);
+          console.log('[Process API] Deducting coins for hashtags:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
@@ -1080,7 +1085,7 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 60_000).toISOString() : null,
+            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           };
     console.log('[Process API] Updating extraction row for hashtags...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -1124,7 +1129,7 @@ export async function POST(req: NextRequest) {
       updateFields.lock_expires_at = null;
     } else {
       updateFields.locked_by = workerId;
-      updateFields.lock_expires_at = new Date(Date.now() + 60_000).toISOString();
+      updateFields.lock_expires_at = new Date(Date.now() + 30 * 60_000).toISOString();
     }
 
   console.log('[Process API] Final DB update for job:', job.id);

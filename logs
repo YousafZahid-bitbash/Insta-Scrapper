@@ -1,0 +1,1741 @@
+2025-09-18T05:21:54.964Z [info] [hikerApi] userByUsernameV1 response for irbazrehman : {
+  pk: 286904213,
+  username: 'irbazrehman',
+  full_name: 'Irbaz',
+  is_private: true,
+  profile_pic_url: 'https://scontent-sea1-1.cdninstagram.com/v/t51.2885-19/151046564_1348321612286200_2934700202824626247_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-sea1-1.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QFjEFUU_OJsssMolrannQ9fa-gCbPMi1Ba0JBa-qafTt1ENnDWA6UqMe8oirkJcp4U&_nc_ohc=Y8kuMddUKYIQ7kNvwGM1X6v&_nc_gid=-Nutg8vKK1SPiqPonqIHOA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GKTJAAn4SL6WSsoEAEfwoCdJJroobkULAAAB-ccb7-5&oh=00_AfZk_Zph0ZQRa6xz6bI3KaiTixPlu7uQYdmsPYKo2gtZ8Q&oe=68D16A60&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 44,
+  follower_count: 1870,
+  following_count: 1505,
+  biography: '🧪',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 104458554286926
+}
+2025-09-18T05:21:54.964Z [info] [Backend] [extractFilteredUsers] Checking user: irbazrehman {
+  pk: 286904213,
+  username: 'irbazrehman',
+  full_name: 'Irbaz',
+  is_private: true,
+  profile_pic_url: 'https://scontent-sea1-1.cdninstagram.com/v/t51.2885-19/151046564_1348321612286200_2934700202824626247_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-sea1-1.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QFjEFUU_OJsssMolrannQ9fa-gCbPMi1Ba0JBa-qafTt1ENnDWA6UqMe8oirkJcp4U&_nc_ohc=Y8kuMddUKYIQ7kNvwGM1X6v&_nc_gid=-Nutg8vKK1SPiqPonqIHOA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GKTJAAn4SL6WSsoEAEfwoCdJJroobkULAAAB-ccb7-5&oh=00_AfZk_Zph0ZQRa6xz6bI3KaiTixPlu7uQYdmsPYKo2gtZ8Q&oe=68D16A60&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 44,
+  follower_count: 1870,
+  following_count: 1505,
+  biography: '🧪',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 104458554286926
+}
+2025-09-18T05:21:54.964Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:54.964Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:54.964Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:54.964Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:54.964Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:54.964Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:54.964Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:54.964Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'irbazrehman',
+  full_name: 'Irbaz',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 286904213,
+  profile_pic_url: 'https://scontent-sea1-1.cdninstagram.com/v/t51.2885-19/151046564_1348321612286200_2934700202824626247_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-sea1-1.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QFjEFUU_OJsssMolrannQ9fa-gCbPMi1Ba0JBa-qafTt1ENnDWA6UqMe8oirkJcp4U&_nc_ohc=Y8kuMddUKYIQ7kNvwGM1X6v&_nc_gid=-Nutg8vKK1SPiqPonqIHOA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GKTJAAn4SL6WSsoEAEfwoCdJJroobkULAAAB-ccb7-5&oh=00_AfZk_Zph0ZQRa6xz6bI3KaiTixPlu7uQYdmsPYKo2gtZ8Q&oe=68D16A60&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:54.964Z [info] [hikerApi] userByUsernameV1 called with: haziqa.r
+2025-09-18T05:21:56.805Z [info] [hikerApi] userByUsernameV1 response for haziqa.r : {
+  pk: 247398267,
+  username: 'haziqa.r',
+  full_name: 'Haziqa Rehman',
+  is_private: true,
+  profile_pic_url: 'https://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/531558555_18520863862038268_6223166611400870737_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QEAi7xni439Cilvm0LzjwTLhxa_hRcr0BY3waR9E5NctOVrbAPjLFbvSJiGBk3qDbA&_nc_ohc=VfbG7SgE6JUQ7kNvwEyfaXe&_nc_gid=m9cyHPPzesMPUS3QkACfOQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GJvwrh-8Hm6noMxBAFHLnrIPIV1WbmNDAQAB-ccb7-5&oh=00_AfZetbR-99dL03FrzY-o22iFVBeTP0T319o45l3tCKAjIg&oe=68D16F5F&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 58,
+  follower_count: 1654,
+  following_count: 1518,
+  biography: '🇵🇰🇲🇨 | @madebyhaziqa',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 112466063472057
+}
+2025-09-18T05:21:56.805Z [info] [Backend] [extractFilteredUsers] Checking user: haziqa.r {
+  pk: 247398267,
+  username: 'haziqa.r',
+  full_name: 'Haziqa Rehman',
+  is_private: true,
+  profile_pic_url: 'https://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/531558555_18520863862038268_6223166611400870737_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QEAi7xni439Cilvm0LzjwTLhxa_hRcr0BY3waR9E5NctOVrbAPjLFbvSJiGBk3qDbA&_nc_ohc=VfbG7SgE6JUQ7kNvwEyfaXe&_nc_gid=m9cyHPPzesMPUS3QkACfOQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GJvwrh-8Hm6noMxBAFHLnrIPIV1WbmNDAQAB-ccb7-5&oh=00_AfZetbR-99dL03FrzY-o22iFVBeTP0T319o45l3tCKAjIg&oe=68D16F5F&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 58,
+  follower_count: 1654,
+  following_count: 1518,
+  biography: '🇵🇰🇲🇨 | @madebyhaziqa',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 112466063472057
+}
+2025-09-18T05:21:56.805Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:56.805Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:56.805Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:56.805Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:56.805Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:56.805Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:56.805Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:56.805Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'haziqa.r',
+  full_name: 'Haziqa Rehman',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 247398267,
+  profile_pic_url: 'https://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/531558555_18520863862038268_6223166611400870737_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QEAi7xni439Cilvm0LzjwTLhxa_hRcr0BY3waR9E5NctOVrbAPjLFbvSJiGBk3qDbA&_nc_ohc=VfbG7SgE6JUQ7kNvwEyfaXe&_nc_gid=m9cyHPPzesMPUS3QkACfOQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GJvwrh-8Hm6noMxBAFHLnrIPIV1WbmNDAQAB-ccb7-5&oh=00_AfZetbR-99dL03FrzY-o22iFVBeTP0T319o45l3tCKAjIg&oe=68D16F5F&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:56.805Z [info] [hikerApi] userByUsernameV1 called with: mustafa.syed._
+2025-09-18T05:21:59.532Z [info] [hikerApi] userByUsernameV1 response for mustafa.syed._ : {
+  pk: 7221581072,
+  username: 'mustafa.syed._',
+  full_name: 'Mustafa Syed',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/375482954_697412122251600_3806357335923934080_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43NjguYzIifQ&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QFBlHlY3UVZNr2gx0alCirA2kJbpEvNQ_T_CcemjAwyfUHXdhXtdvXg_mQ3nje-AKA&_nc_ohc=zcdMRkBp998Q7kNvwE7CodT&_nc_gid=UGhG9FM95I8rIPAEz2X3JA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GEpqYRZQEc-pSnoCAIDD8n-U5dI0bkULAAAB-ccb7-5&oh=00_Afa-QwExbr1hrqlZW4AEUz9lJoCp2O6ERk1RYZ1Xy7bssw&oe=68D14E7E&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 0,
+  follower_count: 503,
+  following_count: 622,
+  biography: 'الحمد لله',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 107090114016795
+}
+2025-09-18T05:21:59.532Z [info] [Backend] [extractFilteredUsers] Checking user: mustafa.syed._ {
+  pk: 7221581072,
+  username: 'mustafa.syed._',
+  full_name: 'Mustafa Syed',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/375482954_697412122251600_3806357335923934080_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43NjguYzIifQ&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QFBlHlY3UVZNr2gx0alCirA2kJbpEvNQ_T_CcemjAwyfUHXdhXtdvXg_mQ3nje-AKA&_nc_ohc=zcdMRkBp998Q7kNvwE7CodT&_nc_gid=UGhG9FM95I8rIPAEz2X3JA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GEpqYRZQEc-pSnoCAIDD8n-U5dI0bkULAAAB-ccb7-5&oh=00_Afa-QwExbr1hrqlZW4AEUz9lJoCp2O6ERk1RYZ1Xy7bssw&oe=68D14E7E&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 0,
+  follower_count: 503,
+  following_count: 622,
+  biography: 'الحمد لله',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 107090114016795
+}
+2025-09-18T05:21:59.532Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:59.532Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:59.532Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:59.532Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:59.532Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:59.532Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:59.532Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:59.532Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:59.532Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:59.532Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:25.546Z [info] [Process API] Loaded process route
+2025-09-18T05:21:25.558Z [info] [Process API] --- Handler Entry ---
+2025-09-18T05:21:25.558Z [info] [Process API] POST /api/extractions/process called
+2025-09-18T05:21:25.559Z [info] [Process API] Received payload: {"type":"INSERT","table":"extractions","record":{"id":194,"status":"pending","filters":"{\"extractPhone\":false,\"extractEmail\":false,\"extractLinkInBio\":false,\"privacy\":\"doesn't matter\",\"profilePicture\":\"doesn't matter\",\"verifiedAccount\":\"doesn't matter\",\"businessAccount\":\"doesn't matter\",\"followersMin\":\"\",\"followersMax\":\"\",\"followingsMin\":\"\",\"followingsMax\":\"\",\"filterByName\":\"\",\"filterByNameInBioContains\":\"\",\"filterByNameInBioStop\":\"\",\"coinLimit\":\"10\"}","user_id":"0c20d057-4671-4844-9d41-0f18691659ee","version":0,"attempts":0,"progress":0,"locked_by":null,"last_error":null,"page_count":1,"completed_at":null,"current_step":null,"next_page_id":null,"requested_at":"2025-09-18T05:21:23.281+00:00","error_message":null,"target_user_id":null,"extraction_type":"followers","lock_expires_at":null,"cancel_requested":false,"target_usernames":"saifsfujifilm"},"schema":"public","old_record":null}
+2025-09-18T05:21:25.559Z [info] [Process API] Job record: {
+  id: 194,
+  status: 'pending',
+  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"10"}`,
+  user_id: '0c20d057-4671-4844-9d41-0f18691659ee',
+  version: 0,
+  attempts: 0,
+  progress: 0,
+  locked_by: null,
+  last_error: null,
+  page_count: 1,
+  completed_at: null,
+  current_step: null,
+  next_page_id: null,
+  requested_at: '2025-09-18T05:21:23.281+00:00',
+  error_message: null,
+  target_user_id: null,
+  extraction_type: 'followers',
+  lock_expires_at: null,
+  cancel_requested: false,
+  target_usernames: 'saifsfujifilm'
+}
+2025-09-18T05:21:25.559Z [info] [Process API] Fetching current job row from DB...
+2025-09-18T05:21:26.437Z [info] [Process API] Current job: {
+  id: 194,
+  user_id: '0c20d057-4671-4844-9d41-0f18691659ee',
+  extraction_type: 'followers',
+  target_user_id: null,
+  requested_at: '2025-09-18T05:21:23.281+00:00',
+  completed_at: null,
+  status: 'pending',
+  page_count: 1,
+  next_page_id: null,
+  error_message: null,
+  progress: 0,
+  current_step: null,
+  target_usernames: 'saifsfujifilm',
+  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"10"}`,
+  attempts: 0,
+  locked_by: null,
+  lock_expires_at: null,
+  version: 0,
+  last_error: null,
+  cancel_requested: false
+}
+2025-09-18T05:21:26.437Z [info] [Process API] Acquiring lock for worker: 2c6a3e3a-e4eb-4568-96ba-75011a491c69
+2025-09-18T05:21:26.842Z [info] [Process API] Using fresh job row for processing
+2025-09-18T05:21:27.724Z [info] [Process API] Processing job: 194 type: followers
+2025-09-18T05:21:27.724Z [info] [Process API] Extraction type: followers
+2025-09-18T05:21:27.724Z [info] [Process API] Starting followers extraction
+2025-09-18T05:21:27.725Z [info] [Process API] Followers usernames: [ 'saifsfujifilm' ]
+2025-09-18T05:21:27.725Z [info] [Process API] Followers step: { idx: 0, targets: [] }
+2025-09-18T05:21:27.725Z [info] [Process API] Resolving follower targets...
+2025-09-18T05:21:27.725Z [info] [Process API] Resolving username: saifsfujifilm (clean: saifsfujifilm)
+2025-09-18T05:21:27.725Z [info] [hikerApi] userByUsernameV1 called with: saifsfujifilm
+2025-09-18T05:21:27.725Z [info] [hikerApi] HIKER_API_KEY (assigned): 0xf5dlh4ay8nvxt8rx0gunlldv6q7zyl
+2025-09-18T05:21:29.423Z [info] [hikerApi] userByUsernameV1 response for saifsfujifilm : {
+  pk: 74812615349,
+  username: 'saifsfujifilm',
+  full_name: 'Saif',
+  is_private: false,
+  profile_pic_url: 'https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/503928766_17846220384495350_249037931605245118_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMxIn0&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2QEc_a7ySVJYxHpRsgl_jfpKeCvmbJrmw3u2IyReLt6b9lLW2VbSWgUuk44dALSN1fA&_nc_ohc=BQsRaoslMxYQ7kNvwFr7r_w&_nc_gid=h-aDtDs-qANPozgfOyX4Bg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GL5XCR725pn6Cmc-AL687eitwnQDbvEnAQAB-ccb7-5&oh=00_AfYahF-9_EqT0nFHVTIV07FvLWvdaN9uV5ltWaiU_X20Yw&oe=68D17D52&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 7,
+  follower_count: 19,
+  following_count: 16,
+  biography: 'fujifilm',
+  external_url: '',
+  account_type: 3,
+  is_business: false,
+  public_email: '',
+  contact_phone_number: '',
+  public_phone_country_code: '',
+  public_phone_number: '',
+  business_contact_method: 'UNKNOWN',
+  business_category_name: null,
+  category_name: null,
+  category: 'Photographer',
+  address_street: '',
+  city_id: 0,
+  city_name: '',
+  latitude: 0,
+  longitude: 0,
+  zip: '',
+  instagram_location_id: '',
+  interop_messaging_user_fbid: 17846219859495350
+}
+2025-09-18T05:21:29.423Z [info] [Process API] userByUsernameV1 result for saifsfujifilm: {
+  pk: 74812615349,
+  username: 'saifsfujifilm',
+  full_name: 'Saif',
+  is_private: false,
+  profile_pic_url: 'https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/503928766_17846220384495350_249037931605245118_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMxIn0&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2QEc_a7ySVJYxHpRsgl_jfpKeCvmbJrmw3u2IyReLt6b9lLW2VbSWgUuk44dALSN1fA&_nc_ohc=BQsRaoslMxYQ7kNvwFr7r_w&_nc_gid=h-aDtDs-qANPozgfOyX4Bg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GL5XCR725pn6Cmc-AL687eitwnQDbvEnAQAB-ccb7-5&oh=00_AfYahF-9_EqT0nFHVTIV07FvLWvdaN9uV5ltWaiU_X20Yw&oe=68D17D52&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 7,
+  follower_count: 19,
+  following_count: 16,
+  biography: 'fujifilm',
+  external_url: '',
+  account_type: 3,
+  is_business: false,
+  public_email: '',
+  contact_phone_number: '',
+  public_phone_country_code: '',
+  public_phone_number: '',
+  business_contact_method: 'UNKNOWN',
+  business_category_name: null,
+  category_name: null,
+  category: 'Photographer',
+  address_street: '',
+  city_id: 0,
+  city_name: '',
+  latitude: 0,
+  longitude: 0,
+  zip: '',
+  instagram_location_id: '',
+  interop_messaging_user_fbid: 17846219859495350
+}
+2025-09-18T05:21:29.423Z [info] [Process API] Resolved target: { username: 'saifsfujifilm', pk: 74812615349, total: 19 }
+2025-09-18T05:21:29.423Z [info] [Process API] Final resolvedTargets: [ { username: 'saifsfujifilm', pk: 74812615349, total: 19 } ] totalEstimated: 19
+2025-09-18T05:21:29.750Z [info] [Process API] Processing follower target: { username: 'saifsfujifilm', pk: 74812615349, total: 19 }
+2025-09-18T05:21:29.750Z [info] [Process API] Fetching followers page for pk: 74812615349 page_id: undefined
+2025-09-18T05:21:30.495Z [info] [Process API] Filtering users...
+2025-09-18T05:21:30.495Z [info] [Backend] [extractFilteredUsers] Filtering users with filters: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:30.496Z [info] [Backend] [extractFilteredUsers] Usernames before filtering: [
+  'haltomm_',       'fara_lone',
+  'leslieyacira',   'fahads21',
+  'fdotj1',         'imanerhzali',
+  'raf_ia90',       'amy.bachhuber',
+  'istitriasih',    'richie_z_',
+  'irbazrehman',    'haziqa.r',
+  'mustafa.syed._', 'baonguyen182',
+  'mahadsidd',      'deenhaque',
+  'imad_rehman49',  'saifffffff',
+  'itterassaif'
+]
+2025-09-18T05:21:30.496Z [info] [hikerApi] userByUsernameV1 called with: haltomm_
+2025-09-18T05:21:32.432Z [info] [hikerApi] userByUsernameV1 response for haltomm_ : {
+  pk: 5097453642,
+  username: 'haltomm_',
+  full_name: 'Halimo-Kafia Mohamed Fourreh',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/491465844_18298104523173643_5233819416489532458_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QGNumX2mmExEwt_gb-CSA4LJ0bw1mgtQHJXGfeKDyXFn2KpDvHMYVLGS7-cvPNmdak&_nc_ohc=HGGt1jamfQgQ7kNvwFKirdL&_nc_gid=TK8s40rGD0qbNaFvbclimw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GHQsSx0Lryp0BwJBACqcZoIHQ6JIbvEnAQAB-ccb7-5&oh=00_AfamAIjXHM4ScHvyyQUmtHB4cz-vPKDDE7puFOm8BKPiCg&oe=68D16417&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 1,
+  follower_count: 352,
+  following_count: 466,
+  biography: '🍉\n🧪🌺你喝茶',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 103073174421063
+}
+2025-09-18T05:21:32.432Z [info] [Backend] [extractFilteredUsers] Checking user: haltomm_ {
+  pk: 5097453642,
+  username: 'haltomm_',
+  full_name: 'Halimo-Kafia Mohamed Fourreh',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/491465844_18298104523173643_5233819416489532458_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QGNumX2mmExEwt_gb-CSA4LJ0bw1mgtQHJXGfeKDyXFn2KpDvHMYVLGS7-cvPNmdak&_nc_ohc=HGGt1jamfQgQ7kNvwFKirdL&_nc_gid=TK8s40rGD0qbNaFvbclimw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GHQsSx0Lryp0BwJBACqcZoIHQ6JIbvEnAQAB-ccb7-5&oh=00_AfamAIjXHM4ScHvyyQUmtHB4cz-vPKDDE7puFOm8BKPiCg&oe=68D16417&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 1,
+  follower_count: 352,
+  following_count: 466,
+  biography: '🍉\n🧪🌺你喝茶',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 103073174421063
+}
+2025-09-18T05:21:32.432Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:32.432Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:32.432Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:32.432Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:32.432Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:32.432Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:32.432Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:32.433Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:32.433Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:32.433Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:32.433Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:32.433Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:32.433Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:32.433Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:32.433Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'haltomm_',
+  full_name: 'Halimo-Kafia Mohamed Fourreh',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 5097453642,
+  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/491465844_18298104523173643_5233819416489532458_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QGNumX2mmExEwt_gb-CSA4LJ0bw1mgtQHJXGfeKDyXFn2KpDvHMYVLGS7-cvPNmdak&_nc_ohc=HGGt1jamfQgQ7kNvwFKirdL&_nc_gid=TK8s40rGD0qbNaFvbclimw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GHQsSx0Lryp0BwJBACqcZoIHQ6JIbvEnAQAB-ccb7-5&oh=00_AfamAIjXHM4ScHvyyQUmtHB4cz-vPKDDE7puFOm8BKPiCg&oe=68D16417&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:32.433Z [info] [hikerApi] userByUsernameV1 called with: fara_lone
+2025-09-18T05:21:34.413Z [info] [hikerApi] userByUsernameV1 response for fara_lone : {
+  pk: 2954801719,
+  username: 'fara_lone',
+  full_name: 'Fariha Rahman',
+  is_private: true,
+  profile_pic_url: 'https://scontent-sjc6-1.cdninstagram.com/v/t51.2885-19/299542408_851709532879375_8110582298661188273_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43MzUuYzIifQ&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QFOZdYcqzsHFDfYpw9v8EuXQgCCHIPlP6TfVgFaO0bvNt-nCXgE6Qkn6HGvXhgd8Pg&_nc_ohc=1NaYlVmW7i0Q7kNvwFKUnm8&_nc_gid=mf4EfwM1AsOSnfRkW9AR4A&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GIin2hEPuigUoAYDALFyRQGhk45wbkULAAAB-ccb7-5&oh=00_AfYADQdJfCjVl6AnQAVRupvm683N8t02Y-oCX6SuUEsCGA&oe=68D15388&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 1,
+  follower_count: 34,
+  following_count: 150,
+  biography: '',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 119789312741054
+}
+2025-09-18T05:21:34.413Z [info] [Backend] [extractFilteredUsers] Checking user: fara_lone {
+  pk: 2954801719,
+  username: 'fara_lone',
+  full_name: 'Fariha Rahman',
+  is_private: true,
+  profile_pic_url: 'https://scontent-sjc6-1.cdninstagram.com/v/t51.2885-19/299542408_851709532879375_8110582298661188273_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43MzUuYzIifQ&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QFOZdYcqzsHFDfYpw9v8EuXQgCCHIPlP6TfVgFaO0bvNt-nCXgE6Qkn6HGvXhgd8Pg&_nc_ohc=1NaYlVmW7i0Q7kNvwFKUnm8&_nc_gid=mf4EfwM1AsOSnfRkW9AR4A&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GIin2hEPuigUoAYDALFyRQGhk45wbkULAAAB-ccb7-5&oh=00_AfYADQdJfCjVl6AnQAVRupvm683N8t02Y-oCX6SuUEsCGA&oe=68D15388&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 1,
+  follower_count: 34,
+  following_count: 150,
+  biography: '',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 119789312741054
+}
+2025-09-18T05:21:34.413Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:34.413Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:34.413Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:34.413Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:34.413Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:34.413Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:34.413Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:34.414Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'fara_lone',
+  full_name: 'Fariha Rahman',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 2954801719,
+  profile_pic_url: 'https://scontent-sjc6-1.cdninstagram.com/v/t51.2885-19/299542408_851709532879375_8110582298661188273_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43MzUuYzIifQ&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QFOZdYcqzsHFDfYpw9v8EuXQgCCHIPlP6TfVgFaO0bvNt-nCXgE6Qkn6HGvXhgd8Pg&_nc_ohc=1NaYlVmW7i0Q7kNvwFKUnm8&_nc_gid=mf4EfwM1AsOSnfRkW9AR4A&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GIin2hEPuigUoAYDALFyRQGhk45wbkULAAAB-ccb7-5&oh=00_AfYADQdJfCjVl6AnQAVRupvm683N8t02Y-oCX6SuUEsCGA&oe=68D15388&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:34.414Z [info] [hikerApi] userByUsernameV1 called with: leslieyacira
+2025-09-18T05:21:35.520Z [info] [hikerApi] userByUsernameV1 response for leslieyacira : {
+  pk: 472034094,
+  username: 'leslieyacira',
+  full_name: '',
+  is_private: true,
+  profile_pic_url: 'https://scontent-det1-1.cdninstagram.com/v/t51.2885-19/544911379_18530123743034095_8349094847002091514_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-det1-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QEZsfuTLZEmG1NkmlqBo4yulxdyQWEQNfBLAKCz5MMkFvZEImJtK2y1SEubXn8F09s&_nc_ohc=4mEqGyVcvzIQ7kNvwGoIhOq&_nc_gid=kd7VxBowRYTYPWqZMiN9GQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GBOweiDv_lijDNVBAPqfmieH8d1zbmNDAQAB-ccb7-5&oh=00_AfaPxVwWkoODZc98vehv1xquE28CInSKzH5seUoOxPZclw&oe=68D173EE&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 24,
+  follower_count: 578,
+  following_count: 626,
+  biography: '✧̣̇˳·˖ ˚　.˚　　　　✦　　　.　　. 　 ˚　. . ݁₊ ⊹ . ݁˖ . ݁ ⋆˙⟡ .',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 110163987045230
+}
+2025-09-18T05:21:35.520Z [info] [Backend] [extractFilteredUsers] Checking user: leslieyacira {
+  pk: 472034094,
+  username: 'leslieyacira',
+  full_name: '',
+  is_private: true,
+  profile_pic_url: 'https://scontent-det1-1.cdninstagram.com/v/t51.2885-19/544911379_18530123743034095_8349094847002091514_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-det1-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QEZsfuTLZEmG1NkmlqBo4yulxdyQWEQNfBLAKCz5MMkFvZEImJtK2y1SEubXn8F09s&_nc_ohc=4mEqGyVcvzIQ7kNvwGoIhOq&_nc_gid=kd7VxBowRYTYPWqZMiN9GQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GBOweiDv_lijDNVBAPqfmieH8d1zbmNDAQAB-ccb7-5&oh=00_AfaPxVwWkoODZc98vehv1xquE28CInSKzH5seUoOxPZclw&oe=68D173EE&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 24,
+  follower_count: 578,
+  following_count: 626,
+  biography: '✧̣̇˳·˖ ˚　.˚　　　　✦　　　.　　. 　 ˚　. . ݁₊ ⊹ . ݁˖ . ݁ ⋆˙⟡ .',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 110163987045230
+}
+2025-09-18T05:21:35.520Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:35.520Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:35.520Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:35.520Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:35.520Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:35.520Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:35.520Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:35.520Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:35.521Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:35.522Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:35.522Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:35.522Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:35.522Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:35.522Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:35.522Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'leslieyacira',
+  full_name: '',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 472034094,
+  profile_pic_url: 'https://scontent-det1-1.cdninstagram.com/v/t51.2885-19/544911379_18530123743034095_8349094847002091514_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-det1-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QEZsfuTLZEmG1NkmlqBo4yulxdyQWEQNfBLAKCz5MMkFvZEImJtK2y1SEubXn8F09s&_nc_ohc=4mEqGyVcvzIQ7kNvwGoIhOq&_nc_gid=kd7VxBowRYTYPWqZMiN9GQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GBOweiDv_lijDNVBAPqfmieH8d1zbmNDAQAB-ccb7-5&oh=00_AfaPxVwWkoODZc98vehv1xquE28CInSKzH5seUoOxPZclw&oe=68D173EE&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:35.522Z [info] [hikerApi] userByUsernameV1 called with: fahads21
+2025-09-18T05:21:38.712Z [info] [hikerApi] userByUsernameV1 response for fahads21 : {
+  pk: 1766419347,
+  username: 'fahads21',
+  full_name: '千𝒶𝓗𝐚𝒹 𝕤ค𝓣Ⓣά𝓡',
+  is_private: true,
+  profile_pic_url: 'https://scontent-gru1-1.cdninstagram.com/v/t51.2885-19/277442926_489526946140324_6526891417332600513_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby45NzIuYzIifQ&_nc_ht=scontent-gru1-1.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QFDS6UKz9kPVuTqDMTgjjTJwU8CZMNyvbMo4KoFvGb0D2wh4QQTki159k64JNu0e7Y&_nc_ohc=u9mXl1n-22oQ7kNvwEukfmG&_nc_gid=FKG8-0xR04T6zdqwDCD5aA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GG5xiRCkkLvfOL0BAMHOp8EpLZRabkULAAAB-ccb7-5&oh=00_AfZNj-2k3P5mAemPGBux_kN5-akHAZ8S_CSkT7KxRpATdg&oe=68D16A74&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 480,
+  follower_count: 37,
+  following_count: 137,
+  biography: 'Media',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 121502375906762
+}
+2025-09-18T05:21:38.712Z [info] [Backend] [extractFilteredUsers] Checking user: fahads21 {
+  pk: 1766419347,
+  username: 'fahads21',
+  full_name: '千𝒶𝓗𝐚𝒹 𝕤ค𝓣Ⓣά𝓡',
+  is_private: true,
+  profile_pic_url: 'https://scontent-gru1-1.cdninstagram.com/v/t51.2885-19/277442926_489526946140324_6526891417332600513_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby45NzIuYzIifQ&_nc_ht=scontent-gru1-1.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QFDS6UKz9kPVuTqDMTgjjTJwU8CZMNyvbMo4KoFvGb0D2wh4QQTki159k64JNu0e7Y&_nc_ohc=u9mXl1n-22oQ7kNvwEukfmG&_nc_gid=FKG8-0xR04T6zdqwDCD5aA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GG5xiRCkkLvfOL0BAMHOp8EpLZRabkULAAAB-ccb7-5&oh=00_AfZNj-2k3P5mAemPGBux_kN5-akHAZ8S_CSkT7KxRpATdg&oe=68D16A74&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 480,
+  follower_count: 37,
+  following_count: 137,
+  biography: 'Media',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 121502375906762
+}
+2025-09-18T05:21:38.712Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:38.712Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:38.712Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:38.712Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:38.712Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:38.712Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:38.712Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:38.712Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'fahads21',
+  full_name: '千𝒶𝓗𝐚𝒹 𝕤ค𝓣Ⓣά𝓡',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 1766419347,
+  profile_pic_url: 'https://scontent-gru1-1.cdninstagram.com/v/t51.2885-19/277442926_489526946140324_6526891417332600513_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby45NzIuYzIifQ&_nc_ht=scontent-gru1-1.cdninstagram.com&_nc_cat=104&_nc_oc=Q6cZ2QFDS6UKz9kPVuTqDMTgjjTJwU8CZMNyvbMo4KoFvGb0D2wh4QQTki159k64JNu0e7Y&_nc_ohc=u9mXl1n-22oQ7kNvwEukfmG&_nc_gid=FKG8-0xR04T6zdqwDCD5aA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GG5xiRCkkLvfOL0BAMHOp8EpLZRabkULAAAB-ccb7-5&oh=00_AfZNj-2k3P5mAemPGBux_kN5-akHAZ8S_CSkT7KxRpATdg&oe=68D16A74&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:38.712Z [info] [hikerApi] userByUsernameV1 called with: fdotj1
+2025-09-18T05:21:39.921Z [info] [hikerApi] userByUsernameV1 response for fdotj1 : {
+  pk: 10954142383,
+  username: 'fdotj1',
+  full_name: 'ayzel aaima',
+  is_private: false,
+  profile_pic_url: 'https://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/447725346_821572129457262_1086032162715809145_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43MjAuYzIifQ&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=106&_nc_oc=Q6cZ2QHetmc0O1xIUtlg1Xi9__tRr12J-cfknZGXpt6i03FTYbYP0vLguAIGYHvaXV9KHxI&_nc_ohc=QlD-XTJ55toQ7kNvwH91UTk&_nc_gid=4uRZls1ZSRxKp-zN61Ku3w&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GCK-rxpuBO8qN_sCAHk1U3l-XBIPbkULAAAB-ccb7-5&oh=00_AfZBkaIfaawOoMRbHt-zOHB47RrRGe_x5d3HSccsltM-NQ&oe=68D17AA5&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 580,
+  follower_count: 86,
+  following_count: 1263,
+  biography: 'Sprinkling kindness everywhere I go!🌝💫',
+  external_url: '',
+  account_type: 3,
+  is_business: false,
+  public_email: '',
+  contact_phone_number: '',
+  public_phone_country_code: '',
+  public_phone_number: '',
+  business_contact_method: 'UNKNOWN',
+  business_category_name: null,
+  category_name: null,
+  category: 'Product/service',
+  address_street: '',
+  city_id: 0,
+  city_name: '',
+  latitude: 0,
+  longitude: 0,
+  zip: '',
+  instagram_location_id: '',
+  interop_messaging_user_fbid: 116634813059542
+}
+2025-09-18T05:21:39.921Z [info] [Backend] [extractFilteredUsers] Checking user: fdotj1 {
+  pk: 10954142383,
+  username: 'fdotj1',
+  full_name: 'ayzel aaima',
+  is_private: false,
+  profile_pic_url: 'https://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/447725346_821572129457262_1086032162715809145_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43MjAuYzIifQ&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=106&_nc_oc=Q6cZ2QHetmc0O1xIUtlg1Xi9__tRr12J-cfknZGXpt6i03FTYbYP0vLguAIGYHvaXV9KHxI&_nc_ohc=QlD-XTJ55toQ7kNvwH91UTk&_nc_gid=4uRZls1ZSRxKp-zN61Ku3w&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GCK-rxpuBO8qN_sCAHk1U3l-XBIPbkULAAAB-ccb7-5&oh=00_AfZBkaIfaawOoMRbHt-zOHB47RrRGe_x5d3HSccsltM-NQ&oe=68D17AA5&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 580,
+  follower_count: 86,
+  following_count: 1263,
+  biography: 'Sprinkling kindness everywhere I go!🌝💫',
+  external_url: '',
+  account_type: 3,
+  is_business: false,
+  public_email: '',
+  contact_phone_number: '',
+  public_phone_country_code: '',
+  public_phone_number: '',
+  business_contact_method: 'UNKNOWN',
+  business_category_name: null,
+  category_name: null,
+  category: 'Product/service',
+  address_street: '',
+  city_id: 0,
+  city_name: '',
+  latitude: 0,
+  longitude: 0,
+  zip: '',
+  instagram_location_id: '',
+  interop_messaging_user_fbid: 116634813059542
+}
+2025-09-18T05:21:39.921Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:39.921Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: false
+2025-09-18T05:21:39.922Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:39.922Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:39.922Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:39.922Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:39.922Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:39.922Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:39.922Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: false
+2025-09-18T05:21:39.922Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:39.922Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:39.922Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:39.922Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:39.922Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:39.922Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'fdotj1',
+  full_name: 'ayzel aaima',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 10954142383,
+  profile_pic_url: 'https://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/447725346_821572129457262_1086032162715809145_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby43MjAuYzIifQ&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_cat=106&_nc_oc=Q6cZ2QHetmc0O1xIUtlg1Xi9__tRr12J-cfknZGXpt6i03FTYbYP0vLguAIGYHvaXV9KHxI&_nc_ohc=QlD-XTJ55toQ7kNvwH91UTk&_nc_gid=4uRZls1ZSRxKp-zN61Ku3w&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GCK-rxpuBO8qN_sCAHk1U3l-XBIPbkULAAAB-ccb7-5&oh=00_AfZBkaIfaawOoMRbHt-zOHB47RrRGe_x5d3HSccsltM-NQ&oe=68D17AA5&_nc_sid=164c1d',
+  is_private: false,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:39.922Z [info] [hikerApi] userByUsernameV1 called with: imanerhzali
+2025-09-18T05:21:41.386Z [info] [hikerApi] userByUsernameV1 response for imanerhzali : {
+  pk: 545175309,
+  username: 'imanerhzali',
+  full_name: 'Imane',
+  is_private: true,
+  profile_pic_url: 'https://scontent-iad3-1.cdninstagram.com/v/t51.2885-19/417404962_887298582876069_3138368606425772546_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QFJVoItDSC5oWLEyfMijbLCZkySGAKbSu6rwOBzALf4zu370chtS4C_cTKrFGu5oPk&_nc_ohc=wTVXPKl3AtAQ7kNvwFsm0bq&_nc_gid=tiZqIhIrvZUHFn1Su6p8zg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GCIY4Rilj9dM-iYDAALyPqieuY0rbkULAAAB-ccb7-5&oh=00_AfYZpoIYmBKn0GsdVc78sGVQO_H56SLWVCjnEJT6NdMGog&oe=68D1653B&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 20,
+  follower_count: 759,
+  following_count: 972,
+  biography: 'CU PhD Biology || 🇲🇦🇨🇦',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 108347133897692
+}
+2025-09-18T05:21:41.386Z [info] [Backend] [extractFilteredUsers] Checking user: imanerhzali {
+  pk: 545175309,
+  username: 'imanerhzali',
+  full_name: 'Imane',
+  is_private: true,
+  profile_pic_url: 'https://scontent-iad3-1.cdninstagram.com/v/t51.2885-19/417404962_887298582876069_3138368606425772546_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QFJVoItDSC5oWLEyfMijbLCZkySGAKbSu6rwOBzALf4zu370chtS4C_cTKrFGu5oPk&_nc_ohc=wTVXPKl3AtAQ7kNvwFsm0bq&_nc_gid=tiZqIhIrvZUHFn1Su6p8zg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GCIY4Rilj9dM-iYDAALyPqieuY0rbkULAAAB-ccb7-5&oh=00_AfYZpoIYmBKn0GsdVc78sGVQO_H56SLWVCjnEJT6NdMGog&oe=68D1653B&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 20,
+  follower_count: 759,
+  following_count: 972,
+  biography: 'CU PhD Biology || 🇲🇦🇨🇦',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 108347133897692
+}
+2025-09-18T05:21:41.386Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:41.386Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:41.386Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:41.386Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:41.386Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:41.386Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:41.386Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:41.387Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'imanerhzali',
+  full_name: 'Imane',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 545175309,
+  profile_pic_url: 'https://scontent-iad3-1.cdninstagram.com/v/t51.2885-19/417404962_887298582876069_3138368606425772546_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_cat=109&_nc_oc=Q6cZ2QFJVoItDSC5oWLEyfMijbLCZkySGAKbSu6rwOBzALf4zu370chtS4C_cTKrFGu5oPk&_nc_ohc=wTVXPKl3AtAQ7kNvwFsm0bq&_nc_gid=tiZqIhIrvZUHFn1Su6p8zg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GCIY4Rilj9dM-iYDAALyPqieuY0rbkULAAAB-ccb7-5&oh=00_AfYZpoIYmBKn0GsdVc78sGVQO_H56SLWVCjnEJT6NdMGog&oe=68D1653B&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:41.387Z [info] [hikerApi] userByUsernameV1 called with: raf_ia90
+2025-09-18T05:21:43.196Z [info] [hikerApi] userByUsernameV1 response for raf_ia90 : {
+  pk: 74248105752,
+  username: 'raf_ia90',
+  full_name: 'Rafi_a558',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lga3-2.cdninstagram.com/v/t51.2885-19/529905248_17857345698473753_2187213170063813126_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2QElsOk6X6PVmQ146ouy4Sf7Rjepi20nYL2VsKd3JqHTE0-FXTDQJhSYvwzSgVkse_4&_nc_ohc=9bAUEp5n5fUQ7kNvwGHxBQ4&_nc_gid=fpykvplZg09UTNJEQm6z1Q&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GGC2lR8ZJ-1KKXE-AAaqtTHKiloebmNDAQAB-ccb7-5&oh=00_Afb0FsbFYC4ELdj56Vd9IrgUzJcKXc3M_dts-UzWFehVmw&oe=68D15CCF&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 0,
+  follower_count: 33,
+  following_count: 91,
+  biography: 'Soft soul ,Sharp mind😍',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 17843874198473752
+}
+2025-09-18T05:21:43.196Z [info] [Backend] [extractFilteredUsers] Checking user: raf_ia90 {
+  pk: 74248105752,
+  username: 'raf_ia90',
+  full_name: 'Rafi_a558',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lga3-2.cdninstagram.com/v/t51.2885-19/529905248_17857345698473753_2187213170063813126_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2QElsOk6X6PVmQ146ouy4Sf7Rjepi20nYL2VsKd3JqHTE0-FXTDQJhSYvwzSgVkse_4&_nc_ohc=9bAUEp5n5fUQ7kNvwGHxBQ4&_nc_gid=fpykvplZg09UTNJEQm6z1Q&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GGC2lR8ZJ-1KKXE-AAaqtTHKiloebmNDAQAB-ccb7-5&oh=00_Afb0FsbFYC4ELdj56Vd9IrgUzJcKXc3M_dts-UzWFehVmw&oe=68D15CCF&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 0,
+  follower_count: 33,
+  following_count: 91,
+  biography: 'Soft soul ,Sharp mind😍',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 17843874198473752
+}
+2025-09-18T05:21:43.196Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:43.196Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:43.196Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:43.196Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:43.196Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:43.197Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:43.197Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:43.197Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:43.197Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:43.197Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:43.197Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:43.197Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:43.197Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:43.197Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:43.197Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'raf_ia90',
+  full_name: 'Rafi_a558',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 74248105752,
+  profile_pic_url: 'https://scontent-lga3-2.cdninstagram.com/v/t51.2885-19/529905248_17857345698473753_2187213170063813126_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2QElsOk6X6PVmQ146ouy4Sf7Rjepi20nYL2VsKd3JqHTE0-FXTDQJhSYvwzSgVkse_4&_nc_ohc=9bAUEp5n5fUQ7kNvwGHxBQ4&_nc_gid=fpykvplZg09UTNJEQm6z1Q&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GGC2lR8ZJ-1KKXE-AAaqtTHKiloebmNDAQAB-ccb7-5&oh=00_Afb0FsbFYC4ELdj56Vd9IrgUzJcKXc3M_dts-UzWFehVmw&oe=68D15CCF&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:43.197Z [info] [hikerApi] userByUsernameV1 called with: amy.bachhuber
+2025-09-18T05:21:44.759Z [info] [hikerApi] userByUsernameV1 response for amy.bachhuber : {
+  pk: 3011561974,
+  username: 'amy.bachhuber',
+  full_name: 'Amy',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lga3-1.cdninstagram.com/v/t51.2885-19/527514168_18421535944097975_1277113475263176070_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lga3-1.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2QFMiRT-u5yez3pBWtu8L9ZDerrNq5mHOvxqw5SYl_ih59n_DsuHtzmUjlxBqrt9W2c&_nc_ohc=OEn4B-UlKcUQ7kNvwEI4cSl&_nc_gid=vmyCG-I-Yzv136AantnnKQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GDg6cR_3QCoSSnJBAIYd7XbwN7kRbmNDAQAB-ccb7-5&oh=00_AfZBaF05MHWRzg7dOVIpEXWiF-egrWrDopCNyBrWhPqCjA&oe=68D17E9D&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 80,
+  follower_count: 880,
+  following_count: 1334,
+  biography: 'MSc 🐸 @kinda.sketch.bro',
+  external_url: 'https://vsco.co/amy-bachhuber',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 109872990409900
+}
+2025-09-18T05:21:44.759Z [info] [Backend] [extractFilteredUsers] Checking user: amy.bachhuber {
+  pk: 3011561974,
+  username: 'amy.bachhuber',
+  full_name: 'Amy',
+  is_private: true,
+  profile_pic_url: 'https://scontent-lga3-1.cdninstagram.com/v/t51.2885-19/527514168_18421535944097975_1277113475263176070_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lga3-1.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2QFMiRT-u5yez3pBWtu8L9ZDerrNq5mHOvxqw5SYl_ih59n_DsuHtzmUjlxBqrt9W2c&_nc_ohc=OEn4B-UlKcUQ7kNvwEI4cSl&_nc_gid=vmyCG-I-Yzv136AantnnKQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GDg6cR_3QCoSSnJBAIYd7XbwN7kRbmNDAQAB-ccb7-5&oh=00_AfZBaF05MHWRzg7dOVIpEXWiF-egrWrDopCNyBrWhPqCjA&oe=68D17E9D&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 80,
+  follower_count: 880,
+  following_count: 1334,
+  biography: 'MSc 🐸 @kinda.sketch.bro',
+  external_url: 'https://vsco.co/amy-bachhuber',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 109872990409900
+}
+2025-09-18T05:21:44.759Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:44.759Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:44.759Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:44.759Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:44.759Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:44.759Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:44.759Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:44.759Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'amy.bachhuber',
+  full_name: 'Amy',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 3011561974,
+  profile_pic_url: 'https://scontent-lga3-1.cdninstagram.com/v/t51.2885-19/527514168_18421535944097975_1277113475263176070_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lga3-1.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2QFMiRT-u5yez3pBWtu8L9ZDerrNq5mHOvxqw5SYl_ih59n_DsuHtzmUjlxBqrt9W2c&_nc_ohc=OEn4B-UlKcUQ7kNvwEI4cSl&_nc_gid=vmyCG-I-Yzv136AantnnKQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GDg6cR_3QCoSSnJBAIYd7XbwN7kRbmNDAQAB-ccb7-5&oh=00_AfZBaF05MHWRzg7dOVIpEXWiF-egrWrDopCNyBrWhPqCjA&oe=68D17E9D&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:44.760Z [info] [hikerApi] userByUsernameV1 called with: istitriasih
+2025-09-18T05:21:46.168Z [info] [hikerApi] userByUsernameV1 response for istitriasih : {
+  pk: 4718572871,
+  username: 'istitriasih',
+  full_name: 'Isti Triasih',
+  is_private: true,
+  profile_pic_url: 'https://scontent-arn2-1.cdninstagram.com/v/t51.2885-19/26868970_2064326733796200_4821180955324579840_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby44NTMuYzIifQ&_nc_ht=scontent-arn2-1.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QEnMeuP4g5yyLQnUqW4eixbNDl3CALambHSDFGqMGmVnwP1CIKJie8fxtrAJ2h6hYQ&_nc_ohc=-qwaHc2hjywQ7kNvwEvHCtx&_nc_gid=WlkIqeJhDukPtW3xI8GkFQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GOr8mQFoE6uFflUHAAAAAACJRuhCbkULAAAB-ccb7-5&oh=00_AfYB-uj9-J08MbqFxJLT__AstbCbIQNpB6NoX1vMYgZ9zA&oe=68D16663&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 554,
+  follower_count: 642,
+  following_count: 1015,
+  biography: '',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 116637959722997
+}
+2025-09-18T05:21:46.168Z [info] [Backend] [extractFilteredUsers] Checking user: istitriasih {
+  pk: 4718572871,
+  username: 'istitriasih',
+  full_name: 'Isti Triasih',
+  is_private: true,
+  profile_pic_url: 'https://scontent-arn2-1.cdninstagram.com/v/t51.2885-19/26868970_2064326733796200_4821180955324579840_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby44NTMuYzIifQ&_nc_ht=scontent-arn2-1.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QEnMeuP4g5yyLQnUqW4eixbNDl3CALambHSDFGqMGmVnwP1CIKJie8fxtrAJ2h6hYQ&_nc_ohc=-qwaHc2hjywQ7kNvwEvHCtx&_nc_gid=WlkIqeJhDukPtW3xI8GkFQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GOr8mQFoE6uFflUHAAAAAACJRuhCbkULAAAB-ccb7-5&oh=00_AfYB-uj9-J08MbqFxJLT__AstbCbIQNpB6NoX1vMYgZ9zA&oe=68D16663&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 554,
+  follower_count: 642,
+  following_count: 1015,
+  biography: '',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 116637959722997
+}
+2025-09-18T05:21:46.168Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:46.168Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:46.168Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:46.168Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: true
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:46.168Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:46.169Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:46.169Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:46.169Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'istitriasih',
+  full_name: 'Isti Triasih',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 4718572871,
+  profile_pic_url: 'https://scontent-arn2-1.cdninstagram.com/v/t51.2885-19/26868970_2064326733796200_4821180955324579840_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby44NTMuYzIifQ&_nc_ht=scontent-arn2-1.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QEnMeuP4g5yyLQnUqW4eixbNDl3CALambHSDFGqMGmVnwP1CIKJie8fxtrAJ2h6hYQ&_nc_ohc=-qwaHc2hjywQ7kNvwEvHCtx&_nc_gid=WlkIqeJhDukPtW3xI8GkFQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GOr8mQFoE6uFflUHAAAAAACJRuhCbkULAAAB-ccb7-5&oh=00_AfYB-uj9-J08MbqFxJLT__AstbCbIQNpB6NoX1vMYgZ9zA&oe=68D16663&_nc_sid=164c1d',
+  is_private: true,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:46.169Z [info] [hikerApi] userByUsernameV1 called with: richie_z_
+2025-09-18T05:21:47.437Z [info] [hikerApi] userByUsernameV1 response for richie_z_ : {
+  pk: 1994564784,
+  username: 'richie_z_',
+  full_name: 'Richie Zhai',
+  is_private: false,
+  profile_pic_url: 'https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/489893589_1335663900818504_2457328313817797029_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby40NzguYzIifQ&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2QHgestHmHcxPS9F3ShtlN4l2lPG-H7aACMcWe4WNmJtBWStaGqJFiu1L2XRLo-vkvE&_nc_ohc=Upg0untLbJwQ7kNvwF8bNiY&_nc_gid=Z9uLoe_z7PqgOU8d5H-1yg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GNUuMx1I-Fh8x74EAKWRnvkULxoibkULAAAB-ccb7-5&oh=00_AfbszFql9pcewTy1P-TeH5VML_EKEZVM-aBdMRpYWQGGCQ&oe=68D15E50&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 12,
+  follower_count: 1355,
+  following_count: 1947,
+  biography: '📍MTL',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 111869890209387
+}
+2025-09-18T05:21:47.437Z [info] [Backend] [extractFilteredUsers] Checking user: richie_z_ {
+  pk: 1994564784,
+  username: 'richie_z_',
+  full_name: 'Richie Zhai',
+  is_private: false,
+  profile_pic_url: 'https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/489893589_1335663900818504_2457328313817797029_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby40NzguYzIifQ&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2QHgestHmHcxPS9F3ShtlN4l2lPG-H7aACMcWe4WNmJtBWStaGqJFiu1L2XRLo-vkvE&_nc_ohc=Upg0untLbJwQ7kNvwF8bNiY&_nc_gid=Z9uLoe_z7PqgOU8d5H-1yg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GNUuMx1I-Fh8x74EAKWRnvkULxoibkULAAAB-ccb7-5&oh=00_AfbszFql9pcewTy1P-TeH5VML_EKEZVM-aBdMRpYWQGGCQ&oe=68D15E50&_nc_sid=164c1d',
+  profile_pic_url_hd: null,
+  is_verified: false,
+  media_count: 12,
+  follower_count: 1355,
+  following_count: 1947,
+  biography: '📍MTL',
+  external_url: '',
+  account_type: 1,
+  is_business: false,
+  public_email: null,
+  contact_phone_number: null,
+  public_phone_country_code: null,
+  public_phone_number: null,
+  business_contact_method: null,
+  business_category_name: null,
+  category_name: null,
+  category: null,
+  address_street: null,
+  city_id: null,
+  city_name: null,
+  latitude: null,
+  longitude: null,
+  zip: null,
+  instagram_location_id: null,
+  interop_messaging_user_fbid: 111869890209387
+}
+2025-09-18T05:21:47.437Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: false
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:47.437Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:47.437Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:47.437Z [info] [filterUser] Filters received: {
+  extractPhone: false,
+  extractEmail: false,
+  extractLinkInBio: false,
+  privacy: "doesn't matter",
+  profilePicture: "doesn't matter",
+  verifiedAccount: "doesn't matter",
+  businessAccount: "doesn't matter",
+  followersMin: '',
+  followersMax: '',
+  followingsMin: '',
+  followingsMax: '',
+  filterByName: '',
+  filterByNameInBioContains: '',
+  filterByNameInBioStop: '',
+  coinLimit: '10'
+}
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: privacy, filter: doesn't matter, value: false
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: profilePicture, filter: doesn't matter, value: true
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: verifiedAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:47.437Z [info] [filterUser] Flag check passed: businessAccount, filter: doesn't matter, value: false
+2025-09-18T05:21:47.437Z [info] [filterUser] Checking username exclude list...
+2025-09-18T05:21:47.437Z [info] [filterUser] filters.filterByName:
+2025-09-18T05:21:47.437Z [info] [Backend] [extractFilteredUsers] User PASSED filters and will be saved: {
+  username: 'richie_z_',
+  full_name: 'Richie Zhai',
+  phone: undefined,
+  email: undefined,
+  link_in_bio: undefined,
+  pk: 1994564784,
+  profile_pic_url: 'https://scontent-lax3-1.cdninstagram.com/v/t51.2885-19/489893589_1335663900818504_2457328313817797029_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby40NzguYzIifQ&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_cat=108&_nc_oc=Q6cZ2QHgestHmHcxPS9F3ShtlN4l2lPG-H7aACMcWe4WNmJtBWStaGqJFiu1L2XRLo-vkvE&_nc_ohc=Upg0untLbJwQ7kNvwF8bNiY&_nc_gid=Z9uLoe_z7PqgOU8d5H-1yg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GNUuMx1I-Fh8x74EAKWRnvkULxoibkULAAAB-ccb7-5&oh=00_AfbszFql9pcewTy1P-TeH5VML_EKEZVM-aBdMRpYWQGGCQ&oe=68D15E50&_nc_sid=164c1d',
+  is_private: false,
+  is_verified: false,
+  is_business: false
+}
+2025-09-18T05:21:47.437Z [info] [hikerApi] userByUsernameV1 called with: irbazrehman

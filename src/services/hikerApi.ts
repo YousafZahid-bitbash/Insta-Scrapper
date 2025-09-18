@@ -2058,7 +2058,7 @@ export async function extractFilteredUsers<T extends UserLike>(
 
 // Reusable filter function for user objects
 export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
-  console.log('[filterUser] Filters received:', filters);
+  //console.log('[filterUser] Filters received:', filters);
   // Profile flags
   const flagChecks = [
     { key: "privacy", value: user.is_private, filter: filters.privacy },
