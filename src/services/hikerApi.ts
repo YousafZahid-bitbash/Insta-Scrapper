@@ -954,8 +954,9 @@ export async function mediaLikersBulkV1(
           if (onProgress) onProgress(allLikers.length);
           
           // Deduct coins when we complete a full batch (every 10 users)
+          // Only deduct coins if NOT called from process route (extraction_id provided means it's from process route)
           if (usersProcessedInBatch >= COIN_RULES.likers.perChunk.users) {
-            if (!skipCoinCheck) {
+            if (!skipCoinCheck && !extraction_id) {
               console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for batch of ${COIN_RULES.likers.perChunk.users} users`);
               coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
             }
@@ -964,8 +965,9 @@ export async function mediaLikersBulkV1(
         }
         
         // Deduct coins for any remaining partial batch
+        // Only deduct coins if NOT called from process route (extraction_id provided means it's from process route)
         if (usersProcessedInBatch > 0 && !stopExtraction) {
-          if (!skipCoinCheck) {
+          if (!skipCoinCheck && !extraction_id) {
             console.log(`[mediaLikersBulkV1] Deducting ${COIN_RULES.likers.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
             coins = await deductCoins(userIdStr, COIN_RULES.likers.perChunk.coins, supabaseToUse);
           }
@@ -995,7 +997,8 @@ export async function mediaLikersBulkV1(
   console.log('[mediaLikersBulkV1] Likers after pre-filtering:', preFilteredLikers.length, preFilteredLikers);
 
   // Second deduction: For userByUsername calls (like followers pattern)
-  if (!skipCoinCheck) {
+  // Only deduct coins if NOT called from process route (extraction_id provided means it's from process route)
+  if (!skipCoinCheck && !extraction_id) {
     const perUserTotalCost = preFilteredLikers.length * COIN_RULES.likers.perUser;
     console.log(`[mediaLikersBulkV1] Second deduction for userByUsername calls: ${preFilteredLikers.length} users × ${COIN_RULES.likers.perUser} = ${perUserTotalCost} coins`);
     console.log(`[mediaLikersBulkV1] Current coins: ${coins}, Required: ${perUserTotalCost}`);
@@ -1007,6 +1010,9 @@ export async function mediaLikersBulkV1(
       console.log(`[mediaLikersBulkV1] Coins deducted successfully for userByUsername calls. New balance: ${coins}`);
       stopExtraction = false; // Ensure we always run the loop after successful deduction
     }
+  } else if (extraction_id) {
+    console.log(`[mediaLikersBulkV1] Skipping coin deduction - called from process route (extraction_id: ${extraction_id})`);
+    stopExtraction = false; // Always run the loop when called from process route
   }
   // 2. Fetch details for each remaining user
   const detailedLikers: UserDetails[] = [];
