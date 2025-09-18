@@ -262,22 +262,42 @@ export async function POST(req: NextRequest) {
         const batchFilteringCost = (pageUsers.length || 0) * COIN_RULES.followers.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
-        // Check coin limit and deduct coins
+        // Check coin limit (using coins_spent) and spend coins atomically before filtering
         if (pageUsers.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
-          
-          // Check if coin limit would be exceeded
+
+          const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
           if (coinLimit !== undefined) {
-            // For now, let's skip the coin limit check and just deduct coins
-            // The coin limit logic needs to be redesigned to track spent coins properly
-            console.log('[Process API] Coin limit check skipped - will deduct coins and let user monitor balance');
+            const remaining = Math.max(0, coinLimit - coinsSpent);
+            console.log('[Process API] Coin limit check (followers):', { coinLimit, coinsSpent, remaining, batchCost });
+            if (batchCost > remaining) {
+              console.log('[Process API] Coin limit reached for followers; stopping before processing batch');
+              updateFields = {
+                page_count: (job.page_count || 0) + 1,
+                progress: (job.progress || 0) + 0,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                error_message: null,
+                next_page_id: null,
+                current_step: JSON.stringify(step),
+                locked_by: null,
+              };
+              await supabase.from('extractions').update(updateFields).eq('id', job.id).eq('locked_by', workerId);
+              return NextResponse.json({ message: 'Coin limit reached', jobId: job.id, ...updateFields });
+            }
           }
-          
-          console.log('[Process API] Deducting coins for followers:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
-          console.log('[Process API] Successfully deducted coins for followers');
+
+          console.log('[Process API] Spending coins (followers) via RPC:', batchCost);
+          const { error: spendErr } = await supabase.rpc('spend_extraction_coins', {
+            p_user_id: job.user_id,
+            p_extraction_id: job.id,
+            p_amount: batchCost,
+          });
+          if (spendErr) throw new Error(spendErr.message);
+          // refresh coins_spent locally for logging/decisions
+          job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCost;
         }
 
         // Apply filters after coin deduction
@@ -428,24 +448,41 @@ export async function POST(req: NextRequest) {
         const batchFilteringCost = (pageUsers.length || 0) * COIN_RULES.followings.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
-        // Check coin limit and deduct coins
+        // Check coin limit (using coins_spent) and spend coins atomically before filtering
         if (pageUsers.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
           
-          // Check if coin limit would be exceeded
+          const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
           if (coinLimit !== undefined) {
-            const totalSpent = (job.progress || 0) * ((COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users) + COIN_RULES.followings.perUser);
-            if (totalSpent + batchCost > coinLimit) {
-              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
-              // Stop extraction - don't process this batch
-              break;
+            const remaining = Math.max(0, coinLimit - coinsSpent);
+            console.log('[Process API] Coin limit check (following):', { coinLimit, coinsSpent, remaining, batchCost });
+            if (batchCost > remaining) {
+              console.log('[Process API] Coin limit reached for following; stopping before processing batch');
+              const updateFollowingStop = {
+                page_count: (job.page_count || 0) + 1,
+                progress: (job.progress || 0) + 0,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                error_message: null,
+                next_page_id: null,
+                current_step: JSON.stringify(step),
+                locked_by: null,
+              } as Record<string, unknown>;
+              await supabase.from('extractions').update(updateFollowingStop).eq('id', job.id).eq('locked_by', workerId);
+              return NextResponse.json({ message: 'Coin limit reached', jobId: job.id, ...updateFollowingStop });
             }
           }
-          
-          console.log('[Process API] Deducting coins for following:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
+
+          console.log('[Process API] Spending coins (following) via RPC:', batchCost);
+          const { error: spendErrF } = await supabase.rpc('spend_extraction_coins', {
+            p_user_id: job.user_id,
+            p_extraction_id: job.id,
+            p_amount: batchCost,
+          });
+          if (spendErrF) throw new Error(spendErrF.message);
+          job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCost;
         }
 
         // Insert filtered users to database
@@ -564,24 +601,41 @@ export async function POST(req: NextRequest) {
         const perUserDetail = COIN_RULES.likers.perUser; // 1 coin per user detail
         const batchCost = Math.ceil((likers.length || 0) / perChunkUsers) * perChunkCoins + (likers.length * perUserDetail);
 
-        // Check coin limit and deduct coins
+        // Check coin limit (using coins_spent) and spend coins atomically
         if (likers.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
           
-          // Check if coin limit would be exceeded
+          const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
           if (coinLimit !== undefined) {
-            const totalSpent = (job.progress || 0) * (perUserDetail + perChunkCoins / perChunkUsers);
-            if (totalSpent + batchCost > coinLimit) {
-              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
-              // Stop extraction - don't process this batch
-              break;
+            const remaining = Math.max(0, coinLimit - coinsSpent);
+            console.log('[Process API] Coin limit check (likers):', { coinLimit, coinsSpent, remaining, batchCost });
+            if (batchCost > remaining) {
+              console.log('[Process API] Coin limit reached for likers; stopping before processing batch');
+              const updStop = {
+                page_count: (job.page_count || 0) + 1,
+                progress: (job.progress || 0) + 0,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                error_message: null,
+                next_page_id: null,
+                current_step: JSON.stringify(step),
+                locked_by: null,
+              } as Record<string, unknown>;
+              await supabase.from('extractions').update(updStop).eq('id', job.id).eq('locked_by', workerId);
+              return NextResponse.json({ message: 'Coin limit reached', jobId: job.id, ...updStop });
             }
           }
-          
-          console.log('[Process API] Deducting coins for likers:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
+
+          console.log('[Process API] Spending coins (likers) via RPC:', batchCost);
+          const { error: spendErrL } = await supabase.rpc('spend_extraction_coins', {
+            p_user_id: job.user_id,
+            p_extraction_id: job.id,
+            p_amount: batchCost,
+          });
+          if (spendErrL) throw new Error(spendErrL.message);
+          job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCost;
         }
 
         // Process all likers (no additional filtering needed for likers)
@@ -689,24 +743,41 @@ export async function POST(req: NextRequest) {
         // Calculate cost based on raw medias (before filtering)
         const batchCost = (medias.length || 0) * perPost;
 
-        // Check coin limit and deduct coins
+        // Check coin limit (using coins_spent) and spend coins atomically
         if (medias.length > 0) {
           const { data: userDataP, error: userErrP } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErrP || typeof userDataP?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userDataP.coins < batchCost) throw new Error('insufficient_coins');
           
-          // Check if coin limit would be exceeded
+          const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
           if (coinLimit !== undefined) {
-            const totalSpent = (job.progress || 0) * perPost;
-            if (totalSpent + batchCost > coinLimit) {
-              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
-              // Stop extraction - don't process this batch
-              break;
+            const remaining = Math.max(0, coinLimit - coinsSpent);
+            console.log('[Process API] Coin limit check (posts):', { coinLimit, coinsSpent, remaining, batchCost });
+            if (batchCost > remaining) {
+              console.log('[Process API] Coin limit reached for posts; stopping before processing batch');
+              const updStop = {
+                page_count: (job.page_count || 0) + 1,
+                progress: (job.progress || 0) + 0,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                error_message: null,
+                next_page_id: null,
+                current_step: JSON.stringify(step),
+                locked_by: null,
+              } as Record<string, unknown>;
+              await supabase.from('extractions').update(updStop).eq('id', job.id).eq('locked_by', workerId);
+              return NextResponse.json({ message: 'Coin limit reached', jobId: job.id, ...updStop });
             }
           }
-          
-          console.log('[Process API] Deducting coins for posts:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
+
+          console.log('[Process API] Spending coins (posts) via RPC:', batchCost);
+          const { error: spendErrP } = await supabase.rpc('spend_extraction_coins', {
+            p_user_id: job.user_id,
+            p_extraction_id: job.id,
+            p_amount: batchCost,
+          });
+          if (spendErrP) throw new Error(spendErrP.message);
+          job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCost;
         }
 
         // Process all medias (no pre-filtering by coin limit)
@@ -879,24 +950,41 @@ export async function POST(req: NextRequest) {
         // Calculate cost based on raw comments (before filtering)
         const batchCost = Math.ceil((comments.length || 0) / perChunkUsers) * perChunkCoins;
 
-        // Check coin limit and deduct coins
+        // Check coin limit (using coins_spent) and spend coins atomically
         if (comments.length > 0) {
           const { data: userDataC, error: userErrC } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErrC || typeof userDataC?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userDataC.coins < batchCost) throw new Error('insufficient_coins');
           
-          // Check if coin limit would be exceeded
+          const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
           if (coinLimit !== undefined) {
-            const totalSpent = (job.progress || 0) * (perChunkCoins / perChunkUsers);
-            if (totalSpent + batchCost > coinLimit) {
-              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
-              // Stop extraction - don't process this batch
-              break;
+            const remaining = Math.max(0, coinLimit - coinsSpent);
+            console.log('[Process API] Coin limit check (commenters):', { coinLimit, coinsSpent, remaining, batchCost });
+            if (batchCost > remaining) {
+              console.log('[Process API] Coin limit reached for commenters; stopping before processing batch');
+              const updStop = {
+                page_count: (job.page_count || 0) + 1,
+                progress: (job.progress || 0) + 0,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                error_message: null,
+                next_page_id: null,
+                current_step: JSON.stringify(step),
+                locked_by: null,
+              } as Record<string, unknown>;
+              await supabase.from('extractions').update(updStop).eq('id', job.id).eq('locked_by', workerId);
+              return NextResponse.json({ message: 'Coin limit reached', jobId: job.id, ...updStop });
             }
           }
-          
-          console.log('[Process API] Deducting coins for commenters:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
+
+          console.log('[Process API] Spending coins (commenters) via RPC:', batchCost);
+          const { error: spendErrC } = await supabase.rpc('spend_extraction_coins', {
+            p_user_id: job.user_id,
+            p_extraction_id: job.id,
+            p_amount: batchCost,
+          });
+          if (spendErrC) throw new Error(spendErrC.message);
+          job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCost;
         }
 
         // Process all comments (no pre-filtering by coin limit)
@@ -1031,24 +1119,41 @@ export async function POST(req: NextRequest) {
         // Calculate cost based on raw clips (before filtering)
         const batchCost = (clips.length || 0) * perData;
 
-        // Check coin limit and deduct coins
+        // Check coin limit (using coins_spent) and spend coins atomically
         if (clips.length > 0) {
           const { data: userDataH, error: userErrH } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErrH || typeof userDataH?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userDataH.coins < batchCost) throw new Error('insufficient_coins');
           
-          // Check if coin limit would be exceeded
+          const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
           if (coinLimit !== undefined) {
-            const totalSpent = (job.progress || 0) * perData;
-            if (totalSpent + batchCost > coinLimit) {
-              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
-              // Stop extraction - don't process this batch
-              break;
+            const remaining = Math.max(0, coinLimit - coinsSpent);
+            console.log('[Process API] Coin limit check (hashtags):', { coinLimit, coinsSpent, remaining, batchCost });
+            if (batchCost > remaining) {
+              console.log('[Process API] Coin limit reached for hashtags; stopping before processing batch');
+              const updStop = {
+                page_count: (job.page_count || 0) + 1,
+                progress: (job.progress || 0) + 0,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                error_message: null,
+                next_page_id: null,
+                current_step: JSON.stringify(step),
+                locked_by: null,
+              } as Record<string, unknown>;
+              await supabase.from('extractions').update(updStop).eq('id', job.id).eq('locked_by', workerId);
+              return NextResponse.json({ message: 'Coin limit reached', jobId: job.id, ...updStop });
             }
           }
-          
-          console.log('[Process API] Deducting coins for hashtags:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
+
+          console.log('[Process API] Spending coins (hashtags) via RPC:', batchCost);
+          const { error: spendErrH } = await supabase.rpc('spend_extraction_coins', {
+            p_user_id: job.user_id,
+            p_extraction_id: job.id,
+            p_amount: batchCost,
+          });
+          if (spendErrH) throw new Error(spendErrH.message);
+          job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCost;
         }
 
         // Process all clips (no pre-filtering by coin limit)
