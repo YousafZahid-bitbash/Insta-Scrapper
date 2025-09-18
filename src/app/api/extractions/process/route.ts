@@ -253,30 +253,41 @@ export async function POST(req: NextRequest) {
           }
         );
 
-        // Coin limit calculation
+        // Coin limit calculation and deduction (based on raw API response)
         const coinLimitRaw = (parsedFilters?.followers?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        let maxUsersWithinCoinLimit: number | undefined = undefined;
-        if (coinLimit !== undefined) {
-          const perUserTotal = (COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users) + COIN_RULES.followers.perUser;
-          maxUsersWithinCoinLimit = Math.floor(coinLimit / perUserTotal);
-        }
-        if (maxUsersWithinCoinLimit !== undefined) {
-          const remaining = Math.max(0, maxUsersWithinCoinLimit - (job.progress || 0));
-          if (filteredUsers.length > remaining) filteredUsers.splice(remaining);
-        }
-
-        // Batch cost (charge only for rows we actually save)
-        const batchExtractionCost = Math.ceil((filteredUsers.length || 0) / COIN_RULES.followers.perChunk.users) * COIN_RULES.followers.perChunk.coins;
-        const batchFilteringCost = (filteredUsers.length || 0) * COIN_RULES.followers.perUser;
+        
+        // Calculate cost based on raw pageUsers (before filtering)
+        const batchExtractionCost = Math.ceil((pageUsers.length || 0) / COIN_RULES.followers.perChunk.users) * COIN_RULES.followers.perChunk.coins;
+        const batchFilteringCost = (pageUsers.length || 0) * COIN_RULES.followers.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
-        // Insert + deduct coins
-        if (filteredUsers.length > 0) {
-          console.log('[Process API] Inserting filtered users to DB:', filteredUsers.length);
+        // Check coin limit and deduct coins
+        if (pageUsers.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
+          
+          // Check if coin limit would be exceeded
+          if (coinLimit !== undefined) {
+            const totalSpent = (job.progress || 0) * ((COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users) + COIN_RULES.followers.perUser);
+            if (totalSpent + batchCost > coinLimit) {
+              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
+              // Stop extraction - don't process this batch
+              break;
+            }
+          }
+          
+          console.log('[Process API] Deducting coins for followers:', batchCost);
+          await deductCoins(String(job.user_id), batchCost, supabase);
+        }
+
+        // Apply filters after coin deduction
+        // Note: maxUsersWithinCoinLimit logic removed since we check coin limit before processing
+
+        // Insert filtered users to database
+        if (filteredUsers.length > 0) {
+          console.log('[Process API] Inserting filtered users to DB:', filteredUsers.length);
           const rows = filteredUsers.map(u => ({
             extraction_id: job.id,
             pk: u.pk || null,
@@ -292,8 +303,6 @@ export async function POST(req: NextRequest) {
           }));
           const { error: insertErr } = await supabase.from('extracted_users').insert(rows);
           if (insertErr) throw new Error(insertErr.message);
-          console.log('[Process API] Deducting coins for followers:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         // Advance cursor
@@ -407,27 +416,38 @@ export async function POST(req: NextRequest) {
           }
         );
 
+        // Coin limit calculation and deduction (based on raw API response)
         const coinLimitRaw = (parsedFilters?.following?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        let maxUsersWithinCoinLimit: number | undefined = undefined;
-        if (coinLimit !== undefined) {
-          const perUserTotal = (COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users) + COIN_RULES.followings.perUser;
-          maxUsersWithinCoinLimit = Math.floor(coinLimit / perUserTotal);
-        }
-        if (maxUsersWithinCoinLimit !== undefined) {
-          const remaining = Math.max(0, maxUsersWithinCoinLimit - (job.progress || 0));
-          if (filteredUsers.length > remaining) filteredUsers.splice(remaining);
-        }
-
-        const batchExtractionCost = Math.ceil((filteredUsers.length || 0) / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
-        const batchFilteringCost = (filteredUsers.length || 0) * COIN_RULES.followings.perUser;
+        
+        // Calculate cost based on raw pageUsers (before filtering)
+        const batchExtractionCost = Math.ceil((pageUsers.length || 0) / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
+        const batchFilteringCost = (pageUsers.length || 0) * COIN_RULES.followings.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
-        if (filteredUsers.length > 0) {
-          console.log('[Process API] Inserting filtered users to DB:', filteredUsers.length);
+        // Check coin limit and deduct coins
+        if (pageUsers.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
+          
+          // Check if coin limit would be exceeded
+          if (coinLimit !== undefined) {
+            const totalSpent = (job.progress || 0) * ((COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users) + COIN_RULES.followings.perUser);
+            if (totalSpent + batchCost > coinLimit) {
+              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
+              // Stop extraction - don't process this batch
+              break;
+            }
+          }
+          
+          console.log('[Process API] Deducting coins for following:', batchCost);
+          await deductCoins(String(job.user_id), batchCost, supabase);
+        }
+
+        // Insert filtered users to database
+        if (filteredUsers.length > 0) {
+          console.log('[Process API] Inserting filtered users to DB:', filteredUsers.length);
           const rows = filteredUsers.map(u => ({
             extraction_id: job.id,
             pk: u.pk || null,
@@ -443,8 +463,6 @@ export async function POST(req: NextRequest) {
           }));
           const { error: insertErr } = await supabase.from('extracted_users').insert(rows);
           if (insertErr) throw new Error(insertErr.message);
-          console.log('[Process API] Deducting coins for following:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         let next_page_id = page.next_page_id;
@@ -533,25 +551,38 @@ export async function POST(req: NextRequest) {
   const res = await mediaLikersBulkV1({ urls: [active.url], filters: parsedFilters || {}, user_id: job.user_id, skipCoinCheck: true }, updateProgress, undefined, job.id, supabase);
   const likers = (res as { filteredLikers?: UserDetails[] })?.filteredLikers || [];
 
-        // Decide how many we can afford BEFORE filtration (extraction per-chunk + per-user detail)
-        const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-        if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
+        // Coin limit calculation and deduction (based on raw API response)
+        const coinLimitRaw = (parsedFilters?.coinLimit) as number | string | undefined;
+        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        
+        // Calculate cost based on raw likers (before filtering)
         const perChunkUsers = COIN_RULES.likers.perChunk.users; // 10 users per chunk
         const perChunkCoins = COIN_RULES.likers.perChunk.coins; // 1 coin per chunk
         const perUserDetail = COIN_RULES.likers.perUser; // 1 coin per user detail
-        // Greedy cap by coins: approximate allowed users by solving chunks + per-user
-        const maxByBalance = Math.max(0, Math.floor(userData.coins / (perUserDetail + perChunkCoins / perChunkUsers)));
-        const coinLimitRaw = (parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        let maxByLimit = Number.POSITIVE_INFINITY;
-        if (coinLimit !== undefined) maxByLimit = Math.floor(coinLimit / (perUserDetail + perChunkCoins / perChunkUsers));
-        const allowedUsers = Math.min(likers.length, maxByBalance, maxByLimit);
-        const toProcess = likers.slice(0, Math.max(0, allowedUsers));
-        const batchCost = Math.ceil((toProcess.length || 0) / perChunkUsers) * perChunkCoins + (toProcess.length * perUserDetail);
-        if (toProcess.length > 0 && batchCost > 0) {
+        const batchCost = Math.ceil((likers.length || 0) / perChunkUsers) * perChunkCoins + (likers.length * perUserDetail);
+
+        // Check coin limit and deduct coins
+        if (likers.length > 0) {
+          const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+          if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
+          if (userData.coins < batchCost) throw new Error('insufficient_coins');
+          
+          // Check if coin limit would be exceeded
+          if (coinLimit !== undefined) {
+            const totalSpent = (job.progress || 0) * (perUserDetail + perChunkCoins / perChunkUsers);
+            if (totalSpent + batchCost > coinLimit) {
+              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
+              // Stop extraction - don't process this batch
+              break;
+            }
+          }
+          
           console.log('[Process API] Deducting coins for likers:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
         }
+
+        // Process all likers (no additional filtering needed for likers)
+        const toProcess = likers;
 
   const rows = toProcess.map((u: UserDetails) => ({
             extraction_id: job.id,
@@ -647,18 +678,36 @@ export async function POST(req: NextRequest) {
   const page = await getUserMediasPage(active.pk, step.page_id);
         const medias = page.items || [];
 
-        // Decide how many posts we can afford BEFORE filtration
-        const coinLimitRaw = (parsedFilters?.coinLimit) as number | string | undefined;
+        // Coin limit calculation and deduction (based on raw API response)
+        const coinLimitRaw = (parsedFilters?.posts?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perPost = COIN_RULES.posts.perPost;
-        const { data: userDataP, error: userErrP } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-        if (userErrP || typeof userDataP?.coins !== 'number') throw new Error('Could not fetch user coins');
-        let maxByLimit = Number.POSITIVE_INFINITY;
-        if (coinLimit !== undefined) maxByLimit = Math.floor(coinLimit / perPost);
-        const maxByBalance = Math.floor(userDataP.coins / perPost);
-        const allowedPosts = Math.min(medias.length, maxByLimit, maxByBalance);
+        
+        // Calculate cost based on raw medias (before filtering)
+        const batchCost = (medias.length || 0) * perPost;
 
-        const toProcess = medias.slice(0, Math.max(0, allowedPosts));
+        // Check coin limit and deduct coins
+        if (medias.length > 0) {
+          const { data: userDataP, error: userErrP } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+          if (userErrP || typeof userDataP?.coins !== 'number') throw new Error('Could not fetch user coins');
+          if (userDataP.coins < batchCost) throw new Error('insufficient_coins');
+          
+          // Check if coin limit would be exceeded
+          if (coinLimit !== undefined) {
+            const totalSpent = (job.progress || 0) * perPost;
+            if (totalSpent + batchCost > coinLimit) {
+              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
+              // Stop extraction - don't process this batch
+              break;
+            }
+          }
+          
+          console.log('[Process API] Deducting coins for posts:', batchCost);
+          await deductCoins(String(job.user_id), batchCost, supabase);
+        }
+
+        // Process all medias (no pre-filtering by coin limit)
+        const toProcess = medias;
 
         // Apply posts filters AFTER deduction (likes/comments ranges, caption contains/stop, etc.)
   const likesMin = Number((parsedFilters?.likesMin as number | string | undefined) ?? NaN);
@@ -728,15 +777,9 @@ export async function POST(req: NextRequest) {
           };
         });
         if (postsRows.length > 0) {
-          const batchCost = postsRows.length * perPost;
-          const { data: userDataP2, error: userErrP2 } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-          if (userErrP2 || typeof userDataP2?.coins !== 'number') throw new Error('Could not fetch user coins');
-          if (userDataP2.coins < batchCost) throw new Error('insufficient_coins');
           console.log('[Process API] Inserting posts to DB:', postsRows.length);
           const { error: insErr } = await supabase.from('extracted_posts').insert(postsRows);
           if (insErr) throw new Error(insErr.message);
-          console.log('[Process API] Deducting coins for posts:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         let next_page_id = page.next_page_id;
@@ -823,28 +866,38 @@ export async function POST(req: NextRequest) {
   const page = await getCommentsPage(active.mediaId, step.page_id);
         const comments = page.items || [];
 
-        // Determine how many commenters we can afford BEFORE filtration
-        const coinLimitRaw = (parsedFilters?.coinLimit) as number | string | undefined;
+        // Coin limit calculation and deduction (based on raw API response)
+        const coinLimitRaw = (parsedFilters?.commenters?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
         // Per-chunk rule: 1 coin per 2 commenters
         const perChunkUsers = COIN_RULES.commenters.perChunk.users; // 2
         const perChunkCoins = COIN_RULES.commenters.perChunk.coins; // 1
+        
+        // Calculate cost based on raw comments (before filtering)
+        const batchCost = Math.ceil((comments.length || 0) / perChunkUsers) * perChunkCoins;
 
-        // Limit by coin limit budget
-        let limitByCoinLimit: number | undefined;
-        if (coinLimit !== undefined) {
-          limitByCoinLimit = Math.max(0, coinLimit) * perChunkUsers; // coinLimit coins → coinLimit*2 commenters
+        // Check coin limit and deduct coins
+        if (comments.length > 0) {
+          const { data: userDataC, error: userErrC } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+          if (userErrC || typeof userDataC?.coins !== 'number') throw new Error('Could not fetch user coins');
+          if (userDataC.coins < batchCost) throw new Error('insufficient_coins');
+          
+          // Check if coin limit would be exceeded
+          if (coinLimit !== undefined) {
+            const totalSpent = (job.progress || 0) * (perChunkCoins / perChunkUsers);
+            if (totalSpent + batchCost > coinLimit) {
+              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
+              // Stop extraction - don't process this batch
+              break;
+            }
+          }
+          
+          console.log('[Process API] Deducting coins for commenters:', batchCost);
+          await deductCoins(String(job.user_id), batchCost, supabase);
         }
-        // Limit by current user coins
-        const { data: userDataC, error: userErrC } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-        if (userErrC || typeof userDataC?.coins !== 'number') throw new Error('Could not fetch user coins');
-        const limitByBalance = Math.floor(userDataC.coins / perChunkCoins) * perChunkUsers;
 
-        let allowed = comments.length;
-        if (limitByCoinLimit !== undefined) allowed = Math.min(allowed, limitByCoinLimit);
-        allowed = Math.min(allowed, limitByBalance);
-
-        const toProcess = comments.slice(0, Math.max(0, allowed));
+        // Process all comments (no pre-filtering by coin limit)
+        const toProcess = comments;
 
         // Apply commenters filters AFTER deduction
         // Exclude words and stop words
@@ -880,17 +933,11 @@ export async function POST(req: NextRequest) {
           parent_comment_id: c.parent_comment_id ?? null,
         }));
 
-        // Deduct only if rows exist; chunk cost is per 2 commenters
+        // Insert filtered commenters to database
         if (rows.length > 0) {
-          const batchCost = Math.ceil(rows.length / perChunkUsers) * perChunkCoins;
-          const { data: userDataC2, error: userErrC2 } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-          if (userErrC2 || typeof userDataC2?.coins !== 'number') throw new Error('Could not fetch user coins');
-          if (userDataC2.coins < batchCost) throw new Error('insufficient_coins');
           console.log('[Process API] Inserting commenters to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_commenters').insert(rows);
           if (insErr) throw new Error(insErr.message);
-          console.log('[Process API] Deducting coins for commenters:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         // Advance page/target
@@ -973,17 +1020,36 @@ export async function POST(req: NextRequest) {
   const page = await getHashtagClipsPage(hashtag, step.page_id, parsedFilters || {});
         const clips = page.items || [];
 
-        // Decide how many we can afford BEFORE filtration (hashtags cost per data)
-        const coinLimitRaw = (parsedFilters?.coinLimit) as number | string | undefined;
+        // Coin limit calculation and deduction (based on raw API response)
+        const coinLimitRaw = (parsedFilters?.hashtags?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perData = COIN_RULES.hashtags.perData;
-        const { data: userDataH, error: userErrH } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-        if (userErrH || typeof userDataH?.coins !== 'number') throw new Error('Could not fetch user coins');
-        let maxByLimit = Number.POSITIVE_INFINITY;
-        if (coinLimit !== undefined) maxByLimit = Math.floor(coinLimit / perData);
-        const maxByBalance = Math.floor(userDataH.coins / perData);
-        const allowed = Math.min(clips.length, maxByLimit, maxByBalance);
-        const toProcess = clips.slice(0, Math.max(0, allowed));
+        
+        // Calculate cost based on raw clips (before filtering)
+        const batchCost = (clips.length || 0) * perData;
+
+        // Check coin limit and deduct coins
+        if (clips.length > 0) {
+          const { data: userDataH, error: userErrH } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+          if (userErrH || typeof userDataH?.coins !== 'number') throw new Error('Could not fetch user coins');
+          if (userDataH.coins < batchCost) throw new Error('insufficient_coins');
+          
+          // Check if coin limit would be exceeded
+          if (coinLimit !== undefined) {
+            const totalSpent = (job.progress || 0) * perData;
+            if (totalSpent + batchCost > coinLimit) {
+              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
+              // Stop extraction - don't process this batch
+              break;
+            }
+          }
+          
+          console.log('[Process API] Deducting coins for hashtags:', batchCost);
+          await deductCoins(String(job.user_id), batchCost, supabase);
+        }
+
+        // Process all clips (no pre-filtering by coin limit)
+        const toProcess = clips;
 
         // Apply hashtag filters AFTER deduction (caption contains/stop, etc.) if provided
         const captionContainsStr = parsedFilters?.postCaptionContains as string | undefined;
@@ -1059,15 +1125,9 @@ export async function POST(req: NextRequest) {
         }).filter((r) => typeof r.post_id === 'string' && !!r.post_id);
 
         if (rows.length > 0) {
-          const batchCost = rows.length * perData;
-          const { data: userDataH2, error: userErrH2 } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-          if (userErrH2 || typeof userDataH2?.coins !== 'number') throw new Error('Could not fetch user coins');
-          if (userDataH2.coins < batchCost) throw new Error('insufficient_coins');
           console.log('[Process API] Inserting hashtag posts to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_hashtag_posts').insert(rows);
           if (insErr) throw new Error(insErr.message);
-          console.log('[Process API] Deducting coins for hashtags:', batchCost);
-          await deductCoins(String(job.user_id), batchCost, supabase);
         }
 
         let next_page_id = page.next_page_id;
