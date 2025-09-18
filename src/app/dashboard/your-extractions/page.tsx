@@ -52,6 +52,7 @@ export default function YourExtractionsPage() {
     completed_at: string;
     status: string;
     page_count: number;
+    coins_spent?: number | null;
     next_page_id: string | null;
     error_message: string | null;
     progress: number | null;
@@ -233,7 +234,7 @@ export default function YourExtractionsPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                               </svg>
                             )}
-                            {extraction.extraction_type === 'followings' && (
+                            {extraction.extraction_type === 'following' && (
                               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                               </svg>
@@ -279,8 +280,8 @@ export default function YourExtractionsPage() {
                             <span className="text-gray-700">{new Date(extraction.requested_at).toLocaleDateString()}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-500">Pages:</span>
-                            <span className="text-gray-700">{extraction.page_count || 1}</span>
+                            <span className="text-gray-500">Coins Spent:</span>
+                            <span className="text-gray-700">{typeof extraction.coins_spent === 'number' ? Math.ceil(extraction.coins_spent) : 0}</span>
                           </div>
                         </div>
                       </div>
@@ -373,7 +374,7 @@ export default function YourExtractionsPage() {
                         <div><span className="font-semibold text-gray-700">Target:</span> <span className="font-mono text-blue-700">{selectedExtraction.target_usernames || selectedExtraction.target_user_id}</span></div>
                         <div className="text-gray-700"><span className="font-semibold">Requested At:</span> {new Date(selectedExtraction.requested_at).toLocaleString()}</div>
                         <div><span className="font-semibold text-gray-700">Status:</span> <span className={selectedExtraction.status === 'completed' ? 'text-green-600' : 'text-red-600'}>{selectedExtraction.status}</span></div>
-                        <div className="text-gray-700"><span className="font-semibold">Page Count:</span> {selectedExtraction.page_count}</div>
+                        <div className="text-gray-700"><span className="font-semibold">Coins Spent:</span> {typeof selectedExtraction.coins_spent === 'number' ? Math.ceil(selectedExtraction.coins_spent) : 0}</div>
                         
                         {selectedExtraction.error_message && (
                           <div className="text-red-500"><span className="font-semibold">Error:</span> {selectedExtraction.error_message}</div>

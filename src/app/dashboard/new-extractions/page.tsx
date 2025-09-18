@@ -97,14 +97,18 @@ export default function NewExtractionsPage() {
 					if (data.status === 'completed') {
 						setShowSuccess(true);
 						setPolling(false);
+						setLoading(false);
 						setProgressCount(data.progress || progressCount); // Final progress count
+						setExtractionId(null);
 					} else if (data.status === 'failed') {
 						setError('Extraction failed.');
 						setPolling(false);
+						setLoading(false);
 					}
 				} catch (err) {
 					setError(String(err));
 					setPolling(false);
+					setLoading(false);
 				}
 			};
 			const interval = setInterval(poll, 2000); // Poll every 2 seconds for better UX
@@ -437,72 +441,27 @@ export default function NewExtractionsPage() {
 								</div>
 							)}
 
-							{/* Progress Section */}
-							{loading && (
-								<div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-									<div className="text-center space-y-4">
-										<h3 className="text-lg font-semibold text-gray-800">Extraction in Progress</h3>
-										<div className="space-y-2">
-											<div className="flex justify-between text-sm">
-												<span className="text-gray-600">
-													{progressTotal > 0 ? (
-														<>Extracted: {progressCount.toLocaleString()} / {progressTotal.toLocaleString()} {
-															selected === "followers" || selected === "following" || selected === "likers"
-																? "users"
-																: selected === "commenters"
-																	? "comments"
-																	: selected === "hashtags"
-																		? "posts"
-																		: selected === "posts"
-																			? "posts"
-																			: "items"
-														}</>
-													) : (
-														<>Extracted: {progressCount.toLocaleString()} {
-															selected === "followers" || selected === "following" || selected === "likers"
-																? "users"
-																: selected === "commenters"
-																	? "comments"
-																	: selected === "hashtags"
-																		? "posts"
-																		: selected === "posts"
-																			? "posts"
-																			: "items"
-														}</>
-													)}
-												</span>
-												<span className="text-gray-600 font-medium">
-													{progressTotal > 0 
-														? `${Math.min(100, Math.round((progressCount / progressTotal) * 100))}%`
-														: 'Processing...'
-													}
-												</span>
-											</div>
-											{progressTotal > 0 ? (
-												<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-													<div
-														className="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
-														style={{ width: `${Math.min(100, (progressCount / progressTotal) * 100)}%` }}
-													></div>
-												</div>
-											) : (
-												<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-													<div className="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full animate-pulse w-full"></div>
-												</div>
-											)}
-										</div>
-										{progressTotal > 0 ? (
-											<p className="text-sm text-gray-600">
-												Estimated {progressTotal.toLocaleString()} total items. Please wait while we collect your data...
-											</p>
-										) : (
-											<p className="text-sm text-gray-600">
-												Calculating total... Please wait while we collect your data...
-											</p>
-										)}
-									</div>
-								</div>
-							)}
+                            {/* Progress Section */}
+                            {(polling || loading) && (
+                                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                                    <div className="text-center space-y-3">
+                                        <h3 className="text-lg font-semibold text-gray-800">Extraction in Progress</h3>
+                                        <div className="text-sm text-gray-700">
+                                            Extracted: <span className="font-semibold text-blue-700">{progressCount.toLocaleString()}</span> {
+                                                selected === "followers" || selected === "following" || selected === "likers"
+                                                    ? "users"
+                                                    : selected === "commenters"
+                                                        ? "comments"
+                                                        : "posts"
+                                            }
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                            <div className="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                                        </div>
+                                        <p className="text-sm text-gray-600">This counter updates live as items are saved.</p>
+                                    </div>
+                                </div>
+                            )}
 						</div>
 						</div>
 					</div>
