@@ -13,15 +13,20 @@ begin
     return;
   end if;
 
-  -- try to insert spend log; if conflict, do nothing (already spent for this batch)
-  insert into public.extraction_spend_logs(user_id, extraction_id, batch_key, amount)
-  values (p_user_id, p_extraction_id, p_batch_key, p_amount)
-  on conflict (user_id, extraction_id, batch_key) do nothing;
-
-  if not found then
-    -- already spent for this batch
+  -- Check if this batch was already spent
+  if exists (
+    select 1 from public.extraction_spend_logs 
+    where user_id = p_user_id 
+      and extraction_id = p_extraction_id 
+      and batch_key = p_batch_key
+  ) then
+    -- already spent for this batch, exit early
     return;
   end if;
+
+  -- Insert spend log
+  insert into public.extraction_spend_logs(user_id, extraction_id, batch_key, amount)
+  values (p_user_id, p_extraction_id, p_batch_key, p_amount);
 
   update public.users u
   set coins = u.coins - p_amount
