@@ -1949,9 +1949,9 @@ export async function extractFilteredUsers<T extends UserLike>(
   filters: FilterOptions,
   getDetails: (username: string) => Promise<UserDetails>
 ): Promise<ExtractedUser[]> {
-  console.log('[Backend] [extractFilteredUsers] Filtering users with filters:', filters);
+  //console.log('[Backend] [extractFilteredUsers] Filtering users with filters:', filters);
   const usernames = users.map(u => u.username);
-  console.log('[Backend] [extractFilteredUsers] Usernames before filtering:', usernames);
+  //console.log('[Backend] [extractFilteredUsers] Usernames before filtering:', usernames);
   const filteredUsers: ExtractedUser[] = [];
   for (const userObj of users) {
     // Get detailed info for each user (followers, followings, likers, etc.)
@@ -1992,16 +1992,16 @@ export async function extractFilteredUsers<T extends UserLike>(
         const biography = (userDetails.biography || "").toLowerCase();
         const foundStop = stopWords.some(word => fullName.includes(word.toLowerCase()) || biography.includes(word.toLowerCase()));
         if (foundStop) {
-          console.log('[Backend] [extractFilteredUsers] STOP IF triggered: Found stop word in name/bio:', userDetails.username);
+          //console.log('[Backend] [extractFilteredUsers] STOP IF triggered: Found stop word in name/bio:', userDetails.username);
           break; // Stop further extraction and return collected users
         }
       }
     }
 
-    console.log('[Backend] [extractFilteredUsers] Checking user:', userDetails.username, userDetails);
+    //console.log('[Backend] [extractFilteredUsers] Checking user:', userDetails.username, userDetails);
     filterUser(userDetails, filters)
     if (!filterUser(userDetails, filters)) {
-      console.log('[Backend] [extractFilteredUsers] User did NOT pass filters:', userDetails.username);
+      //console.log('[Backend] [extractFilteredUsers] User did NOT pass filters:', userDetails.username);
       continue;
     }
     // Prepare contact/link data to save
@@ -2048,7 +2048,7 @@ export async function extractFilteredUsers<T extends UserLike>(
       is_verified: userDetails.is_verified,
       is_business: userDetails.is_business,
     };
-    console.log('[Backend] [extractFilteredUsers] User PASSED filters and will be saved:', saveData);
+    //console.log('[Backend] [extractFilteredUsers] User PASSED filters and will be saved:', saveData);
     filteredUsers.push(saveData);
   }
   console.log('[Backend] [extractFilteredUsers] Users after filtering:', filteredUsers.length);
