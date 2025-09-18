@@ -64,36 +64,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Job not in runnable state', status: currentJob.status });
   }
 
-  const now = Date.now();
-  const lockNotExpired = currentJob.lock_expires_at ? new Date(currentJob.lock_expires_at).getTime() > now : false;
-  if (currentJob.locked_by && lockNotExpired) {
-    console.warn('[Process API] Lock held by another worker');
-    return NextResponse.json({ message: 'Lock held by another worker' });
+  // Check if lock is held by another worker (not self-chaining)
+  if (currentJob.locked_by) {
+    // Check if this is a self-chaining call by looking at the request body
+    const isSelfChain = payload.record && payload.record.id === currentJob.id;
+    if (isSelfChain) {
+      console.log('[Process API] Self-chaining call detected, continuing with existing lock:', currentJob.locked_by);
+      // Continue processing with existing lock
+    } else {
+      console.warn('[Process API] Lock held by another worker:', currentJob.locked_by);
+      return NextResponse.json({ message: 'Lock held by another worker' });
+    }
   }
 
-  const workerId = crypto.randomUUID();
-  console.log('[Process API] Acquiring lock for worker:', workerId);
-  const newLockExpiry = new Date(now + 30 * 60_000).toISOString(); // 30 minutes instead of 1 minute
-  const currentVersion = typeof currentJob.version === 'number' ? currentJob.version : 0;
-  const { error: lockErr, data: lockRows } = await supabase
-    .from('extractions')
-    .update({
-      locked_by: workerId,
-      lock_expires_at: newLockExpiry,
-      status: 'running',
-      version: currentVersion + 1,
-    })
-    .eq('id', job.id)
-    .eq('version', currentVersion)
-    .select('id');
+  let workerId: string;
+  let lockAcquired = false;
 
-  if (lockErr) {
-    console.warn('[Process API] Lock acquire failed', lockErr.message);
-    return NextResponse.json({ message: 'Could not acquire lock' }, { status: 200 });
-  }
-  if (!lockRows || lockRows.length === 0) {
-    console.warn('[Process API] Lock already acquired elsewhere');
-    return NextResponse.json({ message: 'Lock already acquired elsewhere' }, { status: 200 });
+  if (currentJob.locked_by) {
+    // Self-chaining: use existing lock
+    workerId = currentJob.locked_by;
+    console.log('[Process API] Using existing lock for self-chaining:', workerId);
+    lockAcquired = true;
+  } else {
+    // New extraction: acquire lock
+    workerId = crypto.randomUUID();
+    console.log('[Process API] Acquiring lock for worker:', workerId);
+    const currentVersion = typeof currentJob.version === 'number' ? currentJob.version : 0;
+    const { error: lockErr, data: lockRows } = await supabase
+      .from('extractions')
+      .update({
+        locked_by: workerId,
+        status: 'running',
+        version: currentVersion + 1,
+      })
+      .eq('id', job.id)
+      .eq('version', currentVersion)
+      .select('id');
+
+    if (lockErr) {
+      console.warn('[Process API] Lock acquire failed', lockErr.message);
+      return NextResponse.json({ message: 'Could not acquire lock' }, { status: 200 });
+    }
+    if (!lockRows || lockRows.length === 0) {
+      console.warn('[Process API] Lock already acquired elsewhere');
+      return NextResponse.json({ message: 'Lock already acquired elsewhere' }, { status: 200 });
+    }
+    lockAcquired = true;
   }
 
   // Use the fresh row for processing
@@ -105,7 +121,7 @@ export async function POST(req: NextRequest) {
     console.warn('[Process API] Cancel requested for job, exiting:', job.id);
     await supabase
       .from('extractions')
-      .update({ status: 'cancelled', locked_by: null, lock_expires_at: null })
+      .update({ status: 'cancelled', locked_by: null })
       .eq('id', job.id)
       .eq('locked_by', workerId);
     return NextResponse.json({ message: 'Job cancelled' }, { status: 200 });
@@ -121,8 +137,7 @@ export async function POST(req: NextRequest) {
       .update({ 
         status: 'failed', 
         error_message: `Job exceeded maximum attempts (${MAX_ATTEMPTS})`,
-        locked_by: null, 
-        lock_expires_at: null 
+        locked_by: null
       })
       .eq('id', job.id)
       .eq('locked_by', workerId);
@@ -307,7 +322,6 @@ export async function POST(req: NextRequest) {
                 next_page_id: step.page_id || null,
                 current_step: JSON.stringify(step),
                 locked_by: hasMore ? workerId : null,
-                lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
               };
 
         console.log('[Process API] Updating extraction row for followers...');
@@ -458,7 +472,6 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           } as Record<string, unknown>;
     console.log('[Process API] Updating extraction row for followings...');
     const { error: updateErrorF } = await supabase
@@ -572,7 +585,6 @@ export async function POST(req: NextRequest) {
             next_page_id: null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           } as Record<string, unknown>;
     console.log('[Process API] Updating extraction row for likers...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -751,7 +763,6 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           };
     console.log('[Process API] Updating extraction row for posts...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -908,7 +919,6 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           } as Record<string, unknown>;
     console.log('[Process API] Updating extraction row for commenters...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -1085,7 +1095,6 @@ export async function POST(req: NextRequest) {
             next_page_id: step.page_id || null,
             current_step: JSON.stringify(step),
             locked_by: hasMore ? workerId : null,
-            lock_expires_at: hasMore ? new Date(Date.now() + 30 * 60_000).toISOString() : null,
           };
     console.log('[Process API] Updating extraction row for hashtags...');
     const { error: upErr } = await supabase.from('extractions').update(upd).eq('id', job.id).eq('locked_by', workerId);
@@ -1126,10 +1135,8 @@ export async function POST(req: NextRequest) {
     // maintain/refresh lock until done
     if (isDone) {
       updateFields.locked_by = null;
-      updateFields.lock_expires_at = null;
     } else {
       updateFields.locked_by = workerId;
-      updateFields.lock_expires_at = new Date(Date.now() + 30 * 60_000).toISOString();
     }
 
   console.log('[Process API] Final DB update for job:', job.id);
@@ -1155,7 +1162,7 @@ export async function POST(req: NextRequest) {
     console.error('[Process API] Job failed:', job?.id, message);
     await supabase
       .from('extractions')
-      .update({ status: 'failed', error_message: message, locked_by: null, lock_expires_at: null })
+      .update({ status: 'failed', error_message: message, locked_by: null })
       .eq('id', job?.id);
     return NextResponse.json({ error: message }, { status: 500 });
   }
