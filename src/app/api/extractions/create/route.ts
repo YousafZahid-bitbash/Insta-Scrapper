@@ -106,8 +106,8 @@ export async function POST(req: NextRequest) {
             }
           }
           
-          const extractionCost = Math.ceil(totalFollowingCount / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
-          const filteringCost = totalFollowingCount * COIN_RULES.followings.perUser;
+          const extractionCost = Math.ceil(totalFollowingCount / COIN_RULES.following.perChunk.users) * COIN_RULES.following.perChunk.coins;
+          const filteringCost = totalFollowingCount * COIN_RULES.following.perUser;
           coinCost = extractionCost + filteringCost;
           
           console.log('[Extraction API] Following count:', totalFollowingCount, 'Total cost:', coinCost);
