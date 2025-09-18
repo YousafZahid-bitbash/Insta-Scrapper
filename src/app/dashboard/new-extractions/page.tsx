@@ -278,9 +278,9 @@ export default function NewExtractionsPage() {
 														}
 														// Check coin limit filter
 														const coinLimitNum = Number(filters.coinLimit);
-														if (filters.coinLimit && (!Number.isFinite(coinLimitNum) || coinLimitNum <= 0 || coinLimitNum > coins)) {
-															if (coinLimitNum <= 0) {
-																setError(`Coin limit must be greater than 0.`);
+														if (filters.coinLimit && (!Number.isFinite(coinLimitNum) || coinLimitNum < 0 || coinLimitNum > coins)) {
+															if (coinLimitNum < 0) {
+																setError(`Coin limit cannot be negative.`);
 															} else if (coinLimitNum > coins) {
 																setError(`Coin limit cannot exceed your current coin balance (${coins}).`);
 															}
@@ -325,7 +325,7 @@ export default function NewExtractionsPage() {
 												Coin Limit (Optional)
 											</label>
 											<p className="text-xs text-gray-600">
-												Set a maximum number of coins to spend on this extraction
+												Set a maximum number of coins to spend on this extraction (0 = no limit)
 											</p>
 										</div>
 									</div>

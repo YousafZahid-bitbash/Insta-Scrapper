@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
 
         // Coin limit calculation based on remaining budget BEFORE filtering
         const coinLimitRaw = (parsedFilters?.followers?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        const coinLimit = coinLimitRaw !== undefined && Number(coinLimitRaw) > 0 ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perUserTotalFollowers = (COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users) + COIN_RULES.followers.perUser;
 
         const { data: balanceRow, error: balanceErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
@@ -465,7 +465,7 @@ export async function POST(req: NextRequest) {
 
         // Coin limit calculation based on remaining budget BEFORE filtering
         const coinLimitRaw = (parsedFilters?.following?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        const coinLimit = coinLimitRaw !== undefined && Number(coinLimitRaw) > 0 ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perUserTotalFollowing = (COIN_RULES.following.perChunk.coins / COIN_RULES.following.perChunk.users) + COIN_RULES.following.perUser;
         const { data: balF, error: balErrF } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
         if (balErrF || typeof balF?.coins !== 'number') throw new Error('Could not fetch user coins');
@@ -679,7 +679,7 @@ export async function POST(req: NextRequest) {
 
         // Cap by remaining coin limit and balance BEFORE spending
         const coinLimitRaw = (parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        const coinLimit = coinLimitRaw !== undefined && Number(coinLimitRaw) > 0 ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perChunkUsers = COIN_RULES.likers.perChunk.users;
         const perChunkCoins = COIN_RULES.likers.perChunk.coins;
         const perUserDetail = COIN_RULES.likers.perUser;
@@ -869,12 +869,12 @@ export async function POST(req: NextRequest) {
             const clean = uname.replace(/^@/, '');
             console.log('[Process API] Resolving posts target:', clean);
             try {
-              const user = await userByUsernameV1(clean);
+            const user = await userByUsernameV1(clean);
               console.log('[Process API] userByUsernameV1 result for posts:', clean, user);
-              if (user?.pk) {
-                const total = typeof user.media_count === 'number' ? user.media_count : 0;
-                totalEstimated += total;
-                resolvedTargets.push({ username: clean, pk: user.pk, total });
+            if (user?.pk) {
+              const total = typeof user.media_count === 'number' ? user.media_count : 0;
+              totalEstimated += total;
+              resolvedTargets.push({ username: clean, pk: user.pk, total });
                 console.log('[Process API] Resolved posts target:', { username: clean, pk: user.pk, total });
               } else {
                 console.warn('[Process API] Could not resolve posts user for username:', clean, 'user result:', user);
@@ -900,7 +900,7 @@ export async function POST(req: NextRequest) {
         // Cap by remaining coin limit and balance BEFORE spending (posts)
         const perPost = COIN_RULES.posts.perPost;
         const coinLimitRawP = (parsedFilters?.posts?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimitP = coinLimitRawP !== undefined ? Math.floor(Number(coinLimitRawP)) : undefined;
+        const coinLimitP = coinLimitRawP !== undefined && Number(coinLimitRawP) > 0 ? Math.floor(Number(coinLimitRawP)) : undefined;
         const { data: balP, error: balErrP } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
         if (balErrP || typeof balP?.coins !== 'number') throw new Error('Could not fetch user coins');
         const userCoinsP = balP.coins;
@@ -1168,7 +1168,7 @@ export async function POST(req: NextRequest) {
 
         // Cap by remaining coin limit and balance BEFORE spending (commenters)
         const coinLimitRaw = (parsedFilters?.commenters?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        const coinLimit = coinLimitRaw !== undefined && Number(coinLimitRaw) > 0 ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perChunkUsers = COIN_RULES.commenters.perChunk.users; // 2
         const perChunkCoins = COIN_RULES.commenters.perChunk.coins; // 1
         const perUserTotalCommenters = perChunkCoins / perChunkUsers; // cost per user
@@ -1410,7 +1410,7 @@ export async function POST(req: NextRequest) {
 
         // Cap by remaining coin limit and balance BEFORE spending (hashtags)
         const coinLimitRaw = (parsedFilters?.hashtags?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        const coinLimit = coinLimitRaw !== undefined && Number(coinLimitRaw) > 0 ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perData = COIN_RULES.hashtags.perData;
         const { data: balH, error: balErrH } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
         if (balErrH || typeof balH?.coins !== 'number') throw new Error('Could not fetch user coins');

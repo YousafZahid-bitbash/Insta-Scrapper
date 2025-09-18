@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     // Calculate coin cost based on extraction type and coin limit
     let coinCost = 0;
-    const coinLimit = filters?.coinLimit ? parseInt(filters.coinLimit) : undefined;
+    const coinLimit = filters?.coinLimit && parseInt(filters.coinLimit) > 0 ? parseInt(filters.coinLimit) : undefined;
     
     switch (type) {
       case 'followers':
