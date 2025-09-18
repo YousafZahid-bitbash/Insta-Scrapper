@@ -431,11 +431,20 @@ export async function POST(req: NextRequest) {
           let totalEstimated = 0;
           for (const uname of usernames) {
             const clean = uname.replace(/^@/, '');
+            console.log('[Process API] Resolving following target:', clean);
+            try {
             const user = await userByUsernameV1(clean);
+              console.log('[Process API] userByUsernameV1 result for following:', clean, user);
             if (user?.pk) {
               const total = typeof user.following_count === 'number' ? user.following_count : 0;
               totalEstimated += total;
               resolvedTargets.push({ username: clean, pk: user.pk, total });
+                console.log('[Process API] Resolved following target:', { username: clean, pk: user.pk, total });
+              } else {
+                console.warn('[Process API] Could not resolve following user for username:', clean, 'user result:', user);
+              }
+            } catch (err) {
+              console.error('[Process API] Error resolving following user:', clean, err);
             }
           }
           step = { idx: 0, page_id: undefined, targets: resolvedTargets, totalEstimated };

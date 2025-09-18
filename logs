@@ -1,14 +1,14 @@
-2025-09-18T08:55:28.713Z [info] [hikerApi] process.env.NEXT_PUBLIC_HIKER_API_KEY: 0xf5dlh4ay8nvxt8rx0gunlldv6q7zyl
-2025-09-18T08:55:28.713Z [info] [hikerApi] process.env.HIKER_API_KEY: undefined
-2025-09-18T08:55:28.713Z [info] [hikerApi] process.env.NODE_ENV: production
-2025-09-18T08:55:28.713Z [info] [Process API] Loaded process route
-2025-09-18T08:55:28.722Z [info] [Process API] --- Handler Entry ---
-2025-09-18T08:55:28.722Z [info] [Process API] POST /api/extractions/process called
-2025-09-18T08:55:28.723Z [info] [Process API] Received payload: {"type":"INSERT","table":"extractions","record":{"id":201,"status":"pending","filters":"{\"extractPhone\":true,\"extractEmail\":true,\"extractLinkInBio\":true,\"privacy\":\"doesn't matter\",\"profilePicture\":\"doesn't matter\",\"verifiedAccount\":\"doesn't matter\",\"businessAccount\":\"doesn't matter\",\"followersMin\":\"\",\"followersMax\":\"\",\"followingsMin\":\"\",\"followingsMax\":\"\",\"filterByName\":\"\",\"filterByNameInBioContains\":\"\",\"filterByNameInBioStop\":\"\",\"coinLimit\":\"15\"}","user_id":"0c20d057-4671-4844-9d41-0f18691659ee","version":0,"attempts":0,"progress":0,"locked_by":null,"last_error":null,"page_count":1,"coins_spent":0,"completed_at":null,"current_step":null,"next_page_id":null,"requested_at":"2025-09-18T08:55:26.238+00:00","error_message":null,"target_user_id":null,"extraction_type":"followers","lock_expires_at":null,"cancel_requested":false,"target_usernames":"yousaf.zahid.10"},"schema":"public","old_record":null}
-2025-09-18T08:55:28.723Z [info] [Process API] Job record: {
-  id: 201,
+2025-09-18T15:36:39.710Z [info] [hikerApi] process.env.NEXT_PUBLIC_HIKER_API_KEY: 0xf5dlh4ay8nvxt8rx0gunlldv6q7zyl
+2025-09-18T15:36:39.710Z [info] [hikerApi] process.env.HIKER_API_KEY: undefined
+2025-09-18T15:36:39.710Z [info] [hikerApi] process.env.NODE_ENV: production
+2025-09-18T15:36:39.710Z [info] [Process API] Loaded process route
+2025-09-18T15:36:39.720Z [info] [Process API] --- Handler Entry ---
+2025-09-18T15:36:39.720Z [info] [Process API] POST /api/extractions/process called
+2025-09-18T15:36:39.721Z [info] [Process API] Received payload: {"type":"INSERT","table":"extractions","record":{"id":206,"status":"pending","filters":"{\"extractPhone\":false,\"extractEmail\":false,\"extractLinkInBio\":false,\"privacy\":\"doesn't matter\",\"profilePicture\":\"doesn't matter\",\"verifiedAccount\":\"doesn't matter\",\"businessAccount\":\"doesn't matter\",\"followersMin\":\"\",\"followersMax\":\"\",\"followingsMin\":\"\",\"followingsMax\":\"\",\"filterByName\":\"\",\"filterByNameInBioContains\":\"\",\"filterByNameInBioStop\":\"\",\"coinLimit\":\"20\"}","user_id":"0c20d057-4671-4844-9d41-0f18691659ee","version":0,"attempts":0,"progress":0,"locked_by":null,"last_error":null,"page_count":1,"coins_spent":0,"completed_at":null,"current_step":null,"next_page_id":null,"requested_at":"2025-09-18T15:36:37.198+00:00","error_message":null,"target_user_id":null,"extraction_type":"following","lock_expires_at":null,"cancel_requested":false,"target_usernames":"yousaf.zahid.10"},"schema":"public","old_record":null}
+2025-09-18T15:36:39.721Z [info] [Process API] Job record: {
+  id: 206,
   status: 'pending',
-  filters: `{"extractPhone":true,"extractEmail":true,"extractLinkInBio":true,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"15"}`,
+  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"20"}`,
   user_id: '0c20d057-4671-4844-9d41-0f18691659ee',
   version: 0,
   attempts: 0,
@@ -20,21 +20,21 @@
   completed_at: null,
   current_step: null,
   next_page_id: null,
-  requested_at: '2025-09-18T08:55:26.238+00:00',
+  requested_at: '2025-09-18T15:36:37.198+00:00',
   error_message: null,
   target_user_id: null,
-  extraction_type: 'followers',
+  extraction_type: 'following',
   lock_expires_at: null,
   cancel_requested: false,
   target_usernames: 'yousaf.zahid.10'
 }
-2025-09-18T08:55:28.723Z [info] [Process API] Fetching current job row from DB...
-2025-09-18T08:55:29.021Z [info] [Process API] Current job: {
-  id: 201,
+2025-09-18T15:36:39.721Z [info] [Process API] Fetching current job row from DB...
+2025-09-18T15:36:40.556Z [info] [Process API] Current job: {
+  id: 206,
   user_id: '0c20d057-4671-4844-9d41-0f18691659ee',
-  extraction_type: 'followers',
+  extraction_type: 'following',
   target_user_id: null,
-  requested_at: '2025-09-18T08:55:26.238+00:00',
+  requested_at: '2025-09-18T15:36:37.198+00:00',
   completed_at: null,
   status: 'pending',
   page_count: 1,
@@ -43,7 +43,7 @@
   progress: 0,
   current_step: null,
   target_usernames: 'yousaf.zahid.10',
-  filters: `{"extractPhone":true,"extractEmail":true,"extractLinkInBio":true,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"15"}`,
+  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"20"}`,
   attempts: 0,
   locked_by: null,
   lock_expires_at: null,
@@ -52,490 +52,25 @@
   cancel_requested: false,
   coins_spent: 0
 }
-2025-09-18T08:55:29.021Z [info] [Process API] Acquiring lock for worker: 32d5b233-08d7-4588-84e4-253148f2b945
-2025-09-18T08:55:29.830Z [info] [Process API] Using fresh job row for processing
-2025-09-18T08:55:30.614Z [info] [Process API] Processing job: 201 type: followers
-2025-09-18T08:55:30.614Z [info] [Process API] Extraction type: followers
-2025-09-18T08:55:30.614Z [info] [Process API] Starting followers extraction
-2025-09-18T08:55:30.614Z [info] [Process API] Followers usernames: [ 'yousaf.zahid.10' ]
-2025-09-18T08:55:30.614Z [info] [Process API] Followers step: { idx: 0, targets: [] }
-2025-09-18T08:55:30.614Z [info] [Process API] Resolving follower targets...
-2025-09-18T08:55:30.614Z [info] [hikerApi] userByUsernameV1 called with: yousaf.zahid.10
-2025-09-18T08:55:30.615Z [info] [hikerApi] HIKER_API_KEY (assigned): 0xf5dlh4ay8nvxt8rx0gunlldv6q7zyl
-2025-09-18T08:55:31.651Z [info] [hikerApi] userByUsernameV1 response for yousaf.zahid.10 : {
-  pk: 5781822144,
-  username: 'yousaf.zahid.10',
-  full_name: 'Yousaf Zahid',
-  is_private: false,
-  profile_pic_url: 'https://scontent-det1-1.cdninstagram.com/v/t51.2885-19/419032896_293036710019027_1494412114659372663_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby42MTcuYzIifQ&_nc_ht=scontent-det1-1.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2QGOEgnCTq_fuennbOPMU8vnm5fagnaaBcqbuse5EKA6OeQjN2s5bUGJy6UUD0k099E&_nc_ohc=_wByEycwYyEQ7kNvwFxOPsF&_nc_gid=FPBjKUbP49TaTT8oms88VQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GEDv_RjTvwHtgwoBAHfuT4rmN70UbkULAAAB-ccb7-5&oh=00_AfaSvgesXCfYPt_cvJ4_DtwIbDu__Tp6zGb_Gx8jqnb26w&oe=68D19EC5&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 32,
-  follower_count: 83,
-  following_count: 168,
-  biography: 'No bio',
-  external_url: '',
-  account_type: 3,
-  is_business: false,
-  public_email: '',
-  contact_phone_number: '',
-  public_phone_country_code: '',
-  public_phone_number: '',
-  business_contact_method: 'UNKNOWN',
-  business_category_name: null,
-  category_name: null,
-  category: 'Personal blog',
-  address_street: '',
-  city_id: 0,
-  city_name: '',
-  latitude: 0,
-  longitude: 0,
-  zip: '',
-  instagram_location_id: '',
-  interop_messaging_user_fbid: 109360147120240
+2025-09-18T15:36:40.556Z [info] [Process API] Acquiring lock for worker: 360a1415-3caf-4b69-a2de-d4060fa7d1ea
+2025-09-18T15:36:41.386Z [info] [Process API] Using fresh job row for processing
+2025-09-18T15:36:42.193Z [info] [Process API] Processing job: 206 type: following
+2025-09-18T15:36:42.193Z [info] [Process API] Extraction type: following
+2025-09-18T15:36:42.193Z [info] [Process API] Starting following extraction
+2025-09-18T15:36:42.193Z [info] [Process API] Following usernames: [ 'yousaf.zahid.10' ]
+2025-09-18T15:36:42.193Z [info] [Process API] Following step: { idx: 0, targets: [] }
+2025-09-18T15:36:42.193Z [info] [Process API] No followings to process, finishing.
+2025-09-18T15:36:42.193Z [info] [Process API] Final updateFields: {}
+2025-09-18T15:36:42.193Z [info] [Process API] Final DB update for job: 206
+2025-09-18T15:36:42.194Z [info] [Process API] Update fields: {
+  page_count: 2,
+  progress: 0,
+  status: 'completed',
+  completed_at: '2025-09-18T15:36:42.193Z',
+  error_message: null,
+  next_page_id: null,
+  locked_by: null
 }
-2025-09-18T08:55:31.651Z [info] [Process API] Resolved target: { username: 'yousaf.zahid.10', pk: 5781822144, total: 83 }
-2025-09-18T08:55:31.651Z [info] [Process API] Final resolvedTargets: [ { username: 'yousaf.zahid.10', pk: 5781822144, total: 83 } ] totalEstimated: 83
-2025-09-18T08:55:35.388Z [info] [hikerApi] userByUsernameV1 response for aabubakar__ : {
-  pk: 4171927870,
-  username: 'aabubakar__',
-  full_name: '',
-  is_private: true,
-  profile_pic_url: 'https://scontent-vie1-1.cdninstagram.com/v/t51.2885-19/542754462_18401254549143871_246511738917218360_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-vie1-1.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QHx1Sm79TEqcwiJxFShxCQy8l5SzCzOlqyHqj8o677WrGlnrquNg3sUJF47QKI1QqU&_nc_ohc=z3pWDPkBv7oQ7kNvwEj0adI&_nc_gid=Rub-K9hhrZtEzoqHGoupKw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GJ7GWSA-wdLw119BADjoH9ceyWsDbmNDAQAB-ccb7-5&oh=00_AfakZVgN-hNGLh8dnZqT0pdXkauidIy1ujY1Eyp5Ue6jLw&oe=68D1B24A&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 17,
-  follower_count: 888,
-  following_count: 776,
-  biography: 'is camera a confessional?',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 114776036572511
-}
-2025-09-18T08:55:35.388Z [info] [hikerApi] userByUsernameV1 called with: 432mr2025
-2025-09-18T08:55:32.502Z [info] [Process API] Processing follower target: { username: 'yousaf.zahid.10', pk: 5781822144, total: 83 }
-2025-09-18T08:55:32.502Z [info] [Process API] Fetching followers page for pk: 5781822144 page_id: undefined
-2025-09-18T08:55:34.055Z [info] [Process API] Followers cap before filtering: {
-  pageUsers: 45,
-  allowedRawUsers: 13,
-  coinLimit: 15,
-  coinsSpent: 0,
-  userCoins: 455
-}
-2025-09-18T08:55:34.055Z [info] [Process API] Filtering users...
-2025-09-18T08:55:34.055Z [info] [hikerApi] userByUsernameV1 called with: aabubakar__
-2025-09-18T08:55:36.324Z [info] [hikerApi] userByUsernameV1 response for 432mr2025 : {
-  pk: 76246683889,
-  username: '432mr2025',
-  full_name: 'Aryan Mughal',
-  is_private: false,
-  profile_pic_url: 'https://scontent-lhr6-1.cdninstagram.com/v/t51.2885-19/537377343_17849123394539890_4606143102776272553_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lhr6-1.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2QFFHP7OkCIXz4RVrfbwiYLDCHbIOZKFQubJ1pZ3RBES8JTi_NwCIbCz3MRufN9h_f0&_nc_ohc=rk5_31jZBZUQ7kNvwEw4DUm&_nc_gid=TTxs0GKXJxSjfews6R8nIg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GD_6ByBy0Xvjrmk-AKlmmGG-Tuw-bmNDAQAB-ccb7-5&oh=00_AfaeEUrJRMyjJ5Bd69vTc7Ii-V1629uCy1FWnl1Rez_Z6A&oe=68D18B7F&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 1,
-  follower_count: 81,
-  following_count: 394,
-  biography: '',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 17846905656539890
-}
-2025-09-18T08:55:36.324Z [info] [hikerApi] userByUsernameV1 called with: zaki_haider101
-2025-09-18T08:55:37.320Z [info] [hikerApi] userByUsernameV1 response for zaki_haider101 : {
-  pk: 76194085153,
-  username: 'zaki_haider101',
-  full_name: 'Syed zaki haider',
-  is_private: false,
-  profile_pic_url: 'https://scontent-det1-1.cdninstagram.com/v/t51.2885-19/527488119_17845593093541154_9213429887003825216_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-det1-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2QHycEL1puBLinfaoF-Hp61xEkAAnLWEavCIysCiKIwWlueaNLhUPFG6mHR0QfOloV0&_nc_ohc=EdMbz2aTpusQ7kNvwHGbEci&_nc_gid=FEUdW_PqAQclvW7WMvX9wQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GHfUcB8ijSXteGY-AECU1Nmqrdx-bmNDAQAB-ccb7-5&oh=00_AfZaKWPsTSUkhCFkYzd5tvj839VRp0I0A2k2ciYcapWalg&oe=68D18AA2&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 4,
-  follower_count: 63,
-  following_count: 217,
-  biography: 'Multi Startup Entrepreneur \nCo Founder Devinci codes\nCo Founder Sales Aura',
-  external_url: 'http://www.devincicodes.com',
-  account_type: 2,
-  is_business: true,
-  public_email: '',
-  contact_phone_number: '',
-  public_phone_country_code: '',
-  public_phone_number: '',
-  business_contact_method: 'UNKNOWN',
-  business_category_name: null,
-  category_name: null,
-  category: 'Entrepreneur',
-  address_street: '',
-  city_id: 0,
-  city_name: '',
-  latitude: 0,
-  longitude: 0,
-  zip: '',
-  instagram_location_id: '',
-  interop_messaging_user_fbid: 17845323342541154
-}
-2025-09-18T08:55:37.320Z [info] [hikerApi] userByUsernameV1 called with: danaa.xvx
-2025-09-18T08:55:38.300Z [info] [hikerApi] userByUsernameV1 response for danaa.xvx : {
-  pk: 1824930304,
-  username: 'danaa.xvx',
-  full_name: 'Danaa',
-  is_private: true,
-  profile_pic_url: 'https://scontent-ord5-3.cdninstagram.com/v/t51.2885-19/467356809_1546184466042576_8780554950868974230_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-ord5-3.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QHp6f5MnwgQcVUIuwMZWTF7w12b-dyiMfl1FDk0CS_PUHOFvMEcZaEhQIDMWTqEep4&_nc_ohc=PuPbrWfy_JQQ7kNvwFZthnZ&_nc_gid=9_F1mWh-p6sb50en51brdw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GIlM2xvQDtsfP34FAJa6V9k0zNp5bkULAAAB-ccb7-5&oh=00_AfbkvlHBC_AGHR1Fm4SOtRi7JyieltCR8c6J_uBvFsNkzQ&oe=68D1A5DE&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 29,
-  follower_count: 615,
-  following_count: 2856,
-  biography: '⚔️\nfts',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 101119801293369
-}
-2025-09-18T08:55:38.300Z [info] [hikerApi] userByUsernameV1 called with: __.hafsa8
-2025-09-18T08:55:39.339Z [info] [hikerApi] userByUsernameV1 response for __.hafsa8 : {
-  pk: 48396889680,
-  username: '__.hafsa8',
-  full_name: '𝕳𝖆𝖋𝖘𝖆',
-  is_private: true,
-  profile_pic_url: 'https://scontent-atl3-2.cdninstagram.com/v/t51.2885-19/541315454_18057621905609681_5525463594970112659_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-atl3-2.cdninstagram.com&_nc_cat=105&_nc_oc=Q6cZ2QEQpjbWt_w56kjKUeZ1ClT7N5oX9vn02ICOHGpDGMT38jl32kBlSQL-_btsndF9ql8&_nc_ohc=HeJ5QLunjw8Q7kNvwG0NyOr&_nc_gid=jCKOaYLd_Wt-s5bi4TL52w&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GH7RQyDREyy7TydAAJPii03dY65MbmNDAQAB-ccb7-5&oh=00_AfanSeKdHokwjpaWUxtxOigUs1IWa1ktJruaRyJeLze46Q&oe=68D19EA8&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 3,
-  follower_count: 1407,
-  following_count: 1124,
-  biography: '@_mysticalbooklets\n@journalthroughcities\n@marchebakes',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 17848594574609680
-}
-2025-09-18T08:55:39.339Z [info] [hikerApi] userByUsernameV1 called with: rayaan._.00
-2025-09-18T08:55:40.082Z [info] [hikerApi] userByUsernameV1 response for rayaan._.00 : {
-  pk: 74984297473,
-  username: 'rayaan._.00',
-  full_name: 'rayan',
-  is_private: true,
-  profile_pic_url: 'https://scontent-bru2-1.cdninstagram.com/v/t51.2885-19/527693432_17854413324497474_7131838969477621030_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmV4cGVyaW1lbnRhbCJ9&_nc_ht=scontent-bru2-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2QEpk79wE0ldsmlBBoOg2CABwCAqZIceaQ7gQtPlBjCshgO97DqIX6zNG9keuqgi3wQ&_nc_ohc=aJ_YHb7FqBkQ7kNvwGcwVrI&_nc_gid=Z7HPnmJvFlSRwswE-kxqHw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GHj2cx9CMuGLfm4-ACZlALPBYflibmNDAQAB-ccb7-5&oh=00_Afa36q4owsLtGBtJGNm4zt2jimHIRLXIV_1kFhA-jGomiw&oe=68D19FAF&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 0,
-  follower_count: 95,
-  following_count: 185,
-  biography: '🇵🇰🇬🇧',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 17844039486497474
-}
-2025-09-18T08:55:40.082Z [info] [hikerApi] userByUsernameV1 called with: _.ahmeday.rz_
-2025-09-18T08:55:47.148Z [info] [hikerApi] userByUsernameV1 response for _.ahmeday.rz_ : {
-  pk: 54630568028,
-  username: '_.ahmeday.rz_',
-  full_name: 'Saeed Ahmed',
-  is_private: true,
-  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/500477130_17987502851816029_4184325927049849396_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDMyLmMyIn0&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=101&_nc_oc=Q6cZ2QFyF2BbprW9FM_Qs_4ypV4hkfau6z40vWzuqufJ1JI8n4-vi99Mx5phygz6DtYH8WQ&_nc_ohc=Xgh2KZ6yuZkQ7kNvwFz-tHN&_nc_gid=UJNp3vLzBrkN_8QkC8hNPg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GMqs1B1d_uDdiec-ADRqQ9pCthE6bvEnAQAB-ccb7-5&oh=00_Afbn9MqDyUV7dRqjapcLt-BpVzt5HU7tJB928yf43jKl5g&oe=68D18529&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 0,
-  follower_count: 112,
-  following_count: 177,
-  biography: 'CS',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 17848064612816028
-}
-2025-09-18T08:55:47.148Z [info] [hikerApi] userByUsernameV1 called with: nilastickershop
-2025-09-18T08:55:48.285Z [info] [hikerApi] userByUsernameV1 response for nilastickershop : {
-  pk: 75430622915,
-  username: 'nilastickershop',
-  full_name: "Nila's sticker shop",
-  is_private: false,
-  profile_pic_url: 'https://scontent-iad3-2.cdninstagram.com/v/t51.2885-19/498615513_17842607007518916_1894000602256999141_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QEaByop0O41QYbymocHrD7e5YPswZGwb81RLhrXeLsjs2DlK2Q84a0mSkx1d0vlIrg&_nc_ohc=FXNzacgb9hwQ7kNvwG9_ZSb&_nc_gid=yV9D02aQ5Toj1rFUhbJk3w&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GNlEuB3E0IyswWM-AOWC502D10gabvEnAQAB-ccb7-5&oh=00_AfZsSycOFsflI9IgYxLznVET_Jf4nX3sR0jrfFXKLM1ONw&oe=68D1A4D1&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 2,
-  follower_count: 6,
-  following_count: 37,
-  biography: '✨ Pop culture stickers & custom designs 💌\n' +
-    '🎨 Commissions open — DM me to order',
-  external_url: '',
-  account_type: 2,
-  is_business: true,
-  public_email: '',
-  contact_phone_number: '',
-  public_phone_country_code: '',
-  public_phone_number: '',
-  business_contact_method: 'UNKNOWN',
-  business_category_name: null,
-  category_name: null,
-  category: 'Art',
-  address_street: '',
-  city_id: 0,
-  city_name: '',
-  latitude: 0,
-  longitude: 0,
-  zip: '',
-  instagram_location_id: '',
-  interop_messaging_user_fbid: 17842606881518916
-}
-2025-09-18T08:55:48.285Z [info] [hikerApi] userByUsernameV1 called with: alidad.wakeel
-2025-09-18T08:55:49.356Z [info] [hikerApi] userByUsernameV1 response for alidad.wakeel : {
-  pk: 11712004289,
-  username: 'alidad.wakeel',
-  full_name: 'محمد علی',
-  is_private: false,
-  profile_pic_url: 'https://scontent-sof1-1.cdninstagram.com/v/t51.2885-19/485191733_2180718859012490_906551464273184513_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-sof1-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2QH65hSf1av1v6UnXWtxK_ARkwId9mUNjhMfibjuXWlIt8YwsIKBHkSIRiTBCUuBv0M&_nc_ohc=c_8A-A6Ykp0Q7kNvwFuKT7b&_nc_gid=k0dBDkq4apiqpOibNBwPlg&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GDVw6xyKSfIsWr8HAAEHne7At5QMbkULAAAB-ccb7-5&oh=00_AfabEB7GR35bXmahWAQ2wQWQUFef0EBBSdUaROx64sqegg&oe=68D1A2BC&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 21,
-  follower_count: 295,
-  following_count: 539,
-  biography: 'no one reads this anyway..',
-  external_url: '',
-  account_type: 3,
-  is_business: false,
-  public_email: '',
-  contact_phone_number: '',
-  public_phone_country_code: '',
-  public_phone_number: '',
-  business_contact_method: 'UNKNOWN',
-  business_category_name: null,
-  category_name: null,
-  category: 'Athlete',
-  address_street: '',
-  city_id: 0,
-  city_name: '',
-  latitude: 0,
-  longitude: 0,
-  zip: '',
-  instagram_location_id: '',
-  interop_messaging_user_fbid: 119741652746472
-}
-2025-09-18T08:55:49.356Z [info] [hikerApi] userByUsernameV1 called with: heenspamm
-2025-09-18T08:55:51.761Z [info] [hikerApi] userByUsernameV1 response for heenspamm : {
-  pk: 64164779661,
-  username: 'heenspamm',
-  full_name: 'raheen',
-  is_private: true,
-  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/505751639_17911814415139662_4545848323619620244_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=106&_nc_oc=Q6cZ2QHPHwNUbyFOx32h0en_v8XhiyTjss_GfwURofAD9lY-SKqcLsOo08aZJys1_kvz_as&_nc_ohc=fdI9FH70e2kQ7kNvwFS6o3H&_nc_gid=SaLtxnYz3jmsGIU2X2dfKw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GFcoJR5OQ39Hs6I-AJQFJyT3GBY-bvEnAQAB-ccb7-5&oh=00_AfZcvXwC6g7BM9CaW0T1GvlCzwRiZARBXR8Opi2oKXEsmw&oe=68D1A097&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 23,
-  follower_count: 48,
-  following_count: 45,
-  biography: 'Yahan dangal machay ga!',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 17843472000139662
-}
-2025-09-18T08:55:51.762Z [info] [hikerApi] userByUsernameV1 called with: amaan_aamir_
-2025-09-18T08:55:53.083Z [info] [hikerApi] userByUsernameV1 response for amaan_aamir_ : {
-  pk: 14965123610,
-  username: 'amaan_aamir_',
-  full_name: 'Amaan Aamir',
-  is_private: false,
-  profile_pic_url: 'https://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/503510825_18111296731499611_1002350710179324452_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=107&_nc_oc=Q6cZ2QHSfcVMbW3MelTzxgVgpWGhVVfTUWSoTLp8WftXmwEHUo6DF3BCRjqt3vBi1M0YStc&_nc_ohc=4z2rv6Or3JwQ7kNvwF4jyeO&_nc_gid=lPYUoYADMJO1wPXboREZkw&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GCn3Ah5bTBrgIFhAACRimQSpEOkNbvEnAQAB-ccb7-5&oh=00_AfZlLzvvG9VjiblHtB94NUe1iNU9Ipm8ovyacxcxSxyt4g&oe=68D1AD5C&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 9,
-  follower_count: 541,
-  following_count: 1586,
-  biography: 'Lahore, Pakistan\nFAST-NU, LHR 25\nSIC MUNDUS CREATUS EST.',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 101992637867038
-}
-2025-09-18T08:55:53.083Z [info] [hikerApi] userByUsernameV1 called with: sidd___3010
-2025-09-18T08:55:54.701Z [info] [hikerApi] userByUsernameV1 response for sidd___3010 : {
-  pk: 73509416993,
-  username: 'sidd___3010',
-  full_name: 'Shaheer Siddiqi',
-  is_private: false,
-  profile_pic_url: 'https://scontent-sea5-1.cdninstagram.com/v/t51.2885-19/542365622_17865274437448994_3116478213334158542_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDI0LmMyIn0&_nc_ht=scontent-sea5-1.cdninstagram.com&_nc_cat=102&_nc_oc=Q6cZ2QHA53bMqFpfxfpWnrNCUd0l4GJ5vd_67My3tpQqEgku7Fe84W7hmpIQcTfhGjOV-Ko&_nc_ohc=mA5U317b_B0Q7kNvwGLmEgd&_nc_gid=telKuJ2TJSkL1kq84CA_NQ&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GLbXUyAitahYX3g-AM7MBlhs9D8rbmNDAQAB-ccb7-5&oh=00_AfZQ_4rAmHHW_4xjaGwB-HxSnTmb8nor5ut98ARzMtV_hw&oe=68D1922D&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 0,
-  follower_count: 78,
-  following_count: 134,
-  biography: '',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 17843480064448994
-}
-2025-09-18T08:55:54.701Z [info] [hikerApi] userByUsernameV1 called with: rohablone
-2025-09-18T08:55:56.424Z [info] [hikerApi] userByUsernameV1 response for rohablone : {
-  pk: 72040835800,
-  username: 'rohablone',
-  full_name: 'Rohab Lone',
-  is_private: true,
-  profile_pic_url: 'https://scontent-sjc3-1.cdninstagram.com/v/t51.2885-19/473641182_582071334635832_9048996852240030947_n.jpg?stp=dst-jpg_e0_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-sjc3-1.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2QHhPEbq0PE6SRaZkQs0LCCcTOXEn0_8uGqliwgOjq1_j7OtBKDRtZrzuja2axbNdNw&_nc_ohc=vx7-WHHeZTIQ7kNvwFzcLqq&_nc_gid=JuB5jJJtMEKUXUygGGOMLA&edm=AO4kU9EBAAAA&ccb=7-5&ig_cache_key=GN4wOxw4iSILZBECAOMcZYexfpR9bkULAAAB-ccb7-5&oh=00_AfaU_ZL2MGz6ezkqeDOYyk8i9-9zyhPPEVMapX0jaaxDIQ&oe=68D18363&_nc_sid=164c1d',
-  profile_pic_url_hd: null,
-  is_verified: false,
-  media_count: 1,
-  follower_count: 7,
-  following_count: 17,
-  biography: '',
-  external_url: '',
-  account_type: 1,
-  is_business: false,
-  public_email: null,
-  contact_phone_number: null,
-  public_phone_country_code: null,
-  public_phone_number: null,
-  business_contact_method: null,
-  business_category_name: null,
-  category_name: null,
-  category: null,
-  address_street: null,
-  city_id: null,
-  city_name: null,
-  latitude: null,
-  longitude: null,
-  zip: null,
-  instagram_location_id: null,
-  interop_messaging_user_fbid: 17843107860403800
-}
-2025-09-18T08:55:56.424Z [info] [Backend] [extractFilteredUsers] Users after filtering: 13
-2025-09-18T08:55:57.211Z [info] [Process API] Coin limit check (followers): { coinLimit: 15, coinsSpent: 0, remaining: 15, batchCost: 15 }
-2025-09-18T08:55:57.211Z [info] [Process API] Spending coins (followers) via RPC: 15
+2025-09-18T15:36:42.523Z [info] [Process API] Successfully updated extraction in database
+2025-09-18T15:36:42.523Z [info] [Process API] Chunk processed for job: 206 isDone: true
+2025-09-18T15:36:42.523Z [info] [Process API] Returning success response
