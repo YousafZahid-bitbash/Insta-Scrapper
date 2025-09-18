@@ -754,23 +754,6 @@ export async function POST(req: NextRequest) {
           });
           if (spendErrL) throw new Error(spendErrL.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntL;
-
-          // Post-spend check: if coin limit reached, stop extraction immediately
-          if (coinLimit !== undefined && coinLimit - job.coins_spent <= 0) {
-            console.log('[Process API] Coin limit reached after spending (likers); stopping extraction');
-            const updateLikersComplete = {
-              page_count: (job.page_count || 0) + 1,
-              progress: (job.progress || 0) + rawLikers.length,
-              status: 'completed',
-              completed_at: new Date().toISOString(),
-              error_message: null,
-              next_page_id: null,
-              current_step: JSON.stringify(step),
-              locked_by: null,
-            } as Record<string, unknown>;
-            await supabase.from('extractions').update(updateLikersComplete).eq('id', job.id).eq('locked_by', workerId);
-            return NextResponse.json({ message: 'Coin limit reached after spending', jobId: job.id, ...updateLikersComplete });
-          }
         }
 
         // Process all likers (no additional filtering needed for likers)
