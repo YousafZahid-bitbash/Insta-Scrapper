@@ -280,6 +280,7 @@ export async function POST(req: NextRequest) {
           
           console.log('[Process API] Deducting coins for followers:', batchCost);
           await deductCoins(String(job.user_id), batchCost, supabase);
+          console.log('[Process API] Successfully deducted coins for followers');
         }
 
         // Apply filters after coin deduction
@@ -1200,6 +1201,7 @@ export async function POST(req: NextRequest) {
     }
 
   console.log('[Process API] Final DB update for job:', job.id);
+  console.log('[Process API] Update fields:', updateFields);
   const { error: updateError } = await supabase
       .from('extractions')
       .update(updateFields)
@@ -1208,10 +1210,13 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       console.error('[Process API] Error updating extraction:', updateError.message);
+      console.error('[Process API] Update error details:', updateError);
       throw new Error(updateError.message);
     }
 
+    console.log('[Process API] Successfully updated extraction in database');
     console.log('[Process API] Chunk processed for job:', job.id, 'isDone:', isDone);
+    console.log('[Process API] Returning success response');
     return NextResponse.json({ message: 'Chunk processed', jobId: job.id, ...updateFields });
   } catch (err: unknown) {
     console.error('[Process API] Exception thrown:', err);
