@@ -478,22 +478,6 @@ export async function POST(req: NextRequest) {
         const rawUsersF = pageUsers.slice(0, allowedRawUsersF);
         console.log('[Process API] Following cap before filtering:', { pageUsers: pageUsers.length, allowedRawUsers: allowedRawUsersF, coinLimit, coinsSpent: coinsSpentF, userCoins: userCoinsF });
 
-        // Early exit if coin limit already reached (no more budget for any users)
-        if (coinLimit !== undefined && allowedRawUsersF === 0 && coinsSpentF >= coinLimit) {
-          console.log('[Process API] Coin limit already reached for following; stopping extraction');
-          const updateFollowingStop = {
-            page_count: (job.page_count || 0) + 1,
-            progress: (job.progress || 0) + 0,
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            error_message: null,
-            next_page_id: null,
-            current_step: JSON.stringify(step),
-            locked_by: null,
-          } as Record<string, unknown>;
-          await supabase.from('extractions').update(updateFollowingStop).eq('id', job.id).eq('locked_by', workerId);
-          return NextResponse.json({ message: 'Coin limit already reached', jobId: job.id, ...updateFollowingStop });
-        }
 
         type FilterObject = Record<string, unknown>;
   console.log('[Process API] Filtering users...');
@@ -587,6 +571,23 @@ export async function POST(req: NextRequest) {
           }));
           const { error: insertErr } = await supabase.from('extracted_users').insert(rows);
           if (insertErr) throw new Error(insertErr.message);
+        }
+
+        // Check if coin limit reached after saving data - stop before next batch
+        if (coinLimit !== undefined && job.coins_spent >= coinLimit) {
+          console.log('[Process API] Coin limit reached after saving data (following); stopping extraction');
+          const updateFollowingStop = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + filteredUsers.length,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updateFollowingStop).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit reached after saving data', jobId: job.id, ...updateFollowingStop });
         }
 
         let next_page_id = page.next_page_id;
