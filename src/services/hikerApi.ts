@@ -2114,26 +2114,26 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
       const fullName = (user.full_name || "").toLowerCase();
       const biography = (user.biography || "").toLowerCase();
       const found = words.some(word => fullName.includes(word.toLowerCase()) || biography.includes(word.toLowerCase()));
-      console.log(`[filterUser] Name/Bio contains check: words=`, words, 'fullName=', fullName, 'biography=', biography, 'found:', found);
+      //console.log(`[filterUser] Name/Bio contains check: words=`, words, 'fullName=', fullName, 'biography=', biography, 'found:', found);
       if (!found) return false;
     }
   }
   
   // Follower/following ranges
   if (filters.followersMin && (typeof user.follower_count !== 'number' || user.follower_count < Number(filters.followersMin))) {
-    console.log(`[filterUser] Follower min check failed: min=${filters.followersMin}, actual=`, user.follower_count);
+    //console.log(`[filterUser] Follower min check failed: min=${filters.followersMin}, actual=`, user.follower_count);
     return false;
   }
   if (filters.followersMax && (typeof user.follower_count !== 'number' || user.follower_count > Number(filters.followersMax))) {
-    console.log(`[filterUser] Follower max check failed: max=${filters.followersMax}, actual=`, user.follower_count);
+    //console.log(`[filterUser] Follower max check failed: max=${filters.followersMax}, actual=`, user.follower_count);
     return false;
   }
   if (filters.followingsMin && (typeof user.following_count !== 'number' || user.following_count < Number(filters.followingsMin))) {
-    console.log(`[filterUser] Following min check failed: min=${filters.followingsMin}, actual=`, user.following_count);
+    //console.log(`[filterUser] Following min check failed: min=${filters.followingsMin}, actual=`, user.following_count);
     return false;
   }
   if (filters.followingsMax && (typeof user.following_count !== 'number' || user.following_count > Number(filters.followingsMax))) {
-    console.log(`[filterUser] Following max check failed: max=${filters.followingsMax}, actual=`, user.following_count);
+    //console.log(`[filterUser] Following max check failed: max=${filters.followingsMax}, actual=`, user.following_count);
     return false;
   }
   return true;
