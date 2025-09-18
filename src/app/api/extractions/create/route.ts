@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
     
     console.log('[Extraction API] Calculated coin cost:', coinCost);
 
-    // Check if user has enough coins
+    // Check if user has enough coins (but don't deduct yet - process route handles it)
     const userCoins = await getUserCoins(user_id, supabase);
     console.log('[Extraction API] User coins:', userCoins);
     
@@ -168,9 +168,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Deduct coins before creating the job
-    const remainingCoins = await deductCoins(user_id, coinCost, supabase);
-    console.log('[Extraction API] Coins deducted. Remaining:', remainingCoins);
+    console.log('[Extraction API] Coin check passed. Coins will be deducted during processing.');
 
     // Store all parameters for downstream extraction
     const { data, error } = await supabase
