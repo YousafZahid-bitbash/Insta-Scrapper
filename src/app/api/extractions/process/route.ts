@@ -1077,14 +1077,23 @@ export async function POST(req: NextRequest) {
   console.log('[Process API] Commenters step:', step);
         try { step = job.current_step ? JSON.parse(job.current_step) : {}; } catch {}
 
-        if (!Array.isArray(step.targets)) {
+        if (!Array.isArray(step.targets) || step.targets.length === 0) {
           console.log('[Process API] Resolving commenters targets...');
           const resolved: { url: string; mediaId: string }[] = [];
           for (const url of urls) {
+            console.log('[Process API] Resolving commenters target URL:', url);
             try {
               const media = await mediaByUrlV1(url);
-              if (media?.id) resolved.push({ url, mediaId: media.id });
-            } catch {}
+              console.log('[Process API] mediaByUrlV1 result for commenters:', url, media);
+              if (media?.id) {
+                resolved.push({ url, mediaId: media.id });
+                console.log('[Process API] Resolved commenters target:', { url, mediaId: media.id });
+              } else {
+                console.warn('[Process API] Could not resolve commenters media for URL:', url, 'media result:', media);
+              }
+            } catch (err) {
+              console.error('[Process API] Error resolving commenters media:', url, err);
+            }
           }
           if (!resolved.length) throw new Error('No valid media IDs');
           step = { idx: 0, page_id: undefined, targets: resolved };
@@ -1118,6 +1127,23 @@ export async function POST(req: NextRequest) {
         const allowedRawComments = Math.max(0, Math.min(comments.length, maxByLimitC, maxByBalanceC));
         const rawComments = comments.slice(0, allowedRawComments);
         console.log('[Process API] Commenters cap before spending:', { comments: comments.length, allowedRawComments, coinsSpent: coinsSpentC, userCoins: userCoinsC });
+
+        // Early exit if coin limit already reached (no more budget for any comments)
+        if (coinLimit !== undefined && allowedRawComments === 0 && coinsSpentC >= coinLimit) {
+          console.log('[Process API] Coin limit already reached for commenters; stopping extraction');
+          const updateCommentersStop = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + 0,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updateCommentersStop).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit already reached', jobId: job.id, ...updateCommentersStop });
+        }
 
         // Per-chunk rule: 1 coin per 2 commenters
         const batchCost = Math.ceil((rawComments.length || 0) / perChunkUsers) * perChunkCoins;
@@ -1205,6 +1231,23 @@ export async function POST(req: NextRequest) {
           console.log('[Process API] Inserting commenters to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_commenters').insert(rows);
           if (insErr) throw new Error(insErr.message);
+        }
+
+        // Check if coin limit reached after saving data - stop before next batch
+        if (coinLimit !== undefined && job.coins_spent >= coinLimit) {
+          console.log('[Process API] Coin limit reached after saving data (commenters); stopping extraction');
+          const updateCommentersComplete = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + rows.length,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updateCommentersComplete).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit reached after saving data', jobId: job.id, ...updateCommentersComplete });
         }
 
         // Advance page/target
