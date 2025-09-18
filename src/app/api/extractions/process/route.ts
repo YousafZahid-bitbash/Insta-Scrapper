@@ -644,11 +644,23 @@ export async function POST(req: NextRequest) {
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
-        if (!Array.isArray(step.targets)) {
+        if (!Array.isArray(step.targets) || step.targets.length === 0) {
           console.log('[Process API] Resolving likers targets...');
           const resolved: { url: string; mediaId: string }[] = [];
           for (const url of urls) {
-            try { const media = await mediaByUrlV1(url); if (media?.id) resolved.push({ url, mediaId: media.id }); } catch {}
+            console.log('[Process API] Resolving likers target URL:', url);
+            try {
+              const media = await mediaByUrlV1(url);
+              console.log('[Process API] mediaByUrlV1 result for likers:', url, media);
+              if (media?.id) {
+                resolved.push({ url, mediaId: media.id });
+                console.log('[Process API] Resolved likers target:', { url, mediaId: media.id });
+              } else {
+                console.warn('[Process API] Could not resolve likers media for URL:', url, 'media result:', media);
+              }
+            } catch (err) {
+              console.error('[Process API] Error resolving likers media:', url, err);
+            }
           }
           if (!resolved.length) throw new Error('No valid media IDs');
           step = { idx: 0, targets: resolved };
@@ -682,6 +694,23 @@ export async function POST(req: NextRequest) {
         const allowedRawLikers = Math.max(0, Math.min(likers.length, maxUsersByLimitL, maxUsersByBalanceL));
         const rawLikers = likers.slice(0, allowedRawLikers);
         console.log('[Process API] Likers cap before spending:', { likers: likers.length, allowedRawLikers, coinsSpent: coinsSpentL, userCoins: userCoinsL });
+
+        // Early exit if coin limit already reached (no more budget for any users)
+        if (coinLimit !== undefined && allowedRawLikers === 0 && coinsSpentL >= coinLimit) {
+          console.log('[Process API] Coin limit already reached for likers; stopping extraction');
+          const updateLikersStop = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + 0,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updateLikersStop).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit already reached', jobId: job.id, ...updateLikersStop });
+        }
 
         // Calculate cost based on raw likers (before filtering)
         const batchCost = Math.ceil((rawLikers.length || 0) / perChunkUsers) * perChunkCoins + (rawLikers.length * perUserDetail);
@@ -725,6 +754,23 @@ export async function POST(req: NextRequest) {
           });
           if (spendErrL) throw new Error(spendErrL.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntL;
+
+          // Post-spend check: if coin limit reached, stop extraction immediately
+          if (coinLimit !== undefined && coinLimit - job.coins_spent <= 0) {
+            console.log('[Process API] Coin limit reached after spending (likers); stopping extraction');
+            const updateLikersComplete = {
+              page_count: (job.page_count || 0) + 1,
+              progress: (job.progress || 0) + rawLikers.length,
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              error_message: null,
+              next_page_id: null,
+              current_step: JSON.stringify(step),
+              locked_by: null,
+            } as Record<string, unknown>;
+            await supabase.from('extractions').update(updateLikersComplete).eq('id', job.id).eq('locked_by', workerId);
+            return NextResponse.json({ message: 'Coin limit reached after spending', jobId: job.id, ...updateLikersComplete });
+          }
         }
 
         // Process all likers (no additional filtering needed for likers)
@@ -747,6 +793,23 @@ export async function POST(req: NextRequest) {
           console.log('[Process API] Inserting likers to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_users').insert(rows);
           if (insErr) throw new Error(insErr.message);
+        }
+
+        // Check if coin limit reached after saving data - stop before next batch
+        if (coinLimit !== undefined && job.coins_spent >= coinLimit) {
+          console.log('[Process API] Coin limit reached after saving data (likers); stopping extraction');
+          const updateLikersComplete = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + rows.length,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updateLikersComplete).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit reached after saving data', jobId: job.id, ...updateLikersComplete });
         }
   step.idx += 1;
   console.log('[Process API] Advancing to next likers target');
