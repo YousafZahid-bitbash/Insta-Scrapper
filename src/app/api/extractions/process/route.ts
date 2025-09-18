@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       // Continue processing with existing lock
     } else {
       console.warn('[Process API] Lock held by another worker:', currentJob.locked_by);
-      return NextResponse.json({ message: 'Lock held by another worker' });
+    return NextResponse.json({ message: 'Lock held by another worker' });
     }
   }
 
@@ -88,26 +88,26 @@ export async function POST(req: NextRequest) {
   } else {
     // New extraction: acquire lock
     workerId = crypto.randomUUID();
-    console.log('[Process API] Acquiring lock for worker:', workerId);
-    const currentVersion = typeof currentJob.version === 'number' ? currentJob.version : 0;
-    const { error: lockErr, data: lockRows } = await supabase
-      .from('extractions')
-      .update({
-        locked_by: workerId,
-        status: 'running',
-        version: currentVersion + 1,
-      })
-      .eq('id', job.id)
-      .eq('version', currentVersion)
-      .select('id');
+  console.log('[Process API] Acquiring lock for worker:', workerId);
+  const currentVersion = typeof currentJob.version === 'number' ? currentJob.version : 0;
+  const { error: lockErr, data: lockRows } = await supabase
+    .from('extractions')
+    .update({
+      locked_by: workerId,
+      status: 'running',
+      version: currentVersion + 1,
+    })
+    .eq('id', job.id)
+    .eq('version', currentVersion)
+    .select('id');
 
-    if (lockErr) {
-      console.warn('[Process API] Lock acquire failed', lockErr.message);
-      return NextResponse.json({ message: 'Could not acquire lock' }, { status: 200 });
-    }
-    if (!lockRows || lockRows.length === 0) {
-      console.warn('[Process API] Lock already acquired elsewhere');
-      return NextResponse.json({ message: 'Lock already acquired elsewhere' }, { status: 200 });
+  if (lockErr) {
+    console.warn('[Process API] Lock acquire failed', lockErr.message);
+    return NextResponse.json({ message: 'Could not acquire lock' }, { status: 200 });
+  }
+  if (!lockRows || lockRows.length === 0) {
+    console.warn('[Process API] Lock already acquired elsewhere');
+    return NextResponse.json({ message: 'Lock already acquired elsewhere' }, { status: 200 });
     }
     lockAcquired = true;
   }
@@ -242,10 +242,28 @@ export async function POST(req: NextRequest) {
         const page = await getFollowersPage(active.pk, step.page_id);
         const pageUsers = page.items || [];
 
+        // Coin limit calculation based on remaining budget BEFORE filtering
+        const coinLimitRaw = (parsedFilters?.followers?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
+        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        const perUserTotalFollowers = (COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users) + COIN_RULES.followers.perUser;
+
+        const { data: balanceRow, error: balanceErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (balanceErr || typeof balanceRow?.coins !== 'number') throw new Error('Could not fetch user coins');
+        const userCoins = balanceRow.coins;
+        const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
+        const remainingByLimit = coinLimit !== undefined ? Math.max(0, coinLimit - coinsSpent) : Number.POSITIVE_INFINITY;
+        const maxUsersByLimit = Math.floor(remainingByLimit / perUserTotalFollowers);
+        const maxUsersByBalance = Math.floor(userCoins / perUserTotalFollowers);
+        const allowedRawUsers = Math.max(0, Math.min(pageUsers.length, maxUsersByLimit, maxUsersByBalance));
+
+        // Cap the raw users list by allowed users before filtering to avoid overspending
+        const rawUsers = pageUsers.slice(0, allowedRawUsers);
+        console.log('[Process API] Followers cap before filtering:', { pageUsers: pageUsers.length, allowedRawUsers, coinLimit, coinsSpent, userCoins });
+
         type FilterObject = Record<string, unknown>;
         console.log('[Process API] Filtering users...');
         const filteredUsers = await extractFilteredUsers(
-          pageUsers.map(u => ({ username: u.username })),
+          rawUsers.map(u => ({ username: u.username })),
           (parsedFilters?.followers || parsedFilters || {}) as FilterObject,
           async (username: string): Promise<UserDetails> => {
             const d = await userByUsernameV1(username);
@@ -253,23 +271,19 @@ export async function POST(req: NextRequest) {
           }
         );
 
-        // Coin limit calculation and deduction (based on raw API response)
-        const coinLimitRaw = (parsedFilters?.followers?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        
-        // Calculate cost based on raw pageUsers (before filtering)
-        const batchExtractionCost = Math.ceil((pageUsers.length || 0) / COIN_RULES.followers.perChunk.users) * COIN_RULES.followers.perChunk.coins;
-        const batchFilteringCost = (pageUsers.length || 0) * COIN_RULES.followers.perUser;
+        // Calculate cost based on capped rawUsers (before filtering)
+        const batchExtractionCost = Math.ceil((rawUsers.length || 0) / COIN_RULES.followers.perChunk.users) * COIN_RULES.followers.perChunk.coins;
+        const batchFilteringCost = (rawUsers.length || 0) * COIN_RULES.followers.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
         // Check coin limit (using coins_spent) and spend coins atomically before filtering
-        if (pageUsers.length > 0) {
+        if (rawUsers.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
 
           const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
-          if (coinLimit !== undefined) {
+        if (coinLimit !== undefined) {
             const remaining = Math.max(0, coinLimit - coinsSpent);
             console.log('[Process API] Coin limit check (followers):', { coinLimit, coinsSpent, remaining, batchCost });
             if (batchCost > remaining) {
@@ -428,10 +442,25 @@ export async function POST(req: NextRequest) {
   const page = await getFollowingPage(active.pk, step.page_id);
         const pageUsers = page.items || [];
 
+        // Coin limit calculation based on remaining budget BEFORE filtering
+        const coinLimitRaw = (parsedFilters?.following?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
+        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        const perUserTotalFollowing = (COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users) + COIN_RULES.followings.perUser;
+        const { data: balF, error: balErrF } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (balErrF || typeof balF?.coins !== 'number') throw new Error('Could not fetch user coins');
+        const userCoinsF = balF.coins;
+        const coinsSpentF = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
+        const remainingByLimitF = coinLimit !== undefined ? Math.max(0, coinLimit - coinsSpentF) : Number.POSITIVE_INFINITY;
+        const maxUsersByLimitF = Math.floor(remainingByLimitF / perUserTotalFollowing);
+        const maxUsersByBalanceF = Math.floor(userCoinsF / perUserTotalFollowing);
+        const allowedRawUsersF = Math.max(0, Math.min(pageUsers.length, maxUsersByLimitF, maxUsersByBalanceF));
+        const rawUsersF = pageUsers.slice(0, allowedRawUsersF);
+        console.log('[Process API] Following cap before filtering:', { pageUsers: pageUsers.length, allowedRawUsers: allowedRawUsersF, coinLimit, coinsSpent: coinsSpentF, userCoins: userCoinsF });
+
         type FilterObject = Record<string, unknown>;
   console.log('[Process API] Filtering users...');
   const filteredUsers = await extractFilteredUsers(
-          pageUsers.map(u => ({ username: u.username })),
+          rawUsersF.map(u => ({ username: u.username })),
           (parsedFilters?.following || parsedFilters || {}) as FilterObject,
           async (username: string): Promise<UserDetails> => {
             const d = await userByUsernameV1(username);
@@ -439,23 +468,19 @@ export async function POST(req: NextRequest) {
           }
         );
 
-        // Coin limit calculation and deduction (based on raw API response)
-        const coinLimitRaw = (parsedFilters?.following?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        
-        // Calculate cost based on raw pageUsers (before filtering)
-        const batchExtractionCost = Math.ceil((pageUsers.length || 0) / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
-        const batchFilteringCost = (pageUsers.length || 0) * COIN_RULES.followings.perUser;
+        // Calculate cost based on capped rawUsersF (before filtering)
+        const batchExtractionCost = Math.ceil((rawUsersF.length || 0) / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
+        const batchFilteringCost = (rawUsersF.length || 0) * COIN_RULES.followings.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
 
         // Check coin limit (using coins_spent) and spend coins atomically before filtering
-        if (pageUsers.length > 0) {
+        if (rawUsersF.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
           
           const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
-          if (coinLimit !== undefined) {
+        if (coinLimit !== undefined) {
             const remaining = Math.max(0, coinLimit - coinsSpent);
             console.log('[Process API] Coin limit check (following):', { coinLimit, coinsSpent, remaining, batchCost });
             if (batchCost > remaining) {
@@ -591,18 +616,29 @@ export async function POST(req: NextRequest) {
   const res = await mediaLikersBulkV1({ urls: [active.url], filters: parsedFilters || {}, user_id: job.user_id, skipCoinCheck: true }, updateProgress, undefined, job.id, supabase);
   const likers = (res as { filteredLikers?: UserDetails[] })?.filteredLikers || [];
 
-        // Coin limit calculation and deduction (based on raw API response)
+        // Cap by remaining coin limit and balance BEFORE spending
         const coinLimitRaw = (parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        
+        const perChunkUsers = COIN_RULES.likers.perChunk.users;
+        const perChunkCoins = COIN_RULES.likers.perChunk.coins;
+        const perUserDetail = COIN_RULES.likers.perUser;
+        const perUserTotalLikers = perUserDetail + (perChunkCoins / perChunkUsers);
+        const { data: balL, error: balErrL } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (balErrL || typeof balL?.coins !== 'number') throw new Error('Could not fetch user coins');
+        const userCoinsL = balL.coins;
+        const coinsSpentL = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
+        const remainingByLimitL = coinLimit !== undefined ? Math.max(0, coinLimit - coinsSpentL) : Number.POSITIVE_INFINITY;
+        const maxUsersByLimitL = Math.floor(remainingByLimitL / perUserTotalLikers);
+        const maxUsersByBalanceL = Math.floor(userCoinsL / perUserTotalLikers);
+        const allowedRawLikers = Math.max(0, Math.min(likers.length, maxUsersByLimitL, maxUsersByBalanceL));
+        const rawLikers = likers.slice(0, allowedRawLikers);
+        console.log('[Process API] Likers cap before spending:', { likers: likers.length, allowedRawLikers, coinsSpent: coinsSpentL, userCoins: userCoinsL });
+
         // Calculate cost based on raw likers (before filtering)
-        const perChunkUsers = COIN_RULES.likers.perChunk.users; // 10 users per chunk
-        const perChunkCoins = COIN_RULES.likers.perChunk.coins; // 1 coin per chunk
-        const perUserDetail = COIN_RULES.likers.perUser; // 1 coin per user detail
-        const batchCost = Math.ceil((likers.length || 0) / perChunkUsers) * perChunkCoins + (likers.length * perUserDetail);
+        const batchCost = Math.ceil((rawLikers.length || 0) / perChunkUsers) * perChunkCoins + (rawLikers.length * perUserDetail);
 
         // Check coin limit (using coins_spent) and spend coins atomically
-        if (likers.length > 0) {
+        if (rawLikers.length > 0) {
           const { data: userData, error: userErr } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
           if (userErr || typeof userData?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userData.coins < batchCost) throw new Error('insufficient_coins');
@@ -639,7 +675,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Process all likers (no additional filtering needed for likers)
-        const toProcess = likers;
+        const toProcess = rawLikers;
 
   const rows = toProcess.map((u: UserDetails) => ({
             extraction_id: job.id,
@@ -735,24 +771,35 @@ export async function POST(req: NextRequest) {
   const page = await getUserMediasPage(active.pk, step.page_id);
         const medias = page.items || [];
 
-        // Coin limit calculation and deduction (based on raw API response)
-        const coinLimitRaw = (parsedFilters?.posts?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
-        const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
+        // Cap by remaining coin limit and balance BEFORE spending (posts)
         const perPost = COIN_RULES.posts.perPost;
-        
-        // Calculate cost based on raw medias (before filtering)
-        const batchCost = (medias.length || 0) * perPost;
+        const coinLimitRawP = (parsedFilters?.posts?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
+        const coinLimitP = coinLimitRawP !== undefined ? Math.floor(Number(coinLimitRawP)) : undefined;
+        const { data: balP, error: balErrP } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (balErrP || typeof balP?.coins !== 'number') throw new Error('Could not fetch user coins');
+        const userCoinsP = balP.coins;
+        const coinsSpentP = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
+        const remainingByLimitP = coinLimitP !== undefined ? Math.max(0, coinLimitP - coinsSpentP) : Number.POSITIVE_INFINITY;
+        const maxPostsByLimit = Math.floor(remainingByLimitP / perPost);
+        const maxPostsByBalance = Math.floor(userCoinsP / perPost);
+        const allowedRawPosts = Math.max(0, Math.min(medias.length, maxPostsByLimit, maxPostsByBalance));
+        const rawMedias = medias.slice(0, allowedRawPosts);
+        console.log('[Process API] Posts cap before spending:', { medias: medias.length, allowedRawPosts, coinsSpent: coinsSpentP, userCoins: userCoinsP });
+
+        // Coin limit calculation and deduction (based on raw API response)
+        // Calculate cost based on capped rawMedias (before filtering)
+        const batchCost = (rawMedias.length || 0) * perPost;
 
         // Check coin limit (using coins_spent) and spend coins atomically
-        if (medias.length > 0) {
-          const { data: userDataP, error: userErrP } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-          if (userErrP || typeof userDataP?.coins !== 'number') throw new Error('Could not fetch user coins');
+        if (rawMedias.length > 0) {
+        const { data: userDataP, error: userErrP } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (userErrP || typeof userDataP?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userDataP.coins < batchCost) throw new Error('insufficient_coins');
           
           const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
-          if (coinLimit !== undefined) {
-            const remaining = Math.max(0, coinLimit - coinsSpent);
-            console.log('[Process API] Coin limit check (posts):', { coinLimit, coinsSpent, remaining, batchCost });
+          if (coinLimitP !== undefined) {
+            const remaining = Math.max(0, coinLimitP - coinsSpent);
+            console.log('[Process API] Coin limit check (posts):', { coinLimit: coinLimitP, coinsSpent, remaining, batchCost });
             if (batchCost > remaining) {
               console.log('[Process API] Coin limit reached for posts; stopping before processing batch');
               const updStop = {
@@ -781,7 +828,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Process all medias (no pre-filtering by coin limit)
-        const toProcess = medias;
+        const toProcess = rawMedias;
 
         // Apply posts filters AFTER deduction (likes/comments ranges, caption contains/stop, etc.)
   const likesMin = Number((parsedFilters?.likesMin as number | string | undefined) ?? NaN);
@@ -940,20 +987,30 @@ export async function POST(req: NextRequest) {
   const page = await getCommentsPage(active.mediaId, step.page_id);
         const comments = page.items || [];
 
-        // Coin limit calculation and deduction (based on raw API response)
+        // Cap by remaining coin limit and balance BEFORE spending (commenters)
         const coinLimitRaw = (parsedFilters?.commenters?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        // Per-chunk rule: 1 coin per 2 commenters
         const perChunkUsers = COIN_RULES.commenters.perChunk.users; // 2
         const perChunkCoins = COIN_RULES.commenters.perChunk.coins; // 1
-        
-        // Calculate cost based on raw comments (before filtering)
-        const batchCost = Math.ceil((comments.length || 0) / perChunkUsers) * perChunkCoins;
+        const perUserTotalCommenters = perChunkCoins / perChunkUsers; // cost per user
+        const { data: balC, error: balErrC } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (balErrC || typeof balC?.coins !== 'number') throw new Error('Could not fetch user coins');
+        const userCoinsC = balC.coins;
+        const coinsSpentC = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
+        const remainingByLimitC = coinLimit !== undefined ? Math.max(0, coinLimit - coinsSpentC) : Number.POSITIVE_INFINITY;
+        const maxByLimitC = Math.floor(remainingByLimitC / perUserTotalCommenters);
+        const maxByBalanceC = Math.floor(userCoinsC / perUserTotalCommenters);
+        const allowedRawComments = Math.max(0, Math.min(comments.length, maxByLimitC, maxByBalanceC));
+        const rawComments = comments.slice(0, allowedRawComments);
+        console.log('[Process API] Commenters cap before spending:', { comments: comments.length, allowedRawComments, coinsSpent: coinsSpentC, userCoins: userCoinsC });
+
+        // Per-chunk rule: 1 coin per 2 commenters
+        const batchCost = Math.ceil((rawComments.length || 0) / perChunkUsers) * perChunkCoins;
 
         // Check coin limit (using coins_spent) and spend coins atomically
-        if (comments.length > 0) {
-          const { data: userDataC, error: userErrC } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-          if (userErrC || typeof userDataC?.coins !== 'number') throw new Error('Could not fetch user coins');
+        if (rawComments.length > 0) {
+        const { data: userDataC, error: userErrC } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (userErrC || typeof userDataC?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userDataC.coins < batchCost) throw new Error('insufficient_coins');
           
           const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
@@ -988,7 +1045,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Process all comments (no pre-filtering by coin limit)
-        const toProcess = comments;
+        const toProcess = rawComments;
 
         // Apply commenters filters AFTER deduction
         // Exclude words and stop words
@@ -1111,18 +1168,29 @@ export async function POST(req: NextRequest) {
   const page = await getHashtagClipsPage(hashtag, step.page_id, parsedFilters || {});
         const clips = page.items || [];
 
-        // Coin limit calculation and deduction (based on raw API response)
+        // Cap by remaining coin limit and balance BEFORE spending (hashtags)
         const coinLimitRaw = (parsedFilters?.hashtags?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
         const perData = COIN_RULES.hashtags.perData;
-        
-        // Calculate cost based on raw clips (before filtering)
-        const batchCost = (clips.length || 0) * perData;
+        const { data: balH, error: balErrH } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (balErrH || typeof balH?.coins !== 'number') throw new Error('Could not fetch user coins');
+        const userCoinsH = balH.coins;
+        const coinsSpentH = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
+        const remainingByLimitH = coinLimit !== undefined ? Math.max(0, coinLimit - coinsSpentH) : Number.POSITIVE_INFINITY;
+        const maxItemsByLimitH = Math.floor(remainingByLimitH / perData);
+        const maxItemsByBalanceH = Math.floor(userCoinsH / perData);
+        const allowedRawClips = Math.max(0, Math.min(clips.length, maxItemsByLimitH, maxItemsByBalanceH));
+        const rawClips = clips.slice(0, allowedRawClips);
+        console.log('[Process API] Hashtags cap before spending:', { clips: clips.length, allowedRawClips, coinsSpent: coinsSpentH, userCoins: userCoinsH });
+
+        // Coin limit calculation and deduction (based on raw API response)
+        // Calculate cost based on capped rawClips (before filtering)
+        const batchCost = (rawClips.length || 0) * perData;
 
         // Check coin limit (using coins_spent) and spend coins atomically
-        if (clips.length > 0) {
-          const { data: userDataH, error: userErrH } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
-          if (userErrH || typeof userDataH?.coins !== 'number') throw new Error('Could not fetch user coins');
+        if (rawClips.length > 0) {
+        const { data: userDataH, error: userErrH } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
+        if (userErrH || typeof userDataH?.coins !== 'number') throw new Error('Could not fetch user coins');
           if (userDataH.coins < batchCost) throw new Error('insufficient_coins');
           
           const coinsSpent = typeof job.coins_spent === 'number' ? job.coins_spent : 0;
@@ -1157,7 +1225,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Process all clips (no pre-filtering by coin limit)
-        const toProcess = clips;
+        const toProcess = rawClips;
 
         // Apply hashtag filters AFTER deduction (caption contains/stop, etc.) if provided
         const captionContainsStr = parsedFilters?.postCaptionContains as string | undefined;
