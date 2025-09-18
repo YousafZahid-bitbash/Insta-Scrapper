@@ -313,23 +313,6 @@ export async function POST(req: NextRequest) {
           if (spendErr) throw new Error(spendErr.message);
           // refresh coins_spent locally for logging/decisions
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostInt;
-          if (coinLimit !== undefined) {
-            const remainingAfter = Math.max(0, coinLimit - job.coins_spent);
-            if (remainingAfter <= 0) {
-              const updStopAfter = {
-                page_count: (job.page_count || 0) + 1,
-                progress: (job.progress || 0) + 0,
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                error_message: null,
-                next_page_id: null,
-                current_step: JSON.stringify(step),
-                locked_by: null,
-              } as Record<string, unknown>;
-              await supabase.from('extractions').update(updStopAfter).eq('id', job.id).eq('locked_by', workerId);
-              return NextResponse.json({ message: 'Coin limit reached (post-spend)', jobId: job.id, ...updStopAfter });
-            }
-          }
         }
 
         // Apply filters after coin deduction
@@ -527,23 +510,6 @@ export async function POST(req: NextRequest) {
           });
           if (spendErrF) throw new Error(spendErrF.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostInt;
-          if (coinLimit !== undefined) {
-            const remainingAfter = Math.max(0, coinLimit - job.coins_spent);
-            if (remainingAfter <= 0) {
-              const updateFollowingStop = {
-                page_count: (job.page_count || 0) + 1,
-                progress: (job.progress || 0) + 0,
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                error_message: null,
-                next_page_id: null,
-                current_step: JSON.stringify(step),
-                locked_by: null,
-              } as Record<string, unknown>;
-              await supabase.from('extractions').update(updateFollowingStop).eq('id', job.id).eq('locked_by', workerId);
-              return NextResponse.json({ message: 'Coin limit reached (post-spend)', jobId: job.id, ...updateFollowingStop });
-            }
-          }
         }
 
         // Insert filtered users to database
@@ -709,23 +675,6 @@ export async function POST(req: NextRequest) {
           });
           if (spendErrL) throw new Error(spendErrL.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntL;
-          if (coinLimit !== undefined) {
-            const remainingAfter = Math.max(0, coinLimit - job.coins_spent);
-            if (remainingAfter <= 0) {
-              const updStopAfter = {
-                page_count: (job.page_count || 0) + 1,
-                progress: (job.progress || 0) + 0,
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                error_message: null,
-                next_page_id: null,
-                current_step: JSON.stringify(step),
-                locked_by: null,
-              } as Record<string, unknown>;
-              await supabase.from('extractions').update(updStopAfter).eq('id', job.id).eq('locked_by', workerId);
-              return NextResponse.json({ message: 'Coin limit reached (post-spend)', jobId: job.id, ...updStopAfter });
-            }
-          }
         }
 
         // Process all likers (no additional filtering needed for likers)
@@ -880,23 +829,6 @@ export async function POST(req: NextRequest) {
           });
           if (spendErrP) throw new Error(spendErrP.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntP;
-          if (coinLimitP !== undefined) {
-            const remainingAfter = Math.max(0, coinLimitP - job.coins_spent);
-            if (remainingAfter <= 0) {
-              const updStopAfter = {
-                page_count: (job.page_count || 0) + 1,
-                progress: (job.progress || 0) + 0,
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                error_message: null,
-                next_page_id: null,
-                current_step: JSON.stringify(step),
-                locked_by: null,
-              } as Record<string, unknown>;
-              await supabase.from('extractions').update(updStopAfter).eq('id', job.id).eq('locked_by', workerId);
-              return NextResponse.json({ message: 'Coin limit reached (post-spend)', jobId: job.id, ...updStopAfter });
-            }
-          }
         }
 
         // Process all medias (no pre-filtering by coin limit)
@@ -1115,23 +1047,6 @@ export async function POST(req: NextRequest) {
           });
           if (spendErrC) throw new Error(spendErrC.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntC;
-          if (coinLimit !== undefined) {
-            const remainingAfter = Math.max(0, coinLimit - job.coins_spent);
-            if (remainingAfter <= 0) {
-              const updStopAfter = {
-                page_count: (job.page_count || 0) + 1,
-                progress: (job.progress || 0) + 0,
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                error_message: null,
-                next_page_id: null,
-                current_step: JSON.stringify(step),
-                locked_by: null,
-              } as Record<string, unknown>;
-              await supabase.from('extractions').update(updStopAfter).eq('id', job.id).eq('locked_by', workerId);
-              return NextResponse.json({ message: 'Coin limit reached (post-spend)', jobId: job.id, ...updStopAfter });
-            }
-          }
         }
 
         // Process all comments (no pre-filtering by coin limit)
@@ -1313,23 +1228,6 @@ export async function POST(req: NextRequest) {
           });
           if (spendErrH) throw new Error(spendErrH.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntH;
-          if (coinLimit !== undefined) {
-            const remainingAfter = Math.max(0, coinLimit - job.coins_spent);
-            if (remainingAfter <= 0) {
-              const updStopAfter = {
-                page_count: (job.page_count || 0) + 1,
-                progress: (job.progress || 0) + 0,
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                error_message: null,
-                next_page_id: null,
-                current_step: JSON.stringify(step),
-                locked_by: null,
-              } as Record<string, unknown>;
-              await supabase.from('extractions').update(updStopAfter).eq('id', job.id).eq('locked_by', workerId);
-              return NextResponse.json({ message: 'Coin limit reached (post-spend)', jobId: job.id, ...updStopAfter });
-            }
-          }
         }
 
         // Process all clips (no pre-filtering by coin limit)
