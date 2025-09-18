@@ -425,7 +425,7 @@ export async function POST(req: NextRequest) {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
 
-        if (!Array.isArray(step.targets)) {
+        if (!Array.isArray(step.targets) || step.targets.length === 0) {
           console.log('[Process API] Resolving following targets...');
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
           let totalEstimated = 0;

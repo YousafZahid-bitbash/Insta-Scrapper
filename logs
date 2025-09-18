@@ -1,14 +1,14 @@
-2025-09-18T15:36:39.710Z [info] [hikerApi] process.env.NEXT_PUBLIC_HIKER_API_KEY: 0xf5dlh4ay8nvxt8rx0gunlldv6q7zyl
-2025-09-18T15:36:39.710Z [info] [hikerApi] process.env.HIKER_API_KEY: undefined
-2025-09-18T15:36:39.710Z [info] [hikerApi] process.env.NODE_ENV: production
-2025-09-18T15:36:39.710Z [info] [Process API] Loaded process route
-2025-09-18T15:36:39.720Z [info] [Process API] --- Handler Entry ---
-2025-09-18T15:36:39.720Z [info] [Process API] POST /api/extractions/process called
-2025-09-18T15:36:39.721Z [info] [Process API] Received payload: {"type":"INSERT","table":"extractions","record":{"id":206,"status":"pending","filters":"{\"extractPhone\":false,\"extractEmail\":false,\"extractLinkInBio\":false,\"privacy\":\"doesn't matter\",\"profilePicture\":\"doesn't matter\",\"verifiedAccount\":\"doesn't matter\",\"businessAccount\":\"doesn't matter\",\"followersMin\":\"\",\"followersMax\":\"\",\"followingsMin\":\"\",\"followingsMax\":\"\",\"filterByName\":\"\",\"filterByNameInBioContains\":\"\",\"filterByNameInBioStop\":\"\",\"coinLimit\":\"20\"}","user_id":"0c20d057-4671-4844-9d41-0f18691659ee","version":0,"attempts":0,"progress":0,"locked_by":null,"last_error":null,"page_count":1,"coins_spent":0,"completed_at":null,"current_step":null,"next_page_id":null,"requested_at":"2025-09-18T15:36:37.198+00:00","error_message":null,"target_user_id":null,"extraction_type":"following","lock_expires_at":null,"cancel_requested":false,"target_usernames":"yousaf.zahid.10"},"schema":"public","old_record":null}
-2025-09-18T15:36:39.721Z [info] [Process API] Job record: {
-  id: 206,
+2025-09-18T15:42:01.966Z [info] [hikerApi] process.env.NEXT_PUBLIC_HIKER_API_KEY: 0xf5dlh4ay8nvxt8rx0gunlldv6q7zyl
+2025-09-18T15:42:01.966Z [info] [hikerApi] process.env.HIKER_API_KEY: undefined
+2025-09-18T15:42:01.966Z [info] [hikerApi] process.env.NODE_ENV: production
+2025-09-18T15:42:01.966Z [info] [Process API] Loaded process route
+2025-09-18T15:42:01.979Z [info] [Process API] --- Handler Entry ---
+2025-09-18T15:42:01.979Z [info] [Process API] POST /api/extractions/process called
+2025-09-18T15:42:01.980Z [info] [Process API] Received payload: {"type":"INSERT","table":"extractions","record":{"id":207,"status":"pending","filters":"{\"extractPhone\":false,\"extractEmail\":false,\"extractLinkInBio\":false,\"privacy\":\"doesn't matter\",\"profilePicture\":\"doesn't matter\",\"verifiedAccount\":\"doesn't matter\",\"businessAccount\":\"doesn't matter\",\"followersMin\":\"\",\"followersMax\":\"\",\"followingsMin\":\"\",\"followingsMax\":\"\",\"filterByName\":\"\",\"filterByNameInBioContains\":\"\",\"filterByNameInBioStop\":\"\",\"coinLimit\":\"10\"}","user_id":"0c20d057-4671-4844-9d41-0f18691659ee","version":0,"attempts":0,"progress":0,"locked_by":null,"last_error":null,"page_count":1,"coins_spent":0,"completed_at":null,"current_step":null,"next_page_id":null,"requested_at":"2025-09-18T15:41:59.544+00:00","error_message":null,"target_user_id":null,"extraction_type":"following","lock_expires_at":null,"cancel_requested":false,"target_usernames":"yousaf.zahid.10"},"schema":"public","old_record":null}
+2025-09-18T15:42:01.980Z [info] [Process API] Job record: {
+  id: 207,
   status: 'pending',
-  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"20"}`,
+  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"10"}`,
   user_id: '0c20d057-4671-4844-9d41-0f18691659ee',
   version: 0,
   attempts: 0,
@@ -20,7 +20,7 @@
   completed_at: null,
   current_step: null,
   next_page_id: null,
-  requested_at: '2025-09-18T15:36:37.198+00:00',
+  requested_at: '2025-09-18T15:41:59.544+00:00',
   error_message: null,
   target_user_id: null,
   extraction_type: 'following',
@@ -28,13 +28,13 @@
   cancel_requested: false,
   target_usernames: 'yousaf.zahid.10'
 }
-2025-09-18T15:36:39.721Z [info] [Process API] Fetching current job row from DB...
-2025-09-18T15:36:40.556Z [info] [Process API] Current job: {
-  id: 206,
+2025-09-18T15:42:01.980Z [info] [Process API] Fetching current job row from DB...
+2025-09-18T15:42:02.307Z [info] [Process API] Current job: {
+  id: 207,
   user_id: '0c20d057-4671-4844-9d41-0f18691659ee',
   extraction_type: 'following',
   target_user_id: null,
-  requested_at: '2025-09-18T15:36:37.198+00:00',
+  requested_at: '2025-09-18T15:41:59.544+00:00',
   completed_at: null,
   status: 'pending',
   page_count: 1,
@@ -43,7 +43,7 @@
   progress: 0,
   current_step: null,
   target_usernames: 'yousaf.zahid.10',
-  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"20"}`,
+  filters: `{"extractPhone":false,"extractEmail":false,"extractLinkInBio":false,"privacy":"doesn't matter","profilePicture":"doesn't matter","verifiedAccount":"doesn't matter","businessAccount":"doesn't matter","followersMin":"","followersMax":"","followingsMin":"","followingsMax":"","filterByName":"","filterByNameInBioContains":"","filterByNameInBioStop":"","coinLimit":"10"}`,
   attempts: 0,
   locked_by: null,
   lock_expires_at: null,
@@ -52,25 +52,25 @@
   cancel_requested: false,
   coins_spent: 0
 }
-2025-09-18T15:36:40.556Z [info] [Process API] Acquiring lock for worker: 360a1415-3caf-4b69-a2de-d4060fa7d1ea
-2025-09-18T15:36:41.386Z [info] [Process API] Using fresh job row for processing
-2025-09-18T15:36:42.193Z [info] [Process API] Processing job: 206 type: following
-2025-09-18T15:36:42.193Z [info] [Process API] Extraction type: following
-2025-09-18T15:36:42.193Z [info] [Process API] Starting following extraction
-2025-09-18T15:36:42.193Z [info] [Process API] Following usernames: [ 'yousaf.zahid.10' ]
-2025-09-18T15:36:42.193Z [info] [Process API] Following step: { idx: 0, targets: [] }
-2025-09-18T15:36:42.193Z [info] [Process API] No followings to process, finishing.
-2025-09-18T15:36:42.193Z [info] [Process API] Final updateFields: {}
-2025-09-18T15:36:42.193Z [info] [Process API] Final DB update for job: 206
-2025-09-18T15:36:42.194Z [info] [Process API] Update fields: {
+2025-09-18T15:42:02.307Z [info] [Process API] Acquiring lock for worker: ac1b75f7-92e5-499d-80e2-8ae162ced706
+2025-09-18T15:42:02.607Z [info] [Process API] Using fresh job row for processing
+2025-09-18T15:42:03.422Z [info] [Process API] Processing job: 207 type: following
+2025-09-18T15:42:03.422Z [info] [Process API] Extraction type: following
+2025-09-18T15:42:03.422Z [info] [Process API] Starting following extraction
+2025-09-18T15:42:03.423Z [info] [Process API] Following usernames: [ 'yousaf.zahid.10' ]
+2025-09-18T15:42:03.423Z [info] [Process API] Following step: { idx: 0, targets: [] }
+2025-09-18T15:42:03.423Z [info] [Process API] No followings to process, finishing.
+2025-09-18T15:42:03.423Z [info] [Process API] Final updateFields: {}
+2025-09-18T15:42:03.423Z [info] [Process API] Final DB update for job: 207
+2025-09-18T15:42:03.423Z [info] [Process API] Update fields: {
   page_count: 2,
   progress: 0,
   status: 'completed',
-  completed_at: '2025-09-18T15:36:42.193Z',
+  completed_at: '2025-09-18T15:42:03.423Z',
   error_message: null,
   next_page_id: null,
   locked_by: null
 }
-2025-09-18T15:36:42.523Z [info] [Process API] Successfully updated extraction in database
-2025-09-18T15:36:42.523Z [info] [Process API] Chunk processed for job: 206 isDone: true
-2025-09-18T15:36:42.523Z [info] [Process API] Returning success response
+2025-09-18T15:42:03.723Z [info] [Process API] Successfully updated extraction in database
+2025-09-18T15:42:03.723Z [info] [Process API] Chunk processed for job: 207 isDone: true
+2025-09-18T15:42:03.723Z [info] [Process API] Returning success response
