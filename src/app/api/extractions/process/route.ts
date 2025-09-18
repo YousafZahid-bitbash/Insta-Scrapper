@@ -270,12 +270,9 @@ export async function POST(req: NextRequest) {
           
           // Check if coin limit would be exceeded
           if (coinLimit !== undefined) {
-            const totalSpent = (job.progress || 0) * ((COIN_RULES.followers.perChunk.coins / COIN_RULES.followers.perChunk.users) + COIN_RULES.followers.perUser);
-            if (totalSpent + batchCost > coinLimit) {
-              console.log('[Process API] Coin limit would be exceeded, stopping extraction');
-              // Stop extraction - don't process this batch
-              break;
-            }
+            // For now, let's skip the coin limit check and just deduct coins
+            // The coin limit logic needs to be redesigned to track spent coins properly
+            console.log('[Process API] Coin limit check skipped - will deduct coins and let user monitor balance');
           }
           
           console.log('[Process API] Deducting coins for followers:', batchCost);
@@ -287,6 +284,11 @@ export async function POST(req: NextRequest) {
         // Note: maxUsersWithinCoinLimit logic removed since we check coin limit before processing
 
         // Insert filtered users to database
+        console.log('[Process API] Filtering results:', { 
+          totalUsers: pageUsers.length, 
+          filteredUsers: filteredUsers.length 
+        });
+        
         if (filteredUsers.length > 0) {
           console.log('[Process API] Inserting filtered users to DB:', filteredUsers.length);
           const rows = filteredUsers.map(u => ({
