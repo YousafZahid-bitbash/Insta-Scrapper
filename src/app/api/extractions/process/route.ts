@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
             let user;
             try {
               user = await userByUsernameV1(clean);
-              console.log(`[Process API] userByUsernameV1 result for ${clean}:`, user);
+              //console.log(`[Process API] userByUsernameV1 result for ${clean}:`, user);
             } catch (err) {
               // If error is 403 or 404, skip and continue
               if (err && typeof err === 'object' && 'response' in err) {
