@@ -457,7 +457,7 @@ export async function POST(req: NextRequest) {
         // Coin limit calculation based on remaining budget BEFORE filtering
         const coinLimitRaw = (parsedFilters?.following?.coinLimit ?? parsedFilters?.coinLimit) as number | string | undefined;
         const coinLimit = coinLimitRaw !== undefined ? Math.floor(Number(coinLimitRaw)) : undefined;
-        const perUserTotalFollowing = (COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users) + COIN_RULES.followings.perUser;
+        const perUserTotalFollowing = (COIN_RULES.following.perChunk.coins / COIN_RULES.following.perChunk.users) + COIN_RULES.following.perUser;
         const { data: balF, error: balErrF } = await supabase.from('users').select('coins').eq('id', job.user_id).single();
         if (balErrF || typeof balF?.coins !== 'number') throw new Error('Could not fetch user coins');
         const userCoinsF = balF.coins;
@@ -481,8 +481,8 @@ export async function POST(req: NextRequest) {
         );
 
         // Calculate cost based on capped rawUsersF (before filtering)
-        const batchExtractionCost = Math.ceil((rawUsersF.length || 0) / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
-        const batchFilteringCost = (rawUsersF.length || 0) * COIN_RULES.followings.perUser;
+        const batchExtractionCost = Math.ceil((rawUsersF.length || 0) / COIN_RULES.following.perChunk.users) * COIN_RULES.following.perChunk.coins;
+        const batchFilteringCost = (rawUsersF.length || 0) * COIN_RULES.following.perUser;
         const batchCost = batchExtractionCost + batchFilteringCost;
         const batchCostInt = Math.ceil(batchCost);
 

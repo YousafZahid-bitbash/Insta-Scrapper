@@ -654,8 +654,8 @@ export async function userFollowingChunkGql(
             // Calculate maximum users we can afford within coin limit (extraction + filtration costs)
             let maxUsersWithinCoinLimit: number | undefined = undefined;
             if (coinLimit !== undefined) {
-              const extractionCostPerUser = COIN_RULES.followings.perChunk.coins / COIN_RULES.followings.perChunk.users; // 0.1
-              const filtrationCostPerUser = COIN_RULES.followings.perUser; // 1.0
+              const extractionCostPerUser = COIN_RULES.following.perChunk.coins / COIN_RULES.following.perChunk.users; // 0.1
+              const filtrationCostPerUser = COIN_RULES.following.perUser; // 1.0
               const totalCostPerUser = extractionCostPerUser + filtrationCostPerUser; // 1.1
               maxUsersWithinCoinLimit = Math.floor(coinLimit / totalCostPerUser);
               console.log(`[hikerApi] [FollowingV2] Coin limit: ${coinLimit}, Max users within budget: ${maxUsersWithinCoinLimit} (${totalCostPerUser} coins per user)`);
@@ -667,7 +667,7 @@ export async function userFollowingChunkGql(
             }
             for (const user of users) {
               // Check if we have enough coins for the full batch (skip in worker context)
-              if (!skipCoinCheck && usersProcessedInBatch === 0 && coins < COIN_RULES.followings.perChunk.coins) {
+              if (!skipCoinCheck && usersProcessedInBatch === 0 && coins < COIN_RULES.following.perChunk.coins) {
                 console.log(`[hikerApi] [FollowingV2] Not enough coins for batch, stopping extraction.`);
                 stopExtraction = true;
                 break;
@@ -685,9 +685,9 @@ export async function userFollowingChunkGql(
                 break;
               }
               // Deduct coins when we complete a full batch (every 10 users)
-              if (usersProcessedInBatch >= COIN_RULES.followings.perChunk.users && !skipCoinCheck) {
-                console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.followings.perChunk.coins} coins for batch of ${COIN_RULES.followings.perChunk.users} users`);
-                coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabaseToUse);
+              if (usersProcessedInBatch >= COIN_RULES.following.perChunk.users && !skipCoinCheck) {
+                console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.following.perChunk.coins} coins for batch of ${COIN_RULES.following.perChunk.users} users`);
+                coins = await deductCoins(userIdStr, COIN_RULES.following.perChunk.coins, supabaseToUse);
                 usersProcessedInBatch = 0; // Reset batch counter
               }
             }
@@ -699,8 +699,8 @@ export async function userFollowingChunkGql(
             
             // Deduct coins for any remaining partial batch
             if (usersProcessedInBatch > 0 && !stopExtraction && !skipCoinCheck) {
-              console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.followings.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
-              coins = await deductCoins(userIdStr, COIN_RULES.followings.perChunk.coins, supabaseToUse);
+              console.log(`[hikerApi] [FollowingV2] Deducting ${COIN_RULES.following.perChunk.coins} coins for partial batch of ${usersProcessedInBatch} users`);
+              coins = await deductCoins(userIdStr, COIN_RULES.following.perChunk.coins, supabaseToUse);
             }
             
             if (stopExtraction) break;
@@ -744,7 +744,7 @@ export async function userFollowingChunkGql(
   console.log('[Backend] [userFollowingChunkGql] Filters received:', filterOptions);
   console.log('[Backend] Starting filtering process. Total users before filtering:', allFollowings.length);
   // Deduct coins for allFollowings before calling extractFilteredUsers
-  const perUserTotalCost = allFollowings.length * COIN_RULES.followings.perUser;
+  const perUserTotalCost = allFollowings.length * COIN_RULES.following.perUser;
   if (!skipCoinCheck && coins < perUserTotalCost) {
     stopExtraction = true;
   } else if (!skipCoinCheck) {
@@ -805,8 +805,8 @@ export async function userFollowingChunkGql(
         if (extractionError) {
           console.error("[hikerApi] Error saving extraction:", extractionError);
           // Calculate actual coin cost for error case
-          const extractionCost = Math.ceil(allFollowings.length / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
-          const filteringCost = allFollowings.length * COIN_RULES.followings.perUser;
+          const extractionCost = Math.ceil(allFollowings.length / COIN_RULES.following.perChunk.users) * COIN_RULES.following.perChunk.coins;
+          const filteringCost = allFollowings.length * COIN_RULES.following.perUser;
           const actualCoinCost = extractionCost + filteringCost;
           return { filteredFollowings: allFollowings as ExtractedUser[], actualCoinCost };
         }
@@ -850,8 +850,8 @@ export async function userFollowingChunkGql(
     
     // Calculate actual coin cost for the extraction
     const extractedCount = allFollowings.length;
-    const extractionCost = Math.ceil(extractedCount / COIN_RULES.followings.perChunk.users) * COIN_RULES.followings.perChunk.coins;
-    const filteringCost = extractedCount * COIN_RULES.followings.perUser;
+    const extractionCost = Math.ceil(extractedCount / COIN_RULES.following.perChunk.users) * COIN_RULES.following.perChunk.coins;
+    const filteringCost = extractedCount * COIN_RULES.following.perUser;
     const actualCoinCost = extractionCost + filteringCost;
     
     console.log(`[Following Extraction] Actual coin cost calculation: extracted=${extractedCount}, extraction=${extractionCost}, filtering=${filteringCost}, total=${actualCoinCost}`);

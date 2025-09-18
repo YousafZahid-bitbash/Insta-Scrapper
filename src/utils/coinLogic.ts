@@ -6,7 +6,7 @@ export const COIN_RULES = {
     perChunk: { users: 10, coins: 1 }, // 1 coin per 10 users
     perUser: 1, // 1 coin per userByUsername
   },
-  followings: {
+  following: {
     perChunk: { users: 10, coins: 1 },
     perUser: 1,
   },
