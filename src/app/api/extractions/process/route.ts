@@ -1375,9 +1375,26 @@ export async function POST(req: NextRequest) {
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
-        if (!Array.isArray(step.targets)) {
+        if (!Array.isArray(step.targets) || step.targets.length === 0) {
           console.log('[Process API] Resolving hashtag targets...');
-          step = { idx: 0, page_id: undefined, targets: hashtagsArr };
+          const resolvedTargets = [] as string[];
+          for (const hashtag of hashtagsArr) {
+            console.log('[Process API] Resolving hashtag target:', hashtag);
+            try {
+              // For hashtags, we just validate the format (no API call needed)
+              const cleanHashtag = hashtag.replace(/^#/, '').trim();
+              if (cleanHashtag.length > 0) {
+                resolvedTargets.push(cleanHashtag);
+                console.log('[Process API] Resolved hashtag target:', cleanHashtag);
+              } else {
+                console.warn('[Process API] Invalid hashtag format:', hashtag);
+              }
+            } catch (err) {
+              console.error('[Process API] Error resolving hashtag:', hashtag, err);
+            }
+          }
+          if (!resolvedTargets.length) throw new Error('No valid hashtags provided');
+          step = { idx: 0, page_id: undefined, targets: resolvedTargets };
           await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
         }
         if (!step.targets.length || step.idx >= step.targets.length) {
@@ -1405,6 +1422,23 @@ export async function POST(req: NextRequest) {
         const allowedRawClips = Math.max(0, Math.min(clips.length, maxItemsByLimitH, maxItemsByBalanceH));
         const rawClips = clips.slice(0, allowedRawClips);
         console.log('[Process API] Hashtags cap before spending:', { clips: clips.length, allowedRawClips, coinsSpent: coinsSpentH, userCoins: userCoinsH });
+
+        // Early exit if coin limit already reached (no more budget for any clips)
+        if (coinLimit !== undefined && allowedRawClips === 0 && coinsSpentH >= coinLimit) {
+          console.log('[Process API] Coin limit already reached for hashtags; stopping extraction');
+          const updateHashtagsStop = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + 0,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updateHashtagsStop).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit already reached', jobId: job.id, ...updateHashtagsStop });
+        }
 
         // Coin limit calculation and deduction (based on raw API response)
         // Calculate cost based on capped rawClips (before filtering)
@@ -1531,6 +1565,23 @@ export async function POST(req: NextRequest) {
           console.log('[Process API] Inserting hashtag posts to DB:', rows.length);
           const { error: insErr } = await supabase.from('extracted_hashtag_posts').insert(rows);
           if (insErr) throw new Error(insErr.message);
+        }
+
+        // Check if coin limit reached after saving data - stop before next batch
+        if (coinLimit !== undefined && job.coins_spent >= coinLimit) {
+          console.log('[Process API] Coin limit reached after saving data (hashtags); stopping extraction');
+          const updateHashtagsComplete = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + rows.length,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updateHashtagsComplete).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit reached after saving data', jobId: job.id, ...updateHashtagsComplete });
         }
 
         let next_page_id = page.next_page_id;
