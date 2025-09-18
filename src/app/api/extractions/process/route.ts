@@ -304,11 +304,16 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log('[Process API] Spending coins (followers) via RPC:', batchCostInt);
+          // Persist step BEFORE spending to avoid re-spend on retry
+          await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
+          // Build idempotent batch key
+          const batchKey = `followers:${String(active.pk)}:${String(step.page_id || 'start')}`;
+          console.log('[Process API] Spending coins (followers) via RPC:', batchCostInt, 'batchKey:', batchKey);
           const { error: spendErr } = await supabase.rpc('spend_extraction_coins', {
             p_user_id: job.user_id,
             p_extraction_id: job.id,
             p_amount: batchCostInt,
+            p_batch_key: batchKey,
           });
           if (spendErr) throw new Error(spendErr.message);
           // refresh coins_spent locally for logging/decisions
@@ -502,11 +507,14 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log('[Process API] Spending coins (following) via RPC:', batchCostInt);
+          await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
+          const batchKeyF = `following:${String(active.pk)}:${String(step.page_id || 'start')}`;
+          console.log('[Process API] Spending coins (following) via RPC:', batchCostInt, 'batchKey:', batchKeyF);
           const { error: spendErrF } = await supabase.rpc('spend_extraction_coins', {
             p_user_id: job.user_id,
             p_extraction_id: job.id,
             p_amount: batchCostInt,
+            p_batch_key: batchKeyF,
           });
           if (spendErrF) throw new Error(spendErrF.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostInt;
@@ -667,11 +675,14 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log('[Process API] Spending coins (likers) via RPC:', batchCostIntL);
+          await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
+          const batchKeyL = `likers:${String(active.mediaId)}:${String(step.idx)}`;
+          console.log('[Process API] Spending coins (likers) via RPC:', batchCostIntL, 'batchKey:', batchKeyL);
           const { error: spendErrL } = await supabase.rpc('spend_extraction_coins', {
             p_user_id: job.user_id,
             p_extraction_id: job.id,
             p_amount: batchCostIntL,
+            p_batch_key: batchKeyL,
           });
           if (spendErrL) throw new Error(spendErrL.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntL;
@@ -821,11 +832,14 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log('[Process API] Spending coins (posts) via RPC:', batchCostIntP);
+          await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
+          const batchKeyP = `posts:${String(active.pk)}:${String(step.page_id || 'start')}`;
+          console.log('[Process API] Spending coins (posts) via RPC:', batchCostIntP, 'batchKey:', batchKeyP);
           const { error: spendErrP } = await supabase.rpc('spend_extraction_coins', {
             p_user_id: job.user_id,
             p_extraction_id: job.id,
             p_amount: batchCostIntP,
+            p_batch_key: batchKeyP,
           });
           if (spendErrP) throw new Error(spendErrP.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntP;
@@ -1039,11 +1053,14 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log('[Process API] Spending coins (commenters) via RPC:', batchCostIntC);
+          await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
+          const batchKeyC = `commenters:${String(active.mediaId)}:${String(step.page_id || 'start')}`;
+          console.log('[Process API] Spending coins (commenters) via RPC:', batchCostIntC, 'batchKey:', batchKeyC);
           const { error: spendErrC } = await supabase.rpc('spend_extraction_coins', {
             p_user_id: job.user_id,
             p_extraction_id: job.id,
             p_amount: batchCostIntC,
+            p_batch_key: batchKeyC,
           });
           if (spendErrC) throw new Error(spendErrC.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntC;
@@ -1220,11 +1237,14 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          console.log('[Process API] Spending coins (hashtags) via RPC:', batchCostIntH);
+          await supabase.from('extractions').update({ current_step: JSON.stringify(step) }).eq('id', job.id).eq('locked_by', workerId);
+          const batchKeyH = `hashtags:${String(hashtag)}:${String(step.page_id || 'start')}`;
+          console.log('[Process API] Spending coins (hashtags) via RPC:', batchCostIntH, 'batchKey:', batchKeyH);
           const { error: spendErrH } = await supabase.rpc('spend_extraction_coins', {
             p_user_id: job.user_id,
             p_extraction_id: job.id,
             p_amount: batchCostIntH,
+            p_batch_key: batchKeyH,
           });
           if (spendErrH) throw new Error(spendErrH.message);
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntH;
