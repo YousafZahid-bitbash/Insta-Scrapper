@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
   console.log('[Process API] --- Handler Entry ---');
   console.log('[Process API] POST /api/extractions/process called');
   // Maintenance guard: short-circuit if MAINTENANCE_MODE is enabled
+
   if (process.env.MAINTENANCE_MODE === 'true') {
     console.warn('[Process API] Maintenance mode active, exiting early');
     return NextResponse.json({ message: 'Maintenance mode active' }, { status: 200 });
@@ -110,10 +111,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Job cancelled' }, { status: 200 });
   }
   // attempts++ for observability and runaway protection
+  const currentAttempts = (typeof job.attempts === 'number' ? job.attempts : 0) + 1;
+  const MAX_ATTEMPTS = 10; // Cap attempts to prevent infinite loops
+  
+  if (currentAttempts > MAX_ATTEMPTS) {
+    console.error('[Process API] Job exceeded max attempts, marking as failed:', job.id, 'attempts:', currentAttempts);
+    await supabase
+      .from('extractions')
+      .update({ 
+        status: 'failed', 
+        error_message: `Job exceeded maximum attempts (${MAX_ATTEMPTS})`,
+        locked_by: null, 
+        lock_expires_at: null 
+      })
+      .eq('id', job.id)
+      .eq('locked_by', workerId);
+    return NextResponse.json({ error: 'Job exceeded maximum attempts' }, { status: 500 });
+  }
+  
   try {
     await supabase
       .from('extractions')
-      .update({ attempts: (typeof job.attempts === 'number' ? job.attempts : 0) + 1 })
+      //.update({ attempts: (typeof job.attempts === 'number' ? job.attempts : 0) + 1 })
+      .update({ attempts: currentAttempts })
       .eq('id', job.id)
       .eq('locked_by', workerId);
   } catch (e) {
