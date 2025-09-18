@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
           let totalEstimated = 0;
           for (const uname of usernames) {
             const clean = uname.replace(/^@/, '');
-            console.log(`[Process API] Resolving username: ${uname} (clean: ${clean})`);
+            //console.log(`[Process API] Resolving username: ${uname} (clean: ${clean})`);
             let user;
             try {
               user = await userByUsernameV1(clean);
