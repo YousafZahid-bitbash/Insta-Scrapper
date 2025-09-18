@@ -2068,37 +2068,37 @@ export function filterUser(user: UserDetails, filters: FilterOptions): boolean {
   ];
   for (const { key, filter, value } of flagChecks) {
     if (filter === "yes" && !value) {
-      console.log(`[filterUser] Flag check failed: ${key} expected yes, got value:`, value);
+      //console.log(`[filterUser] Flag check failed: ${key} expected yes, got value:`, value);
       return false;
     }
     if (filter === "no" && value) {
-      console.log(`[filterUser] Flag check failed: ${key} expected no, got value:`, value);
+      //console.log(`[filterUser] Flag check failed: ${key} expected no, got value:`, value);
       return false;
     }
-    console.log(`[filterUser] Flag check passed: ${key}, filter: ${filter}, value:`, value);
+    //console.log(`[filterUser] Flag check passed: ${key}, filter: ${filter}, value:`, value);
   }
 
   // Filter by username exclude list
-  console.log('[filterUser] Checking username exclude list...');
-  console.log('[filterUser] filters.filterByName:', filters.filterByName);
+  //console.log('[filterUser] Checking username exclude list...');
+  //console.log('[filterUser] filters.filterByName:', filters.filterByName);
   if (filters.filterByName) {
     const rawExcludeList = String(filters.filterByName);
-    console.log('[filterUser] Raw exclude list:', rawExcludeList);
+    //console.log('[filterUser] Raw exclude list:', rawExcludeList);
     const excludeUsernames = rawExcludeList
       .split(/\r?\n/)
       .map(u => u.trim().toLowerCase())
       .filter(Boolean);
-    console.log('[filterUser] Normalized exclude list:', excludeUsernames);
+    //console.log('[filterUser] Normalized exclude list:', excludeUsernames);
     const usernameNormalized = user.username.toLowerCase();
-    console.log('[filterUser] Normalized username:', usernameNormalized);
+    //console.log('[filterUser] Normalized username:', usernameNormalized);
     if (excludeUsernames.length > 0) {
       const match = excludeUsernames.includes(usernameNormalized);
-      console.log(`[filterUser] Username exclude check: username=${user.username}, excludeList=`, excludeUsernames, 'match:', match);
+      //console.log(`[filterUser] Username exclude check: username=${user.username}, excludeList=`, excludeUsernames, 'match:', match);
       if (match) {
-        console.log(`[filterUser] User ${user.username} excluded by filterByName.`);
+        //console.log(`[filterUser] User ${user.username} excluded by filterByName.`);
         return false;
       } else {
-        console.log(`[filterUser] User ${user.username} NOT excluded by filterByName.`);
+        //console.log(`[filterUser] User ${user.username} NOT excluded by filterByName.`);
       }
     }
   }
