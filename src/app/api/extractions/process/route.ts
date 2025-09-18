@@ -756,10 +756,22 @@ export async function POST(req: NextRequest) {
           job.coins_spent = (typeof job.coins_spent === 'number' ? job.coins_spent : 0) + batchCostIntL;
         }
 
-        // Process all likers (no additional filtering needed for likers)
-        const toProcess = rawLikers;
+        // Apply user filters to likers (same as followers/following)
+        type FilterObject = Record<string, unknown>;
+        console.log('[Process API] Filtering likers...');
+        const filteredLikers = await extractFilteredUsers(
+          rawLikers.map(u => ({ username: u.username })),
+          (parsedFilters || {}) as FilterObject,
+          async (username: string): Promise<UserDetails> => {
+            const d = await userByUsernameV1(username);
+            return d as UserDetails;
+          }
+        );
 
-  const rows = toProcess.map((u: UserDetails) => ({
+        // Process filtered likers
+        const toProcess = filteredLikers;
+
+  const rows = toProcess.map((u) => ({
             extraction_id: job.id,
             pk: u.pk || null,
             username: u.username,
@@ -767,8 +779,8 @@ export async function POST(req: NextRequest) {
             profile_pic_url: u.profile_pic_url,
             is_private: u.is_private,
             is_verified: u.is_verified,
-            email: u.public_email ?? null,
-            phone: u.public_phone_number ?? null,
+            email: u.email ?? null,
+            phone: u.phone ?? null,
             link_in_bio: u.link_in_bio ?? null,
             is_business: typeof u.is_business === 'boolean' ? u.is_business : null,
           }));
@@ -849,17 +861,26 @@ export async function POST(req: NextRequest) {
         try {
           step = job.current_step ? JSON.parse(job.current_step) : { idx: 0, targets: [] };
         } catch {}
-        if (!Array.isArray(step.targets)) {
+        if (!Array.isArray(step.targets) || step.targets.length === 0) {
           console.log('[Process API] Resolving posts targets...');
           const resolvedTargets = [] as { username: string; pk: string; total: number }[];
           let totalEstimated = 0;
           for (const uname of usernames) {
             const clean = uname.replace(/^@/, '');
-            const user = await userByUsernameV1(clean);
-            if (user?.pk) {
-              const total = typeof user.media_count === 'number' ? user.media_count : 0;
-              totalEstimated += total;
-              resolvedTargets.push({ username: clean, pk: user.pk, total });
+            console.log('[Process API] Resolving posts target:', clean);
+            try {
+              const user = await userByUsernameV1(clean);
+              console.log('[Process API] userByUsernameV1 result for posts:', clean, user);
+              if (user?.pk) {
+                const total = typeof user.media_count === 'number' ? user.media_count : 0;
+                totalEstimated += total;
+                resolvedTargets.push({ username: clean, pk: user.pk, total });
+                console.log('[Process API] Resolved posts target:', { username: clean, pk: user.pk, total });
+              } else {
+                console.warn('[Process API] Could not resolve posts user for username:', clean, 'user result:', user);
+              }
+            } catch (err) {
+              console.error('[Process API] Error resolving posts user:', clean, err);
             }
           }
           step = { idx: 0, page_id: undefined, targets: resolvedTargets, totalEstimated };
@@ -890,6 +911,23 @@ export async function POST(req: NextRequest) {
         const allowedRawPosts = Math.max(0, Math.min(medias.length, maxPostsByLimit, maxPostsByBalance));
         const rawMedias = medias.slice(0, allowedRawPosts);
         console.log('[Process API] Posts cap before spending:', { medias: medias.length, allowedRawPosts, coinsSpent: coinsSpentP, userCoins: userCoinsP });
+
+        // Early exit if coin limit already reached (no more budget for any posts)
+        if (coinLimitP !== undefined && allowedRawPosts === 0 && coinsSpentP >= coinLimitP) {
+          console.log('[Process API] Coin limit already reached for posts; stopping extraction');
+          const updatePostsStop = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + 0,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updatePostsStop).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit already reached', jobId: job.id, ...updatePostsStop });
+        }
 
         // Coin limit calculation and deduction (based on raw API response)
         // Calculate cost based on capped rawMedias (before filtering)
@@ -1010,6 +1048,23 @@ export async function POST(req: NextRequest) {
           console.log('[Process API] Inserting posts to DB:', postsRows.length);
           const { error: insErr } = await supabase.from('extracted_posts').insert(postsRows);
           if (insErr) throw new Error(insErr.message);
+        }
+
+        // Check if coin limit reached after saving data - stop before next batch
+        if (coinLimitP !== undefined && job.coins_spent >= coinLimitP) {
+          console.log('[Process API] Coin limit reached after saving data (posts); stopping extraction');
+          const updatePostsComplete = {
+            page_count: (job.page_count || 0) + 1,
+            progress: (job.progress || 0) + postsRows.length,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            error_message: null,
+            next_page_id: null,
+            current_step: JSON.stringify(step),
+            locked_by: null,
+          } as Record<string, unknown>;
+          await supabase.from('extractions').update(updatePostsComplete).eq('id', job.id).eq('locked_by', workerId);
+          return NextResponse.json({ message: 'Coin limit reached after saving data', jobId: job.id, ...updatePostsComplete });
         }
 
         let next_page_id = page.next_page_id;
