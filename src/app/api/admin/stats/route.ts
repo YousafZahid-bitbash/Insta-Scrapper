@@ -4,7 +4,7 @@ import { requireAdmin } from '@/utils/adminAuth';
 
 async function getUserStats(_req: NextRequest) {
   try {
-    console.log('📊 [Admin Stats] Starting stats calculation...');
+    console.log('📊 [Admin Stats] Starting comprehensive stats calculation...');
     
     // Get total users (exclude admin users)
     console.log('📊 [Admin Stats] Getting total users...');
@@ -67,6 +67,71 @@ async function getUserStats(_req: NextRequest) {
 
     const totalCoins = coinsData?.reduce((sum, user) => sum + (user.coins || 0), 0) || 0;
 
+    // Get extraction statistics
+    console.log('📊 [Admin Stats] Getting extraction statistics...');
+    const { count: totalExtractions, error: extractionsError } = await supabase
+      .from('extractions')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: completedExtractions } = await supabase
+      .from('extractions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed');
+
+    const { count: failedExtractions } = await supabase
+      .from('extractions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'failed');
+
+    const { count: runningExtractions } = await supabase
+      .from('extractions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'running');
+
+    // Get extraction types breakdown
+    const { data: extractionTypes } = await supabase
+      .from('extractions')
+      .select('extraction_type, status')
+      .eq('status', 'completed');
+
+    const extractionTypeStats = extractionTypes?.reduce((acc: Record<string, number>, extraction) => {
+      acc[extraction.extraction_type] = (acc[extraction.extraction_type] || 0) + 1;
+      return acc;
+    }, {}) || {};
+
+    // Get revenue statistics from payments
+    console.log('📊 [Admin Stats] Getting revenue statistics...');
+    const { data: paymentsData, error: paymentsError } = await supabase
+      .from('payments')
+      .select('amount, status, created_at')
+      .eq('status', 'completed');
+
+    if (paymentsError) {
+      console.error('📊 [Admin Stats] Error getting payments:', paymentsError);
+    }
+
+    const totalRevenue = paymentsData?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+    const totalPurchases = paymentsData?.length || 0;
+
+    // Get revenue by month for the last 12 months
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    
+    const { data: monthlyPayments } = await supabase
+      .from('payments')
+      .select('amount, created_at')
+      .eq('status', 'completed')
+      .gte('created_at', twelveMonthsAgo.toISOString())
+      .order('created_at', { ascending: true });
+
+    // Process monthly revenue data
+    const monthlyRevenue = monthlyPayments?.reduce((acc: Record<string, number>, payment) => {
+      const date = new Date(payment.created_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      acc[monthKey] = (acc[monthKey] || 0) + (payment.amount || 0);
+      return acc;
+    }, {}) || {};
+
     // Get recent users (exclude admin users)
     const { data: recentUsers } = await supabase
       .from('users')
@@ -75,6 +140,32 @@ async function getUserStats(_req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(5);
 
+    // Get recent extractions
+    const { data: recentExtractions } = await supabase
+      .from('extractions')
+      .select('id, user_id, extraction_type, status, progress, coins_spent, requested_at')
+      .order('requested_at', { ascending: false })
+      .limit(10);
+
+    // Get user growth data for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const { data: userGrowthData } = await supabase
+      .from('users')
+      .select('created_at')
+      .eq('is_admin', false)
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .order('created_at', { ascending: true });
+
+    // Process daily user growth
+    const dailyUserGrowth = userGrowthData?.reduce((acc: Record<string, number>, user) => {
+      const date = new Date(user.created_at);
+      const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      acc[dayKey] = (acc[dayKey] || 0) + 1;
+      return acc;
+    }, {}) || {};
+
     return NextResponse.json({
       stats: {
         totalUsers: totalUsers || 0,
@@ -82,9 +173,21 @@ async function getUserStats(_req: NextRequest) {
         adminUsers: adminUsers || 0,
         todayUsers: todayUsers || 0,
         activeWeekUsers: activeWeekUsers || 0,
-        totalCoins
+        totalCoins,
+        totalExtractions: totalExtractions || 0,
+        completedExtractions: completedExtractions || 0,
+        failedExtractions: failedExtractions || 0,
+        runningExtractions: runningExtractions || 0,
+        totalRevenue,
+        totalPurchases,
+        extractionTypeStats
       },
-      recentUsers: recentUsers || []
+      charts: {
+        monthlyRevenue,
+        dailyUserGrowth
+      },
+      recentUsers: recentUsers || [],
+      recentExtractions: recentExtractions || []
     });
   } catch (error) {
     console.error('Admin stats error:', error);
