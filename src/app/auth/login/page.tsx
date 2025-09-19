@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 // No supabase auth used for session
 
 function LoginForm() {
@@ -13,6 +14,7 @@ function LoginForm() {
 	const [success, setSuccess] = useState("");
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const { isAuthenticated, isAdmin, refetchUser } = useAuth();
 
 	console.log('[Login] Component mounted');
 
@@ -32,21 +34,19 @@ function LoginForm() {
 				return;
 			}
 			
-			try {
-				const res = await fetch('/api/me', { credentials: 'include' });
-				if (res.ok) {
-					const user = await res.json();
-					if (user?.is_admin) {
-						router.replace('/admin');
-					} else {
-						router.replace('/dashboard/new-extractions');
-					}
-					return; // Don't show login form
+			// Check if already authenticated using context
+			if (isAuthenticated) {
+				if (isAdmin) {
+					router.replace('/admin');
+				} else {
+					router.replace('/dashboard/new-extractions');
 				}
-			} catch {}
-			setLoading(false); // Not authenticated, show login form
+				return; // Don't show login form
+			}
+			
+			setLoading(false); // Show login form
 		})();
-	}, [router, searchParams]);
+	}, [router, searchParams, isAuthenticated, isAdmin]);
 
 	async function handleLogin(e: React.FormEvent) {
 		e.preventDefault();
@@ -80,6 +80,10 @@ function LoginForm() {
 				localStorage.setItem("user_id", result.user_id);
 				localStorage.setItem("is_admin", result.is_admin ? 'true' : 'false');
 				console.log('[Login] Login success, is_admin:', result.is_admin);
+				
+				// Refresh auth context to get updated user data
+				await refetchUser();
+				
 				if (result.is_admin) {
 					console.log('[Login] Redirecting to /admin after login');
 					router.replace("/admin");

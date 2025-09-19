@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import "../../globals.css";
 import { FilterPanel, FiltersState } from "@/components/FilterPanel";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 
@@ -22,6 +23,7 @@ const extractOptions = [
 
 export default function NewExtractionsPage() {
 	const router = useRouter();
+	const { user, refetchUser } = useAuth();
 	const [showCoinError, setShowCoinError] = useState(false);
 		const [showSuccess, setShowSuccess] = useState(false);
 		const [extractionId, setExtractionId] = useState<string | null>(null);
@@ -68,20 +70,11 @@ export default function NewExtractionsPage() {
 		}, []);
 
 		useEffect(() => {
-			async function checkAuthAndFetchCoins() {
-				try {
-					const res = await fetch("/api/me");
-					if (!res.ok) throw new Error("Not authenticated");
-					const user = await res.json();
-					if (user && typeof user.coins === "number") setCoins(user.coins);
-					if (user && user.id) setUserId(user.id);
-				} catch {
-					// Not authenticated, redirect to login
-					router.replace("/auth/login");
-				}
+			if (user) {
+				setCoins(user.coins);
+				setUserId(user.id);
 			}
-			checkAuthAndFetchCoins();
-		}, [router]);
+		}, [user]);
 
 	useEffect(() => {
 		if (!polling || !extractionId) return;

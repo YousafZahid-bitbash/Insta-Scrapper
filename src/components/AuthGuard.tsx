@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -10,52 +11,11 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children, requireAuth = false, adminOnly = false }: AuthGuardProps) {
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isBanned, setIsBanned] = useState(false);
-  // user state is not used, so remove it
+  const { loading, isAuthenticated, isAdmin, isBanned } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/me');
-        if (res.ok) {
-          const userData = await res.json();
-          // setUser(userData); // user is not used
-          setIsAuthenticated(true);
-          setIsAdmin(!!userData.is_admin);
-          setIsBanned(false);
-        } else {
-          const err = await res.json();
-          if (err.error === 'Account suspended') {
-            setIsBanned(true);
-          }
-          setIsAuthenticated(false);
-          setIsAdmin(false);
-          // setUser(null); // user is not used
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-        setIsBanned(false);
-  // setUser(null); // user is not used
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, [adminOnly]);
-
-  useEffect(() => {
     if (loading) return;
-
-    // If user is banned, redirect to login with banned flag
-    if (isBanned) {
-      router.replace('/auth/login?banned=true');
-      return;
-    }
 
     if (requireAuth && !isAuthenticated) {
       router.replace('/auth/login');
@@ -66,7 +26,7 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
       router.replace('/auth/login');
       return;
     }
-  }, [loading, isAuthenticated, isAdmin, isBanned, requireAuth, adminOnly, router]);
+  }, [loading, isAuthenticated, isAdmin, requireAuth, adminOnly, router]);
 
   if (loading) {
     return (
