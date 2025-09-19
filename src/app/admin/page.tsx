@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
 import ConfirmationModal from '@/components/ConfirmationModal';
 import AdminNavbar from '@/components/AdminNavbar';
+import UserDetailsModal from '@/components/UserDetailsModal';
 
 interface Stats {
   totalUsers: number;
@@ -30,6 +31,13 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userDetailsModal, setUserDetailsModal] = useState<{
+    isOpen: boolean;
+    user: RecentUser | null;
+  }>({
+    isOpen: false,
+    user: null
+  });
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     userId: string;
@@ -109,6 +117,20 @@ export default function AdminDashboard() {
       currentStatus,
       username,
       isLoading: false
+    });
+  };
+
+  const handleUserDetailsClick = (user: RecentUser) => {
+    setUserDetailsModal({
+      isOpen: true,
+      user
+    });
+  };
+
+  const closeUserDetailsModal = () => {
+    setUserDetailsModal({
+      isOpen: false,
+      user: null
     });
   };
 
@@ -319,70 +341,140 @@ export default function AdminDashboard() {
 
         {/* Recent Users */}
         <div className="mt-12 bg-white shadow-lg overflow-hidden rounded-xl border border-gray-100">
-          <div className="px-6 py-6 border-b border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900">Recent Users</h3>
+          <div className="px-4 sm:px-6 py-6 border-b border-gray-200">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900">Recent Users</h3>
             <p className="mt-1 text-sm text-gray-600">Latest user registrations</p>
           </div>
-          <ul className="divide-y divide-gray-100">
-            {recentUsers.map((user) => (
-              <li key={user.id} className="hover:bg-gray-50 transition-colors duration-150">
-                <div className="px-6 py-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-12 w-12">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-md">
-                          <span className="text-lg font-semibold text-white">
-                            {user.email.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="flex items-center">
-                          <div className="text-sm font-semibold text-gray-900">{user.email}</div>
-                          {user.username && (
-                            <div className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">@{user.username}</div>
-                          )}
-                          <div className={`ml-2 text-xs px-2 py-1 rounded-full font-medium ${
-                            user.is_active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {user.is_active ? 'Active' : 'Banned'}
+          
+          {/* Desktop List */}
+          <div className="hidden md:block">
+            <ul className="divide-y divide-gray-100">
+              {recentUsers.map((user) => (
+                <li key={user.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <div className="px-6 py-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-12 w-12">
+                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-md">
+                            <span className="text-lg font-semibold text-white">
+                              {user.email.charAt(0).toUpperCase()}
+                            </span>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          Joined {formatDate(user.created_at)}
+                        <div className="ml-4">
+                          <div className="flex items-center">
+                            <div className="text-sm font-semibold text-gray-900">{user.email}</div>
+                            {user.username && (
+                              <div className="ml-2 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">@{user.username}</div>
+                            )}
+                            <div className={`ml-2 text-xs px-2 py-1 rounded-full font-medium ${
+                              user.is_active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.is_active ? 'Active' : 'Banned'}
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            Joined {formatDate(user.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-sm text-gray-900 bg-yellow-50 px-3 py-1 rounded-full">
+                          <span className="font-semibold">{user.coins}</span> coins
+                        </div>
+                        {user.last_login && (
+                          <div className="text-xs text-gray-500">
+                            Last login: {formatDate(user.last_login)}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => handleUserStatusToggle(user.id, user.is_active, user.username)}
+                          className={`px-4 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                            user.is_active
+                              ? 'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg'
+                              : 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
+                          }`}
+                        >
+                          {user.is_active ? 'Ban User' : 'Unban User'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden">
+            <div className="space-y-4 p-4">
+              {recentUsers.map((user) => (
+                <div 
+                  key={user.id} 
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                >
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => handleUserDetailsClick(user)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-md">
+                            <span className="text-sm font-semibold text-white">
+                              {user.email.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 truncate">{user.email}</div>
+                          {user.username && (
+                            <div className="text-sm text-gray-500 truncate">@{user.username}</div>
+                          )}
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.is_active ? 'Active' : 'Banned'}
+                            </span>
+                            <span className="text-xs text-gray-500 bg-yellow-50 px-2 py-1 rounded-full">
+                              {user.coins} coins
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-sm text-gray-900 bg-yellow-50 px-3 py-1 rounded-full">
-                        <span className="font-semibold">{user.coins}</span> coins
-                      </div>
-                      {user.last_login && (
-                        <div className="text-xs text-gray-500">
-                          Last login: {formatDate(user.last_login)}
-                        </div>
-                      )}
+                    <div className="flex-shrink-0 ml-4">
                       <button
                         onClick={() => handleUserStatusToggle(user.id, user.is_active, user.username)}
-                        className={`px-4 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
                           user.is_active
-                            ? 'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg'
-                            : 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
                         }`}
                       >
-                        {user.is_active ? 'Ban User' : 'Unban User'}
+                        {user.is_active ? 'Ban' : 'Unban'}
                       </button>
                     </div>
                   </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
       
+      {/* User Details Modal */}
+      <UserDetailsModal
+        isOpen={userDetailsModal.isOpen}
+        onClose={closeUserDetailsModal}
+        user={userDetailsModal.user}
+        onToggleStatus={(userId, username, currentStatus) => handleUserStatusToggle(userId, currentStatus, username)}
+        isLoading={confirmationModal.isLoading}
+      />
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmationModal.isOpen}

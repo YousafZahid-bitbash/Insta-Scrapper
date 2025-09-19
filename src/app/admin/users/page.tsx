@@ -4,13 +4,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import AdminNavbar from '@/components/AdminNavbar';
+import UserDetailsModal from '@/components/UserDetailsModal';
 
 interface User {
   id: string;
   email: string;
   username: string;
+  full_name?: string;
   coins: number;
   is_active: boolean;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
   last_login: string | null;
@@ -29,7 +32,13 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [editingCoins, setEditingCoins] = useState<{ userId: string; coins: number } | null>(null);
+  const [userDetailsModal, setUserDetailsModal] = useState<{
+    isOpen: boolean;
+    user: User | null;
+  }>({
+    isOpen: false,
+    user: null
+  });
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
     userId: string;
@@ -88,29 +97,6 @@ export default function AdminUsers() {
     }
   };
 
-  const handleUpdateCoins = async (userId: string, newCoins: number, action: 'set' | 'add') => {
-    try {
-      const response = await fetch('/api/admin/update-coins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, coins: newCoins, action })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update coins');
-      }
-
-      // Update the user in the list
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, coins: data.user.coins } : user
-      ));
-      setEditingCoins(null);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update coins');
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -129,6 +115,20 @@ export default function AdminUsers() {
       currentStatus,
       username,
       isLoading: false
+    });
+  };
+
+  const handleUserDetailsClick = (user: User) => {
+    setUserDetailsModal({
+      isOpen: true,
+      user
+    });
+  };
+
+  const closeUserDetailsModal = () => {
+    setUserDetailsModal({
+      isOpen: false,
+      user: null
     });
   };
 
@@ -279,7 +279,8 @@ export default function AdminUsers() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -312,38 +313,7 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {editingCoins?.userId === user.id ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="number"
-                            value={editingCoins.coins}
-                            onChange={(e) => setEditingCoins({ userId: user.id, coins: parseInt(e.target.value) || 0 })}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                          <button
-                            onClick={() => handleUpdateCoins(user.id, editingCoins.coins, 'set')}
-                            className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => setEditingCoins(null)}
-                            className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-900">{user.coins}</span>
-                          <button
-                            onClick={() => setEditingCoins({ userId: user.id, coins: user.coins })}
-                            className="text-blue-600 hover:text-blue-900 text-xs"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      )}
+                      <span className="text-sm font-medium text-gray-900">{user.coins.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-1">
@@ -352,7 +322,11 @@ export default function AdminUsers() {
                         }`}>
                           {user.is_active ? 'Active' : 'Inactive'}
                         </span>
-                        {/* TODO: Add admin badge when is_admin column exists */}
+                        {user.is_admin && (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                            Admin
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -362,41 +336,80 @@ export default function AdminUsers() {
                       {user.last_login ? formatDate(user.last_login) : 'Never'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex flex-col space-y-2">
-                        {/* Coin Actions */}
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleUpdateCoins(user.id, 100, 'add')}
-                            className="text-green-600 hover:text-green-900 text-xs"
-                          >
-                            +100 Coins
-                          </button>
-                          <button
-                            onClick={() => handleUpdateCoins(user.id, 500, 'add')}
-                            className="text-blue-600 hover:text-blue-900 text-xs"
-                          >
-                            +500 Coins
-                          </button>
-                        </div>
-                        {/* Ban/Unban Actions */}
-                        <div>
-                          <button
-                            onClick={() => handleUserStatusToggle(user.id, user.is_active, user.username)}
-                            className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
-                              user.is_active
-                                ? 'bg-red-500 hover:bg-red-600 text-white'
-                                : 'bg-green-500 hover:bg-green-600 text-white'
-                            }`}
-                          >
-                            {user.is_active ? 'Ban User' : 'Unban User'}
-                          </button>
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => handleUserStatusToggle(user.id, user.is_active, user.username)}
+                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
+                          user.is_active
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                      >
+                        {user.is_active ? 'Ban User' : 'Unban User'}
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden">
+            <div className="space-y-4 p-4">
+              {users.map((user) => (
+                <div 
+                  key={user.id} 
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                >
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => handleUserDetailsClick(user)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                            <span className="text-sm font-medium text-white">
+                              {user.email.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">{user.email}</div>
+                          {user.username && (
+                            <div className="text-sm text-gray-500 truncate">@{user.username}</div>
+                          )}
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                            {user.is_admin && (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                Admin
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 ml-4">
+                      <button
+                        onClick={() => handleUserStatusToggle(user.id, user.is_active, user.username)}
+                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
+                          user.is_active
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                      >
+                        {user.is_active ? 'Ban' : 'Unban'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Pagination */}
@@ -474,6 +487,15 @@ export default function AdminUsers() {
         </div>
       </div>
       
+      {/* User Details Modal */}
+      <UserDetailsModal
+        isOpen={userDetailsModal.isOpen}
+        onClose={closeUserDetailsModal}
+        user={userDetailsModal.user}
+        onToggleStatus={(userId, username, currentStatus) => handleUserStatusToggle(userId, currentStatus, username)}
+        isLoading={confirmationModal.isLoading}
+      />
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmationModal.isOpen}
