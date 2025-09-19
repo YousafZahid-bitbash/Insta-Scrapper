@@ -29,7 +29,12 @@ export default function UserDetailsModal({
   onToggleStatus, 
   isLoading 
 }: UserDetailsModalProps) {
-  if (!isOpen || !user) return null;
+  console.log('UserDetailsModal render:', { isOpen, user: user?.email });
+  
+  if (!isOpen || !user) {
+    console.log('UserDetailsModal: not rendering - isOpen:', isOpen, 'user:', user);
+    return null;
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -43,7 +48,7 @@ export default function UserDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20">
         {/* Background overlay */}
         <div 
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
@@ -51,7 +56,7 @@ export default function UserDetailsModal({
         ></div>
 
         {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg mx-4 border-4 border-red-500">
           {/* Header */}
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="flex items-center justify-between mb-4">

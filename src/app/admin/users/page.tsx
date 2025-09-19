@@ -119,10 +119,12 @@ export default function AdminUsers() {
   };
 
   const handleUserDetailsClick = (user: User) => {
+    console.log('handleUserDetailsClick called with user:', user.email);
     setUserDetailsModal({
       isOpen: true,
       user
     });
+    console.log('UserDetailsModal state set to open');
   };
 
   const closeUserDetailsModal = () => {
