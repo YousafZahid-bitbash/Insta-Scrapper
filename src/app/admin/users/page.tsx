@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import AdminNavbar from '@/components/AdminNavbar';
 
 interface User {
   id: string;
@@ -204,40 +205,7 @@ export default function AdminUsers() {
   if (loading && users.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Navigation Header */}
-        <nav className="bg-white shadow-xl border-b border-gray-200 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex justify-between items-center h-20">
-              <div className="flex items-center space-x-8">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-lg">A</span>
-                  </div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    Admin Dashboard
-                  </h1>
-                </div>
-                <div className="hidden md:flex space-x-1">
-                  <Link href="/admin" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                    Dashboard
-                  </Link>
-                  <Link href="/admin/users" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
-                    All Users
-                  </Link>
-                  <Link href="/admin/stats" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                    Statistics
-                  </Link>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </nav>
+        <AdminNavbar onLogout={handleLogout} />
         
         {/* Content */}
         <div className="max-w-7xl mx-auto py-6 px-4">
@@ -251,52 +219,19 @@ export default function AdminUsers() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Navigation Header */}
-      <nav className="bg-white shadow-xl border-b border-gray-200 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-lg">A</span>
-                </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Admin Dashboard
-                </h1>
-              </div>
-              <div className="hidden md:flex space-x-1">
-                <Link href="/admin" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                  Dashboard
-                </Link>
-                <Link href="/admin/users" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
-                  All Users
-                </Link>
-                <Link href="/admin/stats" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                  Statistics
-                </Link>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
+      <AdminNavbar onLogout={handleLogout} />
       
       {/* Content */}
-      <div className="max-w-7xl mx-auto py-8 px-6">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">User Management</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">User Management</h2>
           <p className="text-gray-600">Manage and monitor all registered users</p>
         </div>
 
         {/* Search and Controls */}
-        <div className="bg-white shadow-lg rounded-xl border border-gray-100 p-6 mb-8">
-          <form onSubmit={handleSearchSubmit} className="flex gap-4">
+        <div className="bg-white shadow-lg rounded-xl border border-gray-100 p-4 sm:p-6 mb-8">
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-4">
             <input
               type="text"
               placeholder="Search users by email or username..."
@@ -306,7 +241,7 @@ export default function AdminUsers() {
             />
             <button
               type="submit"
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+              className="px-6 sm:px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
             >
               Search
             </button>

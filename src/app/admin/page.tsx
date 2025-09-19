@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
 import ConfirmationModal from '@/components/ConfirmationModal';
+import AdminNavbar from '@/components/AdminNavbar';
 
 interface Stats {
   totalUsers: number;
@@ -161,43 +162,10 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Navigation Header */}
-        <nav className="bg-white shadow-xl border-b border-gray-200 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex justify-between items-center h-20">
-              <div className="flex items-center space-x-8">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-lg">A</span>
-                  </div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    Admin Dashboard
-                  </h1>
-                </div>
-                <div className="hidden md:flex space-x-1">
-                  <Link href="/admin" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
-                    Dashboard
-                  </Link>
-                  <Link href="/admin/users" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                    All Users
-                  </Link>
-                  <Link href="/admin/stats" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                    Statistics
-                  </Link>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </nav>
+        <AdminNavbar onLogout={handleLogout} />
         
         {/* Content */}
-        <div className="max-w-7xl mx-auto py-8 px-6">
+        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
@@ -212,40 +180,7 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Navigation Header */}
-        <nav className="bg-white shadow-xl border-b border-gray-200 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex justify-between items-center h-20">
-              <div className="flex items-center space-x-8">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-lg">A</span>
-                  </div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    Admin Dashboard
-                  </h1>
-                </div>
-                <div className="hidden md:flex space-x-1">
-                  <Link href="/admin" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
-                    Dashboard
-                  </Link>
-                  <Link href="/admin/users" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                    All Users
-                  </Link>
-                  <Link href="/admin/stats" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                    Statistics
-                  </Link>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </nav>
+        <AdminNavbar onLogout={handleLogout} />
         
         {/* Content */}
         <div className="max-w-7xl mx-auto py-8 px-6">
@@ -269,46 +204,13 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Navigation Header */}
-      <nav className="bg-white shadow-xl border-b border-gray-200 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-lg">A</span>
-                </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Admin Dashboard
-                </h1>
-              </div>
-              <div className="hidden md:flex space-x-1">
-                <Link href="/admin" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
-                  Dashboard
-                </Link>
-                <Link href="/admin/users" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                  All Users
-                </Link>
-                <Link href="/admin/stats" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200">
-                  Statistics
-                </Link>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
+      <AdminNavbar onLogout={handleLogout} />
       
       {/* Content */}
-      <div className="max-w-7xl mx-auto py-8 px-6">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
           <p className="text-gray-600">Here&apos;s what&apos;s happening with your platform today.</p>
         </div>
 
