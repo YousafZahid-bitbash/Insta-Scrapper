@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 interface Stats {
   totalUsers: number;
@@ -28,6 +29,19 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    userId: string;
+    currentStatus: boolean;
+    username: string;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    userId: '',
+    currentStatus: true,
+    username: '',
+    isLoading: false
+  });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -87,7 +101,21 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleUserStatusToggle = async (userId: string, currentStatus: boolean) => {
+  const handleUserStatusToggle = (userId: string, currentStatus: boolean, username: string) => {
+    setConfirmationModal({
+      isOpen: true,
+      userId,
+      currentStatus,
+      username,
+      isLoading: false
+    });
+  };
+
+  const confirmUserStatusToggle = async () => {
+    const { userId, currentStatus } = confirmationModal;
+    
+    setConfirmationModal(prev => ({ ...prev, isLoading: true }));
+    
     try {
       const response = await fetch('/api/admin/toggle-user-status', {
         method: 'POST',
@@ -117,9 +145,17 @@ export default function AdminDashboard() {
 
       // Refresh stats to update active user count
       fetchStats();
+      
+      // Close modal
+      setConfirmationModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
+      setConfirmationModal(prev => ({ ...prev, isLoading: false }));
     }
+  };
+
+  const closeConfirmationModal = () => {
+    setConfirmationModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
   };
 
   if (loading) {
@@ -427,7 +463,7 @@ export default function AdminDashboard() {
                         </div>
                       )}
                       <button
-                        onClick={() => handleUserStatusToggle(user.id, user.is_active)}
+                        onClick={() => handleUserStatusToggle(user.id, user.is_active, user.username)}
                         className={`px-4 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
                           user.is_active
                             ? 'bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg'
@@ -444,6 +480,23 @@ export default function AdminDashboard() {
           </ul>
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onClose={closeConfirmationModal}
+        onConfirm={confirmUserStatusToggle}
+        title={confirmationModal.currentStatus ? 'Ban User' : 'Unban User'}
+        message={
+          confirmationModal.currentStatus
+            ? `Are you sure you want to ban "${confirmationModal.username}"? This will prevent them from logging in and accessing the platform.`
+            : `Are you sure you want to unban "${confirmationModal.username}"? This will restore their access to the platform.`
+        }
+        confirmText={confirmationModal.currentStatus ? 'Ban User' : 'Unban User'}
+        cancelText="Cancel"
+        type={confirmationModal.currentStatus ? 'ban' : 'unban'}
+        isLoading={confirmationModal.isLoading}
+      />
     </div>
   );
 }
