@@ -506,30 +506,54 @@ export default function NewExtractionsPage() {
 				</>
 			)}
 
-			{/* Modern Success Modal */}
+			{/* Professional Success Modal */}
 			{showSuccess && (
 				<>
-					<div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-						<div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform animate-bounce-in">
-							<div className="text-center">
-								<div className="w-16 h-16 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-									<svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+					<div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+						<div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 transform transition-all duration-300 ease-out scale-100 opacity-100 border border-gray-100">
+							{/* Header with gradient */}
+							<div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-t-3xl p-6 text-center">
+								<div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
+									<svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
 									</svg>
 								</div>
-								<h3 className="text-2xl font-bold text-gray-900 mb-2">Extraction Complete!</h3>
-								<p className="text-gray-600 mb-6">
-									Your Instagram data has been successfully extracted. You can now view and download your results.
+								<h3 className="text-2xl font-bold text-white mb-2">Extraction Complete!</h3>
+								<p className="text-emerald-100 text-sm">
+									Your data has been successfully processed
 								</p>
+							</div>
+							
+							{/* Content */}
+							<div className="p-8">
+								<div className="text-center mb-6">
+									<p className="text-gray-600 leading-relaxed">
+										Your Instagram data extraction has been completed successfully. You can now view, analyze, and download your results.
+									</p>
+								</div>
+								
+								{/* Stats */}
+								<div className="bg-gray-50 rounded-2xl p-4 mb-6">
+									<div className="flex items-center justify-between text-sm">
+										<span className="text-gray-600">Items Extracted:</span>
+										<span className="font-semibold text-gray-900">{extractedCount}</span>
+									</div>
+									<div className="flex items-center justify-between text-sm mt-2">
+										<span className="text-gray-600">Status:</span>
+										<span className="font-semibold text-green-600">Completed</span>
+									</div>
+								</div>
+								
+								{/* Action Buttons */}
 								<div className="flex gap-3">
 									<button
-										className="flex-1 px-6 py-3 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-white font-semibold rounded-lg transition-all duration-200"
+										className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 										onClick={() => window.location.href = "/dashboard/your-extractions"}
 									>
 										View Results
 									</button>
 									<button
-										className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200"
+										className="px-6 py-3 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
 										onClick={() => setShowSuccess(false)}
 									>
 										Close
