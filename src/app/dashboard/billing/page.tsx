@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Shimmer from "@/components/Shimmer";
 import Sidebar from "@/components/Sidebar";
 import { supabase } from "../../../supabaseClient";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 
@@ -19,6 +20,7 @@ type Deal = {
 };
 
 export default function BillingPage() {
+  const { user } = useAuth();
   const [coins, setCoins] = useState<number>(0);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,16 +31,7 @@ export default function BillingPage() {
   }, []);
 
   useEffect(() => {
-    async function fetchCoinsAndDeals() {
-      try {
-        // Fetch user info (including coins) from /api/me
-        const res = await fetch("/api/me");
-        if (!res.ok) throw new Error("Not authenticated");
-        const user = await res.json();
-        if (user && typeof user.coins === "number") setCoins(user.coins);
-      } catch {
-        setCoins(0);
-      }
+    async function fetchDeals() {
       try {
         // Fetch deals directly from Supabase
         const { data, error } = await supabase
@@ -50,8 +43,12 @@ export default function BillingPage() {
       } catch {}
       setLoading(false);
     }
-    fetchCoinsAndDeals();
-  }, []);
+    
+    if (user && typeof user.coins === "number") {
+      setCoins(user.coins);
+    }
+    fetchDeals();
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-[#f7f9fc] flex flex-col">

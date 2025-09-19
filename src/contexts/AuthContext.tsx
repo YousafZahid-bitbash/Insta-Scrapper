@@ -31,14 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isFetching, setIsFetching] = useState(false);
   const router = useRouter();
 
-  const fetchUser = async () => {
+  const fetchUser = async (retryCount = 0) => {
     if (isFetching) return; // Prevent multiple simultaneous calls
     
     setIsFetching(true);
     try {
       const res = await fetch('/api/me', { 
         credentials: 'include',
-        cache: 'no-store' // Ensure fresh data
+        cache: 'no-store', // Ensure fresh data
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
       
       if (res.ok) {
@@ -47,8 +50,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true);
         setIsAdmin(!!userData.is_admin);
         setIsBanned(false);
+        console.log('[AuthContext] Successfully authenticated user:', userData.email);
       } else {
         const err = await res.json();
+        console.log('[AuthContext] Authentication failed:', res.status, err);
+        
+        // If it's a 401 and we haven't retried yet, wait a bit and retry once
+        if (res.status === 401 && retryCount === 0) {
+          console.log('[AuthContext] Retrying authentication in 100ms...');
+          setIsFetching(false);
+          setTimeout(() => fetchUser(1), 100);
+          return;
+        }
+        
         if (err.error === 'Account suspended') {
           setIsBanned(true);
         }

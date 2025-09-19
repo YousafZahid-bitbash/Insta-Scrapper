@@ -4,11 +4,13 @@
 import { useEffect, useState } from "react";
 import React from "react";
 import { supabase } from "../../../supabaseClient";
+import { useAuth } from "@/contexts/AuthContext";
 import Shimmer from "../../../components/Shimmer";
 import Sidebar from "../../../components/Sidebar";
 import Navbar from "../../../components/Navbar";
 
 export default function YourExtractionsPage() {
+  const { user } = useAuth();
   // ...existing code...
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -117,11 +119,8 @@ export default function YourExtractionsPage() {
 
   useEffect(() => {
     async function fetchExtractions() {
+      if (!user?.id) return;
       try {
-        const res = await fetch("/api/me");
-        if (!res.ok) throw new Error("Not authenticated");
-        const user = await res.json();
-        if (!user?.id) return;
         setLoading(true);
         // Replace with your own API or fetch logic for extractions
         const extractionsRes = await fetch(`/api/extractions?user_id=${user.id}`);
@@ -133,21 +132,13 @@ export default function YourExtractionsPage() {
       setLoading(false);
     }
     fetchExtractions();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    async function fetchCoins() {
-      try {
-        const res = await fetch("/api/me");
-        if (!res.ok) throw new Error("Not authenticated");
-        const user = await res.json();
-        if (user && typeof user.coins === "number") setCoins(user.coins);
-      } catch {
-        setCoins(0);
-      }
+    if (user && typeof user.coins === "number") {
+      setCoins(user.coins);
     }
-    fetchCoins();
-  }, []);
+  }, [user]);
 
 
   const handleShowDetails = async (extraction: Extraction) => {

@@ -81,16 +81,21 @@ function LoginForm() {
 				localStorage.setItem("is_admin", result.is_admin ? 'true' : 'false');
 				console.log('[Login] Login success, is_admin:', result.is_admin);
 				
-				// Refresh auth context to get updated user data
-				await refetchUser();
-				
-				if (result.is_admin) {
-					console.log('[Login] Redirecting to /admin after login');
-					router.replace("/admin");
-				} else {
-					console.log('[Login] Redirecting to /dashboard/new-extractions after login');
-					router.replace("/dashboard/new-extractions");
-				}
+				// Wait a moment for cookie to be set, then refresh auth context
+				setTimeout(async () => {
+					await refetchUser();
+					
+					// Wait a bit more for context to update, then redirect
+					setTimeout(() => {
+						if (result.is_admin) {
+							console.log('[Login] Redirecting to /admin after login');
+							router.replace("/admin");
+						} else {
+							console.log('[Login] Redirecting to /dashboard/new-extractions after login');
+							router.replace("/dashboard/new-extractions");
+						}
+					}, 200);
+				}, 100);
 			}
 		} catch (err) {
 			setLoading(false);

@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 export default function SettingsPage() {
-  type User = { id: string; email: string; username: string };
-  const [user, setUser] = useState<User | null>(null);
+  const { user: authUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [coins, setCoins] = useState<number>(0);
   // ...existing code...
@@ -20,21 +20,11 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch("/api/me");
-        if (!res.ok) throw new Error("Not authenticated");
-        const user = await res.json();
-        setUser(user);
-        if (user && typeof user.coins === "number") setCoins(user.coins);
-      } catch {
-        setUser(null);
-        setCoins(0);
-      }
+    if (authUser) {
+      if (typeof authUser.coins === "number") setCoins(authUser.coins);
       setLoading(false);
     }
-    fetchUser();
-  }, []);
+  }, [authUser]);
 
   return (
     

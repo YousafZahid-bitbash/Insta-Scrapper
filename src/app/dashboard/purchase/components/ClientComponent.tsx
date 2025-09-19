@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import StripeProvider from "@/components/StripeProvider";
 import StripePaymentForm from "@/components/StripePaymentForm";
+import { useAuth } from "@/contexts/AuthContext";
 import { FaLock, FaShieldAlt, FaCheckCircle, FaCoins, FaCreditCard, FaBolt } from "react-icons/fa";
 
 const paymentMethods = [
@@ -69,6 +70,7 @@ function PaymentSummary({ deal }: { deal: { name: string; description: string; p
 
 
 export default function ClientComponent({ deal }: { deal: { name: string; description: string; price: string; coins: string } }) {
+  const { user } = useAuth();
   const [currencyInput, setCurrencyInput] = useState("");
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState("stripe");
@@ -82,18 +84,10 @@ export default function ClientComponent({ deal }: { deal: { name: string; descri
   const [coins, setCoins] = useState<number>(0);
 
   useEffect(() => {
-    async function fetchCoins() {
-      try {
-        const res = await fetch("/api/me");
-        if (!res.ok) throw new Error("Not authenticated");
-        const user = await res.json();
-        if (user && typeof user.coins === "number") setCoins(user.coins);
-      } catch {
-        setCoins(0);
-      }
+    if (user && typeof user.coins === "number") {
+      setCoins(user.coins);
     }
-    fetchCoins();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     async function fetchCurrencies() {

@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Stats {
   totalUsers: number;
@@ -23,6 +24,7 @@ interface RecentUser {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,22 +72,10 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     // Auth check: only allow admin
-    (async () => {
-      try {
-        const res = await fetch('/api/me', { credentials: 'include' });
-        if (!res.ok) {
-          router.replace('/auth/login');
-          return;
-        }
-        const user = await res.json();
-        if (!user?.is_admin) {
-          router.replace('/auth/login');
-        }
-      } catch {
-        router.replace('/auth/login');
-      }
-    })();
-  }, [router]);
+    if (user && !user.is_admin) {
+      router.replace('/auth/login');
+    }
+  }, [user, router]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
