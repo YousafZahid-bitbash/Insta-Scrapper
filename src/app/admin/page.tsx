@@ -20,10 +20,12 @@ interface RecentUser {
   id: string;
   email: string;
   username: string;
+  full_name?: string;
   created_at: string;
   coins: number;
   last_login: string | null;
   is_active: boolean;
+  is_admin: boolean;
 }
 
 export default function AdminDashboard() {
