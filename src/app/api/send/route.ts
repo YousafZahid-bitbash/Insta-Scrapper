@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const { to, firstName } = await req.json();
     const { data, error } = await resend.emails.send({
-      from: 'Bitbash <onboarding@bitbash.dev>',
+      from: 'Scrapper Glass <support@scrapperglass.com>',
       to: [to],
       subject: 'Hello world',
       react: EmailTemplate({ firstName }),

@@ -2,11 +2,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '../../../supabaseClient';
 import crypto from 'crypto';
+import { Resend } from 'resend';
 
-// You should use a real email service in production
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 async function sendEmail(to: string, subject: string, text: string) {
-  console.log(`Send email to ${to}: ${subject}\n${text}`);
-  // Integrate with SendGrid, Resend, etc. here
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'Scrapper Glass <support@scrapperglass.com>',
+      to: [to],
+      subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #222;">
+          <h2>Password Reset Request</h2>
+          <p>You requested a password reset for your Scrapper Glass account.</p>
+          <p>Click the link below to reset your password:</p>
+          <p><a href="${text}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a></p>
+          <p>If you didn't request this, please ignore this email.</p>
+          <p>This link will expire in 1 hour.</p>
+          <p style="font-size: 12px; color: #888; margin-top: 32px;">Thank you,<br/>The Scrapper Glass Team</p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error('Error sending password reset email:', error);
+      return false;
+    }
+    
+    console.log('Password reset email sent successfully:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('Exception sending password reset email:', error);
+    return false;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -36,9 +65,9 @@ export async function POST(req: NextRequest) {
     expires_at: expiresAt,
   });
 
-  // Send email (pseudo-code, replace with your email logic)
-  const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/reset-password?token=${token}`;
-  await sendEmail(email, "Password Reset", `Reset your password: ${resetUrl}`);
+  // Send email
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?token=${token}`;
+  await sendEmail(email, "Password Reset - Scrapper Glass", resetUrl);
 
   return NextResponse.json(genericMsg);
 }

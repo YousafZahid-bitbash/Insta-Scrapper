@@ -81,15 +81,15 @@ export async function POST(request: NextRequest) {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
     const subject = isBanned
-      ? 'Account Suspension Notification - InstaScrapper'
-      : 'Account Reactivated - InstaScrapper';
-    const supportEmail = 'support@bitbash.dev';
+      ? 'Account Suspension Notification - Scrapper Glass'
+      : 'Account Reactivated - Scrapper Glass';
+    const supportEmail = 'support@scrapperglass.com';
     console.log('📧 [SendBanEmail] Preparing email:');
     console.log('  - Subject:', subject);
     console.log('  - To:', email);
     console.log('  - Is banned:', isBanned);
     const { data, error } = await resend.emails.send({
-      from: 'InstaScrapper <onboarding@bitbash.dev>',
+      from: 'Scrapper Glass <support@scrapperglass.com>',
       to: [email],
       subject,
       react: BanUnbanEmailTemplate({ username, isBanned, actionDate, supportEmail }),

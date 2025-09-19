@@ -10,9 +10,9 @@ async function testResendEmail() {
   
   try {
     const { data, error } = await resend.emails.send({
-      from: 'InstaScrapper <onboarding@resend.dev>',
+      from: 'Scrapper Glass <support@scrapperglass.com>',
       to: ['yousaf.zahid@bitbash.dev'], // sending to yourself for testing
-      subject: 'Test Email - InstaScrapper Ban Notification',
+      subject: 'Test Email - Scrapper Glass Ban Notification',
       html: `
         <h1>Test Email</h1>
         <p>This is a test to verify Resend email sending is working.</p>
