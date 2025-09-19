@@ -38,11 +38,11 @@ export default function SettingsPage() {
             <h1 className="text-3xl font-serif font-bold text-center mb-8 text-gray-900 tracking-tight">Settings</h1>
             {loading ? (
               <div className="text-center text-lg text-gray-500">Loading user details...</div>
-            ) : user ? (
+            ) : authUser ? (
               <>
                 <div className="mb-8 text-center">
-                  <div className="text-lg font-serif text-gray-700 mb-2">Name: <span className="font-bold text-gray-900">{user.username || "-"}</span></div>
-                  <div className="text-lg font-serif text-gray-700 mb-2">Email: <span className="font-bold text-gray-900">{user.email}</span></div>
+                  <div className="text-lg font-serif text-gray-700 mb-2">Name: <span className="font-bold text-gray-900">{authUser.username || "-"}</span></div>
+                  <div className="text-lg font-serif text-gray-700 mb-2">Email: <span className="font-bold text-gray-900">{authUser.email}</span></div>
                  </div>
                 <div className="mb-8 text-center">
                   {/* Update Password feature removed */}
