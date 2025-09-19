@@ -18,6 +18,8 @@ interface AuthContextType {
   isAdmin: boolean;
   isBanned: boolean;
   refetchUser: () => Promise<void>;
+  logout: () => Promise<void>;
+  checkBanStatus: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const [banCheckInterval, setBanCheckInterval] = useState<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   const fetchUser = async (retryCount = 0) => {
@@ -87,6 +90,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUser();
   };
 
+  // Function to handle user logout and cleanup
+  const handleUserLogout = async () => {
+    try {
+      // Call logout API to clear server-side session
+      await fetch('/api/logout', { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
+    } catch (error) {
+      console.error('[AuthContext] Error during logout:', error);
+    } finally {
+      // Clear client-side state regardless of API call success
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+      setIsBanned(false);
+      
+      // Clear localStorage
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('is_admin');
+      
+      // Clear any existing ban check interval
+      if (banCheckInterval) {
+        clearInterval(banCheckInterval);
+        setBanCheckInterval(null);
+      }
+      
+      // Redirect to login with ban flag
+      router.replace('/auth/login?banned=true');
+    }
+  };
+
+  // Function to check ban status immediately
+  const checkBanStatus = async () => {
+    if (!isAuthenticated || isAdmin) return false; // Don't check for admins
+    
+    try {
+      const res = await fetch('/api/me', { 
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        if (err.error === 'Account suspended') {
+          console.log('[AuthContext] User banned detected, logging out...');
+          await handleUserLogout();
+          return true; // User was banned
+        }
+      }
+      return false; // User is not banned
+    } catch (error) {
+      console.error('[AuthContext] Error checking ban status:', error);
+      return false;
+    }
+  };
+
+  // Function to start periodic ban checking for authenticated users
+  const startBanCheck = () => {
+    if (banCheckInterval) return; // Already running
+    
+    const interval = setInterval(async () => {
+      await checkBanStatus();
+    }, 30000); // Check every 30 seconds
+    
+    setBanCheckInterval(interval);
+  };
+
+  // Function to stop ban checking
+  const stopBanCheck = () => {
+    if (banCheckInterval) {
+      clearInterval(banCheckInterval);
+      setBanCheckInterval(null);
+    }
+  };
+
   useEffect(() => {
     fetchUser();
   }, []);
@@ -98,6 +177,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [isBanned, loading, router]);
 
+  // Start/stop ban checking based on authentication status
+  useEffect(() => {
+    if (isAuthenticated && !isAdmin && !isBanned) {
+      startBanCheck();
+    } else {
+      stopBanCheck();
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      stopBanCheck();
+    };
+  }, [isAuthenticated, isAdmin, isBanned]);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -105,7 +198,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated,
       isAdmin,
       isBanned,
-      refetchUser
+      refetchUser,
+      logout: handleUserLogout,
+      checkBanStatus
     }}>
       {children}
     </AuthContext.Provider>

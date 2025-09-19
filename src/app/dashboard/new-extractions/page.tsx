@@ -23,7 +23,7 @@ const extractOptions = [
 
 export default function NewExtractionsPage() {
 	const router = useRouter();
-	const { user, refetchUser } = useAuth();
+	const { user, refetchUser, checkBanStatus } = useAuth();
 	const [showCoinError, setShowCoinError] = useState(false);
 		const [showSuccess, setShowSuccess] = useState(false);
 		const [extractionId, setExtractionId] = useState<string | null>(null);
@@ -263,6 +263,13 @@ export default function NewExtractionsPage() {
 														e.preventDefault();
 														setResult(null);
 														setError(null);
+														
+														// Check if user is banned before proceeding
+														const isBanned = await checkBanStatus();
+														if (isBanned) {
+															return; // User will be redirected by AuthContext
+														}
+														
 														// Check coin balance
 														if (coins <= 0) {
 															setShowCoinError(true);

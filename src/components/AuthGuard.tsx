@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AuthGuardProps {
@@ -11,8 +11,9 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children, requireAuth = false, adminOnly = false }: AuthGuardProps) {
-  const { loading, isAuthenticated, isAdmin, isBanned } = useAuth();
+  const { loading, isAuthenticated, isAdmin, isBanned, checkBanStatus } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (loading) return;
@@ -27,6 +28,13 @@ export default function AuthGuard({ children, requireAuth = false, adminOnly = f
       return;
     }
   }, [loading, isAuthenticated, isAdmin, requireAuth, adminOnly, router]);
+
+  // Check ban status on route changes for authenticated users
+  useEffect(() => {
+    if (isAuthenticated && !isAdmin && !loading) {
+      checkBanStatus();
+    }
+  }, [pathname, isAuthenticated, isAdmin, loading, checkBanStatus]);
 
   if (loading) {
     return (
